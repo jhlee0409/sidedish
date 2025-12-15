@@ -15,24 +15,27 @@ export async function GET(request: NextRequest) {
 
     const db = getAdminDb()
 
+    // Note: Firestore requires a composite index for where + orderBy on different fields
+    // To avoid index requirement, we fetch without orderBy and sort in JavaScript
     const snapshot = await db
       .collection(COLLECTIONS.WHISPERS)
       .where('projectAuthorId', '==', user.uid)
-      .orderBy('createdAt', 'desc')
       .get()
 
-    const whispers: WhisperResponse[] = snapshot.docs.map(doc => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        projectId: data.projectId,
-        projectTitle: data.projectTitle,
-        senderName: data.senderName,
-        content: data.content,
-        isRead: data.isRead || false,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      }
-    })
+    const whispers: WhisperResponse[] = snapshot.docs
+      .map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          projectId: data.projectId,
+          projectTitle: data.projectTitle,
+          senderName: data.senderName,
+          content: data.content,
+          isRead: data.isRead || false,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        }
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json({ data: whispers })
   } catch (error) {

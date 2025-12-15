@@ -25,9 +25,12 @@ export async function verifyAuth(request: NextRequest): Promise<AuthenticatedUse
       return null
     }
 
-    // Check if credentials are configured
-    if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      console.error('Auth failed: FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY not configured')
+    // Check if credentials are configured (support both methods)
+    const hasServiceAccountKey = !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+    const hasIndividualCreds = process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY
+
+    if (!hasServiceAccountKey && !hasIndividualCreds) {
+      console.error('Auth failed: Neither FIREBASE_SERVICE_ACCOUNT_KEY nor FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY configured')
       return null
     }
 
