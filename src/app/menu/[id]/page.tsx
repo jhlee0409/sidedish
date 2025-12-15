@@ -23,7 +23,7 @@ import {
   createWhisper,
 } from '@/lib/api-client'
 import { ProjectResponse, CommentResponse } from '@/lib/db-types'
-import { REACTION_EMOJI_MAP, REACTION_KEYS } from '@/lib/constants'
+import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
 import LoginModal from '@/components/LoginModal'
 
 export default function MenuDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +53,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         ])
 
         setProject(projectData)
-        setReactions(projectData.reactions || {})
+        setReactions(normalizeReactions(projectData.reactions || {}))
         setComments(commentsData)
         setLikeCount(projectData.likes)
 
