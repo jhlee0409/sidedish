@@ -1,13 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { X, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils } from 'lucide-react';
-import Button from './Button';
-import { CreateProjectInput, ProjectPlatform } from '../types';
-import { generateProjectContent } from '../services/geminiService';
+'use client'
+
+import { useState, useRef } from 'react'
+import Image from 'next/image'
+import { X, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils } from 'lucide-react'
+import Button from './Button'
+import { CreateProjectInput, ProjectPlatform } from '@/lib/types'
+import { generateProjectContent } from '@/services/geminiService'
 
 interface ProjectFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (project: CreateProjectInput) => void;
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (project: CreateProjectInput) => void
 }
 
 const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -21,82 +24,81 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
     link: '',
     githubUrl: '',
     platform: 'WEB'
-  });
-  const [tagInput, setTagInput] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  
-  // File input ref
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  })
+  const [tagInput, setTagInput] = useState('')
+  const [isAiLoading, setIsAiLoading] = useState(false)
 
-  if (!isOpen) return null;
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  if (!isOpen) return null
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("파일 크기는 5MB 이하여야 합니다.");
-        return;
+        alert("파일 크기는 5MB 이하여야 합니다.")
+        return
       }
 
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }))
+      }
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
+      e.preventDefault()
       if (!formData.tags.includes(tagInput.trim())) {
-        setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+        setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
       }
-      setTagInput('');
+      setTagInput('')
     }
-  };
+  }
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }));
-  };
+    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }))
+  }
 
   const handleAiGenerate = async () => {
     if (!formData.description) {
-        alert("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!");
-        return;
+      alert("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!")
+      return
     }
-    
-    setIsAiLoading(true);
+
+    setIsAiLoading(true)
     try {
-      const result = await generateProjectContent(formData.description);
-      
+      const result = await generateProjectContent(formData.description)
+
       setFormData(prev => ({
         ...prev,
         shortDescription: result.shortDescription,
         description: result.description,
         tags: result.tags
-      }));
+      }))
     } catch (error) {
-      console.error(error);
-      alert('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error(error)
+      alert('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
-      setIsAiLoading(false);
+      setIsAiLoading(false)
     }
-  };
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!formData.title || !formData.shortDescription) {
-      alert('필수 항목을 입력해주세요.');
-      return;
+      alert('필수 항목을 입력해주세요.')
+      return
     }
-    onSubmit(formData);
-    onClose();
+    onSubmit(formData)
+    onClose()
     setFormData({
       title: '',
       shortDescription: '',
@@ -107,8 +109,8 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
       link: '',
       githubUrl: '',
       platform: 'WEB'
-    });
-  };
+    })
+  }
 
   const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
     { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
@@ -116,48 +118,48 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
     { value: 'GAME', label: '게임', icon: <Gamepad2 className="w-4 h-4" /> },
     { value: 'DESIGN', label: '디자인/작품', icon: <Palette className="w-4 h-4" /> },
     { value: 'OTHER', label: '기타', icon: <Box className="w-4 h-4" /> },
-  ];
+  ]
 
   const getLinkConfig = (platform: ProjectPlatform) => {
     switch (platform) {
       case 'WEB':
-        return { 
-          label: '서비스 주소 (URL)', 
+        return {
+          label: '서비스 주소 (URL)',
           placeholder: 'https://myservice.com',
-          desc: '유저들이 맛볼 수 있는 웹사이트 주소를 입력해주세요.' 
-        };
+          desc: '유저들이 맛볼 수 있는 웹사이트 주소를 입력해주세요.'
+        }
       case 'APP':
-        return { 
-          label: '다운로드 링크 (App Store/Play Store)', 
+        return {
+          label: '다운로드 링크 (App Store/Play Store)',
           placeholder: 'https://apps.apple.com/... 또는 https://play.google.com/...',
           desc: '앱을 설치할 수 있는 스토어 링크를 입력해주세요.'
-        };
+        }
       case 'GAME':
-        return { 
-          label: '플레이 / 다운로드 링크', 
+        return {
+          label: '플레이 / 다운로드 링크',
           placeholder: 'https://store.steampowered.com/... 또는 https://itch.io/...',
           desc: '게임을 바로 즐길 수 있는 링크를 입력해주세요.'
-        };
+        }
       case 'DESIGN':
-        return { 
-          label: '포트폴리오 주소', 
+        return {
+          label: '포트폴리오 주소',
           placeholder: 'https://behance.net/... 또는 https://notion.so/...',
           desc: '작품을 감상할 수 있는 페이지 링크를 입력해주세요.'
-        };
+        }
       default:
-        return { 
-          label: '프로젝트 링크', 
+        return {
+          label: '프로젝트 링크',
           placeholder: '프로젝트를 확인할 수 있는 URL',
           desc: '프로젝트와 관련된 웹페이지 주소를 입력해주세요.'
-        };
+        }
     }
-  };
+  }
 
-  const linkConfig = getLinkConfig(formData.platform);
+  const linkConfig = getLinkConfig(formData.platform)
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div 
+      <div
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       ></div>
@@ -166,8 +168,8 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
         <div className="sticky top-0 bg-white/90 backdrop-blur-sm px-8 py-5 border-b border-slate-100 flex justify-between items-center z-10">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <Utensils className="w-6 h-6 text-orange-500" />
-                새로운 메뉴 등록
+              <Utensils className="w-6 h-6 text-orange-500" />
+              새로운 메뉴 등록
             </h2>
             <p className="text-sm text-slate-500 mt-1">맛있는 아이디어를 플레이팅해보세요.</p>
           </div>
@@ -214,11 +216,10 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
                   key={opt.value}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, platform: opt.value }))}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
-                    formData.platform === opt.value
-                      ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
-                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
-                  }`}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.platform === opt.value
+                    ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
+                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
+                    }`}
                 >
                   <div className="mb-1">{opt.icon}</div>
                   <span className="text-xs font-semibold">{opt.label}</span>
@@ -230,91 +231,91 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">메뉴 사진 (썸네일)</label>
             <div className="flex flex-col md:flex-row gap-4">
-                <div 
-                    className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    {formData.imageUrl ? (
-                        <>
-                            <img src={formData.imageUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
-                                    <Upload className="w-4 h-4 text-slate-700" />
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-400">
-                            <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                            <span className="text-xs font-medium">사진 업로드</span>
-                        </div>
-                    )}
-                    <input 
-                        ref={fileInputRef}
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleFileChange}
-                        className="hidden" 
-                    />
-                </div>
+              <div
+                className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {formData.imageUrl ? (
+                  <>
+                    <Image src={formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
+                        <Upload className="w-4 h-4 text-slate-700" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400">
+                    <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
+                    <span className="text-xs font-medium">사진 업로드</span>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
 
-                <div className="flex-1 flex flex-col justify-center space-y-3">
-                    <div className="space-y-1">
-                        <input
-                            type="text"
-                            name="imageUrl"
-                            value={formData.imageUrl}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
-                            placeholder="또는 이미지 URL을 직접 입력하세요"
-                        />
-                    </div>
-                    <div className="text-xs text-slate-500 space-y-1 pl-1">
-                        <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 보기 좋은 떡이 먹기도 좋습니다 (16:9 권장)</p>
-                        <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 5MB 이하의 JPG, PNG 파일을 업로드해주세요.</p>
-                    </div>
+              <div className="flex-1 flex flex-col justify-center space-y-3">
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    name="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
+                    placeholder="또는 이미지 URL을 직접 입력하세요"
+                  />
                 </div>
+                <div className="text-xs text-slate-500 space-y-1 pl-1">
+                  <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 보기 좋은 떡이 먹기도 좋습니다 (16:9 권장)</p>
+                  <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 5MB 이하의 JPG, PNG 파일을 업로드해주세요.</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* AI Generation Section integrated with Description */}
           <div className="space-y-2">
             <div className="flex justify-between items-end mb-1">
-                <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
-                <button
-                    type="button"
-                    onClick={handleAiGenerate}
-                    disabled={!formData.description || isAiLoading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
-                >
-                    <Wand2 className="w-3.5 h-3.5" />
-                    AI 셰프가 대신 작성하기
-                </button>
+              <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={!formData.description || isAiLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                AI 셰프가 대신 작성하기
+              </button>
             </div>
-            
+
             <div className="relative group">
-                <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows={6}
-                    className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
-                    placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요. (예: 리액트로 버무린 모바일 친화적인 투두리스트. 귀여운 고양이 테마가 별미입니다.)"
-                />
-                
-                <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
-                    간단한 재료만 적고 AI 버튼을 눌러보세요!
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={6}
+                className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
+                placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요. (예: 리액트로 버무린 모바일 친화적인 투두리스트. 귀여운 고양이 테마가 별미입니다.)"
+              />
+
+              <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
+                간단한 재료만 적고 AI 버튼을 눌러보세요!
+              </div>
+
+              {isAiLoading && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
+                  <div className="bg-white p-4 rounded-2xl shadow-xl border border-orange-50 flex flex-col items-center animate-in zoom-in duration-300">
+                    <Sparkles className="w-8 h-8 text-orange-500 animate-pulse mb-2" />
+                    <span className="text-sm font-bold text-slate-800">AI 셰프가 요리 중...</span>
+                    <span className="text-xs text-slate-500 mt-1">맛깔난 소개글과 재료를 준비하고 있습니다.</span>
+                  </div>
                 </div>
-                
-                {isAiLoading && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
-                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-orange-50 flex flex-col items-center animate-in zoom-in duration-300">
-                            <Sparkles className="w-8 h-8 text-orange-500 animate-pulse mb-2" />
-                            <span className="text-sm font-bold text-slate-800">AI 셰프가 요리 중...</span>
-                            <span className="text-xs text-slate-500 mt-1">맛깔난 소개글과 재료를 준비하고 있습니다.</span>
-                        </div>
-                    </div>
-                )}
+              )}
             </div>
           </div>
 
@@ -395,7 +396,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProjectFormModal;
+export default ProjectFormModal
