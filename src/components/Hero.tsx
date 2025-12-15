@@ -31,7 +31,7 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
         </h1>
 
         <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-600 mb-12 leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-          셰프(개발자)들의 정성이 담긴 사이드 프로젝트를 맛보고,<br className="hidden md:block" />
+          셰프(메이커)들의 정성이 담긴 사이드 프로젝트를 맛보고,<br className="hidden md:block" />
           당신의 솔직한 미식평을 남겨주세요.
         </p>
 

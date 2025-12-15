@@ -254,7 +254,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 alt="SideDish"
                 width={32}
                 height={32}
-                className="h-8 w-8"
+                className="h-8 w-8 rounded-full"
               />
             </Link>
             <div className="w-24" />

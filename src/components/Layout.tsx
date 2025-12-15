@@ -49,7 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
               alt="SideDish"
               width={36}
               height={36}
-              className="h-9 w-9 group-hover:scale-105 transition-transform duration-300"
+              className="h-9 w-9 group-hover:scale-105 transition-transform duration-300 rounded-full"
             />
           </Link>
 
@@ -113,15 +113,15 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
         <div className="container mx-auto px-4 flex flex-col items-center">
           <div className="mb-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
             <Image
-              src="/sidedish_logo.png"
+              src="/sidedish_logo_with_text.png"
               alt="SideDish"
               width={48}
               height={48}
-              className="h-12 w-12"
+              className="h-12 w-12 rounded-full"
             />
           </div>
           <p className="text-slate-500 text-sm mb-8 text-center max-w-md leading-relaxed">
-            세상의 모든 셰프(개발자)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br />
+            세상의 모든 셰프(메이커)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br />
             솔직한 미식평을 나누는 공간입니다.
           </p>
           <div className="flex gap-6 mb-8 text-slate-400 text-sm font-medium">
