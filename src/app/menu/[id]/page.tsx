@@ -234,7 +234,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         <div className="text-center">
           <h2 className="text-xl font-bold text-slate-900 mb-2">메뉴를 찾을 수 없습니다</h2>
           <p className="text-slate-500 mb-6">요청하신 메뉴가 존재하지 않습니다.</p>
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="primary" className="bg-orange-600 hover:bg-orange-700">
               메뉴판으로 돌아가기
             </Button>

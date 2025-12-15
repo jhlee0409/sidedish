@@ -189,7 +189,7 @@ function MyPageContent() {
           isOpen={showLoginModal}
           onClose={() => {
             setShowLoginModal(false)
-            router.push('/')
+            router.push('/dashboard')
           }}
         />
       </>
@@ -428,7 +428,7 @@ function MyPageContent() {
                   title="아직 찜한 메뉴가 없어요"
                   description="마음에 드는 요리를 발견하면 찜해보세요!"
                   action={
-                    <Link href="/">
+                    <Link href="/dashboard">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
                         메뉴판 둘러보기
                       </Button>
