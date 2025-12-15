@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { Suspense, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
@@ -33,10 +33,36 @@ const platformIcons = {
 }
 
 export default function MyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+          <div className="text-slate-400">마이페이지를 불러오는 중...</div>
+        </div>
+      </div>
+    }>
+      <MyPageContent />
+    </Suspense>
+  )
+}
+
+function MyPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<TabType>('menus')
+  // URL 쿼리스트링에서 탭 상태 읽기
+  const tabParam = searchParams.get('tab') as TabType | null
+  const validTabs: TabType[] = ['menus', 'likes', 'whispers']
+  const activeTab: TabType = tabParam && validTabs.includes(tabParam) ? tabParam : 'menus'
+
+  // 탭 변경 시 URL 업데이트
+  const setActiveTab = useCallback((tab: TabType) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', tab)
+    router.push(`/mypage?${params.toString()}`, { scroll: false })
+  }, [router, searchParams])
   const [myProjects, setMyProjects] = useState<ProjectResponse[]>([])
   const [likedProjects, setLikedProjects] = useState<ProjectResponse[]>([])
   const [whispers, setWhispers] = useState<WhisperResponse[]>([])

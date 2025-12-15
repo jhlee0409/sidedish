@@ -51,6 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
               height={36}
               className="h-9 w-9 group-hover:scale-105 transition-transform duration-300 rounded-full"
             />
+            <span className="font-bold text-lg text-slate-900">SideDish</span>
           </Link>
 
           <div className="flex items-center gap-3">
