@@ -1,11 +1,12 @@
 'use client'
 
-import { Heart, ArrowUpRight, User, Smartphone, Globe, Gamepad2, Palette, Box, MessageCircle } from 'lucide-react'
+import { Heart, ArrowUpRight, User, Smartphone, Globe, Gamepad2, Palette, Box } from 'lucide-react'
 import Image from 'next/image'
-import { Project, ProjectPlatform } from '@/lib/types'
+import { ProjectPlatform } from '@/lib/types'
+import { ProjectResponse } from '@/lib/db-types'
 
 interface ProjectCardProps {
-  project: Project
+  project: ProjectResponse
   onClick: () => void
 }
 
@@ -68,7 +69,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
               <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md">
                 <User className="w-3 h-3" />
-                {project.author}
+                {project.authorName}
               </span>
               <span>•</span>
               <span>{new Date(project.createdAt).toLocaleDateString()}</span>
@@ -97,12 +98,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
               <Heart className="w-4 h-4 fill-slate-100 group-hover:fill-pink-500 transition-colors" />
               {project.likes}
             </div>
-            {project.comments && project.comments.length > 0 && (
-              <div className="flex items-center gap-1 text-xs font-bold text-slate-400 group-hover:text-blue-500 transition-colors">
-                <MessageCircle className="w-4 h-4 fill-slate-100 group-hover:fill-blue-500 transition-colors" />
-                {project.comments.length}
-              </div>
-            )}
           </div>
         </div>
       </div>

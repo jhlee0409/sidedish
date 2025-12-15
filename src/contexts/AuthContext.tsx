@@ -9,6 +9,7 @@ import {
   isFirebaseConfigured,
   FirebaseUser,
 } from '@/lib/firebase'
+import { initApiClient } from '@/lib/api-client'
 
 export interface User {
   id: string
@@ -120,6 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null
     }
   }, [firebaseUser])
+
+  // Initialize API client with token getter
+  useEffect(() => {
+    initApiClient(getIdToken)
+  }, [getIdToken])
 
   const value: AuthContextType = {
     user,

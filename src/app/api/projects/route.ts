@@ -16,21 +16,22 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.toLowerCase()
     const authorId = searchParams.get('authorId')
 
-    let query = db.collection(COLLECTIONS.PROJECTS)
-      .orderBy('createdAt', 'desc')
+    // Build query - avoid composite index requirement by handling authorId separately
+    const collection = db.collection(COLLECTIONS.PROJECTS)
 
-    // Filter by platform
-    if (platform && platform !== 'All') {
+    // If authorId is provided, don't use orderBy to avoid composite index requirement
+    // We'll sort client-side instead
+    let query: FirebaseFirestore.Query = authorId
+      ? collection.where('authorId', '==', authorId)
+      : collection.orderBy('createdAt', 'desc')
+
+    // Filter by platform (only when not filtering by author)
+    if (platform && platform !== 'All' && !authorId) {
       query = query.where('platform', '==', platform)
     }
 
-    // Filter by author
-    if (authorId) {
-      query = query.where('authorId', '==', authorId)
-    }
-
-    // Pagination cursor
-    if (cursor) {
+    // Pagination cursor (only when using orderBy)
+    if (cursor && !authorId) {
       const cursorDoc = await db.collection(COLLECTIONS.PROJECTS).doc(cursor).get()
       if (cursorDoc.exists) {
         query = query.startAfter(cursorDoc)
@@ -61,6 +62,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Sort by createdAt descending for authorId queries (client-side sort)
+    if (authorId) {
+      projects.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    }
+
     // Client-side search filtering (for title and tags)
     if (search) {
       projects = projects.filter(p =>
@@ -69,13 +75,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Client-side platform filtering for authorId queries
+    if (platform && platform !== 'All' && authorId) {
+      projects = projects.filter(p => p.platform === platform)
+    }
+
     const hasMore = snapshot.docs.length > limit
-    const nextCursor = hasMore ? snapshot.docs[limit - 1]?.id : undefined
+    const nextCursor = hasMore && !authorId ? snapshot.docs[limit - 1]?.id : undefined
 
     const response: PaginatedResponse<ProjectResponse> = {
       data: projects,
       nextCursor,
-      hasMore,
+      hasMore: hasMore && !authorId,
     }
 
     return NextResponse.json(response)

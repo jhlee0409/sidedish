@@ -1,24 +1,28 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, User, Utensils, MessageCircle, Heart, Mail,
+  ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
-  Globe, Smartphone, Gamepad2, Palette, Box, ExternalLink
+  Globe, Smartphone, Gamepad2, Palette, Box, Loader2
 } from 'lucide-react'
 import Button from '@/components/Button'
-import { Project, User as UserType, UserComment, Whisper } from '@/lib/types'
+import { useAuth } from '@/contexts/AuthContext'
 import {
-  getUser, updateUser, getMyProjects, deleteProject,
-  getUserComments, deleteUserComment, getWhispers, markWhisperAsRead,
-  getLikedProjectIds
-} from '@/lib/storage'
-import { MOCK_PROJECTS } from '@/lib/constants'
+  getProjects,
+  deleteProject as deleteProjectApi,
+  getUserLikes,
+  getWhispers as getWhispersApi,
+  markWhisperAsRead as markWhisperAsReadApi,
+  getProject,
+} from '@/lib/api-client'
+import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
+import LoginModal from '@/components/LoginModal'
 
-type TabType = 'menus' | 'reviews' | 'likes' | 'whispers'
+type TabType = 'menus' | 'likes' | 'whispers'
 
 const platformIcons = {
   WEB: <Globe className="w-4 h-4" />,
@@ -30,77 +34,128 @@ const platformIcons = {
 
 export default function MyPage() {
   const router = useRouter()
-  const [user, setUser] = useState<UserType | null>(null)
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+
   const [activeTab, setActiveTab] = useState<TabType>('menus')
-  const [myProjects, setMyProjects] = useState<Project[]>([])
-  const [myComments, setMyComments] = useState<UserComment[]>([])
-  const [likedProjects, setLikedProjects] = useState<Project[]>([])
-  const [whispers, setWhispers] = useState<Whisper[]>([])
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editedName, setEditedName] = useState('')
+  const [myProjects, setMyProjects] = useState<ProjectResponse[]>([])
+  const [likedProjects, setLikedProjects] = useState<ProjectResponse[]>([])
+  const [whispers, setWhispers] = useState<WhisperResponse[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+
+  const loadData = useCallback(async () => {
+    if (!user) return
+
+    setIsLoading(true)
+    try {
+      // Load my projects
+      const projectsResponse = await getProjects({ authorId: user.id })
+      setMyProjects(projectsResponse.data)
+
+      // Load liked projects
+      try {
+        const likesResponse = await getUserLikes(user.id)
+        const likedProjectPromises = likesResponse.projectIds.map(id =>
+          getProject(id).catch(() => null)
+        )
+        const likedProjectResults = await Promise.all(likedProjectPromises)
+        setLikedProjects(likedProjectResults.filter((p): p is ProjectResponse => p !== null))
+      } catch {
+        setLikedProjects([])
+      }
+
+      // Load whispers
+      try {
+        const whispersResponse = await getWhispersApi()
+        setWhispers(whispersResponse)
+      } catch {
+        setWhispers([])
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user])
 
   useEffect(() => {
-    const userData = getUser()
-    setUser(userData)
-    setEditedName(userData.name)
+    if (!authLoading && !isAuthenticated) {
+      setShowLoginModal(true)
+    }
+  }, [authLoading, isAuthenticated])
 
-    // Load my projects
-    setMyProjects(getMyProjects())
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadData()
+    }
+  }, [isAuthenticated, user, loadData])
 
-    // Load my comments
-    setMyComments(getUserComments())
-
-    // Load liked projects
-    const likedIds = getLikedProjectIds()
-    const myProjectsList = getMyProjects()
-    const allProjects = [...myProjectsList, ...MOCK_PROJECTS]
-    setLikedProjects(allProjects.filter(p => likedIds.includes(p.id)))
-
-    // Load whispers
-    setWhispers(getWhispers())
-  }, [])
-
-  const handleSaveName = () => {
-    if (editedName.trim()) {
-      const updated = updateUser({ name: editedName.trim() })
-      setUser(updated)
-      setIsEditingName(false)
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      await deleteProjectApi(projectId)
+      setMyProjects(prev => prev.filter(p => p.id !== projectId))
+      setDeleteConfirmId(null)
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+      alert('프로젝트 삭제에 실패했습니다.')
     }
   }
 
-  const handleDeleteProject = (projectId: string) => {
-    deleteProject(projectId)
-    setMyProjects(prev => prev.filter(p => p.id !== projectId))
-    setDeleteConfirmId(null)
-  }
-
-  const handleDeleteComment = (commentId: string) => {
-    deleteUserComment(commentId)
-    setMyComments(prev => prev.filter(c => c.id !== commentId))
-  }
-
-  const handleReadWhisper = (whisperId: string) => {
-    markWhisperAsRead(whisperId)
-    setWhispers(prev => prev.map(w =>
-      w.id === whisperId ? { ...w, isRead: true } : w
-    ))
+  const handleReadWhisper = async (whisperId: string) => {
+    try {
+      await markWhisperAsReadApi(whisperId)
+      setWhispers(prev => prev.map(w =>
+        w.id === whisperId ? { ...w, isRead: true } : w
+      ))
+    } catch (error) {
+      console.error('Failed to mark whisper as read:', error)
+    }
   }
 
   const tabs = [
     { id: 'menus' as TabType, label: '내 메뉴', icon: <Utensils className="w-4 h-4" />, count: myProjects.length },
-    { id: 'reviews' as TabType, label: '내 리뷰', icon: <MessageCircle className="w-4 h-4" />, count: myComments.length },
     { id: 'likes' as TabType, label: '찜한 메뉴', icon: <Heart className="w-4 h-4" />, count: likedProjects.length },
     { id: 'whispers' as TabType, label: '받은 피드백', icon: <Mail className="w-4 h-4" />, count: whispers.filter(w => !w.isRead).length },
   ]
 
   const unreadWhispers = whispers.filter(w => !w.isRead).length
 
-  if (!user) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">로딩 중...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+          <div className="text-slate-400">마이페이지를 불러오는 중...</div>
+        </div>
       </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">로그인이 필요합니다</h2>
+            <p className="text-slate-500 mb-6">마이페이지를 이용하려면 로그인해주세요.</p>
+            <Button
+              variant="primary"
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={() => setShowLoginModal(true)}
+            >
+              로그인하기
+            </Button>
+          </div>
+        </div>
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => {
+            setShowLoginModal(false)
+            router.push('/')
+          }}
+        />
+      </>
     )
   }
 
@@ -134,47 +189,16 @@ export default function MyPage() {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 flex items-center gap-6">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white/30">
-                {user.name.charAt(0).toUpperCase()}
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white/30 overflow-hidden">
+                {user.avatarUrl ? (
+                  <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="flex-1">
-                {isEditingName ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 text-white placeholder:text-white/60 outline-none focus:ring-2 focus:ring-white/50 text-xl font-bold"
-                      placeholder="닉네임 입력"
-                      autoFocus
-                    />
-                    <button
-                      onClick={handleSaveName}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditingName(false)
-                        setEditedName(user.name)
-                      }}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-bold">{user.name}</h1>
-                    <button
-                      onClick={() => setIsEditingName(true)}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                <h1 className="text-3xl font-bold">{user.name}</h1>
+                <p className="text-white/70 text-sm mt-1">{user.email}</p>
                 <div className="flex items-center gap-2 mt-2 text-white/80">
                   <ChefHat className="w-4 h-4" />
                   <span>SideDish Chef</span>
@@ -184,7 +208,7 @@ export default function MyPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 divide-x divide-slate-100">
+          <div className="grid grid-cols-3 divide-x divide-slate-100">
             {tabs.map(tab => (
               <button
                 key={tab.id}
@@ -322,60 +346,6 @@ export default function MyPage() {
             </div>
           )}
 
-          {/* My Reviews Tab */}
-          {activeTab === 'reviews' && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-slate-900 mb-6">내가 남긴 리뷰</h2>
-
-              {myComments.length > 0 ? (
-                <div className="space-y-4">
-                  {myComments.map(comment => (
-                    <div
-                      key={comment.id}
-                      className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <Link
-                          href={`/?project=${comment.projectId}`}
-                          className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                        >
-                          <Utensils className="w-3 h-3" />
-                          {comment.projectTitle}
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-400">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-slate-700 leading-relaxed">{comment.content}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<MessageCircle className="w-12 h-12" />}
-                  title="아직 남긴 리뷰가 없어요"
-                  description="다른 셰프들의 요리를 맛보고 리뷰를 남겨보세요!"
-                  action={
-                    <Link href="/">
-                      <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
-                        메뉴판 둘러보기
-                      </Button>
-                    </Link>
-                  }
-                />
-              )}
-            </div>
-          )}
-
           {/* Liked Menus Tab */}
           {activeTab === 'likes' && (
             <div className="space-y-4">
@@ -387,7 +357,7 @@ export default function MyPage() {
                     <div
                       key={project.id}
                       className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/?project=${project.id}`)}
+                      onClick={() => router.push(`/menu/${project.id}`)}
                     >
                       <div className="relative h-32">
                         <Image
@@ -409,7 +379,7 @@ export default function MyPage() {
                         <p className="text-sm text-slate-500 line-clamp-1">{project.shortDescription}</p>
                         <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
                           <ChefHat className="w-3 h-3" />
-                          <span>{project.author}</span>
+                          <span>{project.authorName}</span>
                         </div>
                       </div>
                     </div>
