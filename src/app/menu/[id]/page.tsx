@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2
 } from 'lucide-react'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -15,6 +15,7 @@ import {
   getProject,
   getProjectComments,
   createComment,
+  deleteComment,
   toggleLike,
   checkLiked,
   addReaction,
@@ -119,6 +120,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       alert('댓글 등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('댓글을 삭제하시겠습니까?')) return
+
+    try {
+      await deleteComment(commentId)
+      setComments(prev => prev.filter(c => c.id !== commentId))
+    } catch (error) {
+      console.error('Failed to delete comment:', error)
+      alert('댓글 삭제에 실패했습니다.')
     }
   }
 
@@ -366,9 +379,20 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                         {comment.authorName.charAt(0)}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-slate-800 text-sm">{comment.authorName}</span>
-                          <span className="text-xs text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-800 text-sm">{comment.authorName}</span>
+                            <span className="text-xs text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {user && comment.authorId === user.id && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="댓글 삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                         <p className="text-slate-600 text-sm leading-relaxed">{comment.content}</p>
                       </div>

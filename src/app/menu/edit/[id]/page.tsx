@@ -4,11 +4,14 @@ import { useState, useRef, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X } from 'lucide-react'
+import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2 } from 'lucide-react'
 import Button from '@/components/Button'
-import { Project, ProjectPlatform } from '@/lib/types'
+import { ProjectPlatform } from '@/lib/types'
 import { generateProjectContent } from '@/services/geminiService'
-import { getProjectById, saveProject } from '@/lib/storage'
+import { useAuth } from '@/contexts/AuthContext'
+import { getProject, updateProject, uploadImage } from '@/lib/api-client'
+import { ProjectResponse } from '@/lib/db-types'
+import LoginModal from '@/components/LoginModal'
 
 const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
   { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
@@ -53,48 +56,84 @@ const getLinkConfig = (platform: ProjectPlatform) => {
   }
 }
 
+interface FormData {
+  title: string
+  shortDescription: string
+  description: string
+  tags: string[]
+  imageUrl: string
+  link: string
+  githubUrl: string
+  platform: ProjectPlatform
+}
+
 export default function MenuEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const [project, setProject] = useState<Project | null>(null)
-  const [formData, setFormData] = useState({
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  const [project, setProject] = useState<ProjectResponse | null>(null)
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     shortDescription: '',
     description: '',
-    tags: [] as string[],
+    tags: [],
     imageUrl: '',
-    author: '',
     link: '',
     githubUrl: '',
-    platform: 'WEB' as ProjectPlatform
+    platform: 'WEB'
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Load project data
   useEffect(() => {
-    const loadProject = () => {
-      const found = getProjectById(id)
-      if (found) {
-        setProject(found)
-        setFormData({
-          title: found.title,
-          shortDescription: found.shortDescription,
-          description: found.description,
-          tags: found.tags,
-          imageUrl: found.imageUrl,
-          author: found.author,
-          link: found.link,
-          githubUrl: found.githubUrl || '',
-          platform: found.platform
-        })
+    const loadProject = async () => {
+      try {
+        const found = await getProject(id)
+        if (found) {
+          setProject(found)
+          setFormData({
+            title: found.title,
+            shortDescription: found.shortDescription,
+            description: found.description,
+            tags: found.tags,
+            imageUrl: found.imageUrl,
+            link: found.link,
+            githubUrl: found.githubUrl || '',
+            platform: found.platform
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load project:', error)
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
     loadProject()
   }, [id])
+
+  // Check if user is authorized to edit
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setShowLoginModal(true)
+    }
+  }, [authLoading, isAuthenticated])
+
+  // Check ownership when both project and user are loaded
+  useEffect(() => {
+    if (project && user && project.authorId !== user.id) {
+      alert('이 메뉴를 수정할 권한이 없습니다.')
+      router.push('/mypage')
+    }
+  }, [project, user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -109,9 +148,12 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         return
       }
 
+      setSelectedFile(file)
+
+      // Create preview URL
       const reader = new FileReader()
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }))
+        setPreviewUrl(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
@@ -120,7 +162,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
-      if (!formData.tags.includes(tagInput.trim())) {
+      if (!formData.tags.includes(tagInput.trim()) && formData.tags.length < 5) {
         setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
       }
       setTagInput('')
@@ -155,8 +197,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
+
     if (!formData.title || !formData.shortDescription) {
       alert('필수 항목을 입력해주세요.')
       return
@@ -164,21 +212,53 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
     if (!project) return
 
-    const updatedProject: Project = {
-      ...project,
-      ...formData,
-    }
+    setIsSubmitting(true)
+    try {
+      let imageUrl = formData.imageUrl
 
-    saveProject(updatedProject)
-    router.push('/mypage')
+      // Upload image if a new file was selected
+      if (selectedFile) {
+        try {
+          const uploadResult = await uploadImage(selectedFile)
+          imageUrl = uploadResult.url
+        } catch (error) {
+          console.error('Image upload failed:', error)
+          alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
+      // Update project via API
+      await updateProject(project.id, {
+        title: formData.title,
+        description: formData.description,
+        shortDescription: formData.shortDescription,
+        tags: formData.tags,
+        imageUrl: imageUrl,
+        link: formData.link,
+        githubUrl: formData.githubUrl,
+        platform: formData.platform,
+      })
+
+      router.push('/mypage')
+    } catch (error) {
+      console.error('Failed to update project:', error)
+      alert('메뉴 수정에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const linkConfig = getLinkConfig(formData.platform)
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">로딩 중...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+          <div className="text-slate-400">로딩 중...</div>
+        </div>
       </div>
     )
   }
@@ -196,6 +276,33 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
           </Link>
         </div>
       </div>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">로그인이 필요합니다</h2>
+            <p className="text-slate-500 mb-6">메뉴를 수정하려면 로그인해주세요.</p>
+            <Button
+              variant="primary"
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={() => setShowLoginModal(true)}
+            >
+              로그인하기
+            </Button>
+          </div>
+        </div>
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => {
+            setShowLoginModal(false)
+            router.push('/')
+          }}
+        />
+      </>
     )
   }
 
@@ -261,14 +368,9 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   <ChefHat className="w-4 h-4 text-slate-500" />
                   총괄 셰프 (작성자)
                 </label>
-                <input
-                  type="text"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                  placeholder="예: 여행작가 김감성"
-                />
+                <div className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-600">
+                  {user?.name || '알 수 없음'}
+                </div>
               </div>
             </div>
 
@@ -299,9 +401,9 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {formData.imageUrl ? (
+                  {(previewUrl || formData.imageUrl) ? (
                     <>
-                      <Image src={formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
+                      <Image src={previewUrl || formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
                           <Upload className="w-4 h-4 text-slate-700" />
@@ -451,15 +553,39 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
               <Link href="/mypage">
-                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6">취소</Button>
+                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting}>취소</Button>
               </Link>
-              <Button type="submit" variant="primary" className="w-full sm:w-auto px-8 rounded-xl shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 text-white">
-                수정 완료
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full sm:w-auto px-8 rounded-xl shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+                disabled={isSubmitting || !isAuthenticated}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    수정 중...
+                  </span>
+                ) : (
+                  '수정 완료'
+                )}
               </Button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false)
+          if (!isAuthenticated) {
+            router.push('/')
+          }
+        }}
+        onSuccess={() => setShowLoginModal(false)}
+      />
     </div>
   )
 }
