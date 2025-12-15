@@ -26,24 +26,27 @@ export async function GET(
       )
     }
 
+    // Note: Firestore requires a composite index for where + orderBy on different fields
+    // To avoid index requirement, we fetch without orderBy and sort in JavaScript
     const snapshot = await db
       .collection(COLLECTIONS.COMMENTS)
       .where('projectId', '==', id)
-      .orderBy('createdAt', 'desc')
       .get()
 
-    const comments: CommentResponse[] = snapshot.docs.map(doc => {
-      const data = doc.data()
-      return {
-        id: doc.id,
-        projectId: data.projectId,
-        authorId: data.authorId,
-        authorName: data.authorName,
-        avatarUrl: data.avatarUrl,
-        content: data.content,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      }
-    })
+    const comments: CommentResponse[] = snapshot.docs
+      .map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          projectId: data.projectId,
+          authorId: data.authorId,
+          authorName: data.authorName,
+          avatarUrl: data.avatarUrl,
+          content: data.content,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        }
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json({ data: comments })
   } catch (error) {
