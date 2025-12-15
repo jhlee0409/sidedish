@@ -1,5 +1,4 @@
-
-import { Project } from './types';
+import { Project } from './types'
 
 export const MOCK_PROJECTS: Project[] = [
   {
@@ -99,4 +98,4 @@ export const MOCK_PROJECTS: Project[] = [
     platform: 'WEB',
     createdAt: new Date('2023-08-10')
   }
-];
+]

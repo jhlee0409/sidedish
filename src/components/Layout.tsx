@@ -1,41 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { Utensils, Plus, ArrowRight } from 'lucide-react';
-import Button from './Button';
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Utensils, Plus, ArrowRight } from 'lucide-react'
+import Button from './Button'
 
 interface LayoutProps {
-  children: React.ReactNode;
-  onLogoClick: () => void;
-  onRegisterClick: () => void;
-  isLanding?: boolean; // New prop to determine header style
+  children: React.ReactNode
+  onLogoClick: () => void
+  onRegisterClick: () => void
+  isLanding?: boolean
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick, isLanding = false }) => {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState(false)
 
-  // Handle scroll effect for header
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+      setScrolled(window.scrollY > 50)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 selection:bg-orange-100 selection:text-orange-900">
       {/* Floating Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 flex justify-center px-4 transition-all duration-300 ${scrolled || !isLanding ? 'pt-4' : 'pt-6'}`}>
-        <div 
+        <div
           className={`
             w-full max-w-6xl rounded-full px-6 py-3 flex items-center justify-between transition-all duration-300
-            ${scrolled || !isLanding 
-              ? 'bg-white/80 backdrop-blur-md border border-white/20 shadow-lg shadow-slate-200/50' 
+            ${scrolled || !isLanding
+              ? 'bg-white/80 backdrop-blur-md border border-white/20 shadow-lg shadow-slate-200/50'
               : 'bg-transparent border-transparent'
             }
           `}
         >
-          <div 
-            className="flex items-center gap-2 cursor-pointer group" 
+          <div
+            className="flex items-center gap-2 cursor-pointer group"
             onClick={onLogoClick}
           >
             <div className={`p-1.5 rounded-full group-hover:rotate-12 transition-transform duration-300 ${scrolled || !isLanding ? 'bg-orange-500' : 'bg-white/20 backdrop-blur-sm'}`}>
@@ -48,7 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick,
 
           <div className="flex items-center gap-3">
             {isLanding ? (
-                <Button 
+              <Button
                 onClick={onRegisterClick}
                 className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
                 icon={<ArrowRight className="w-4 h-4" />}
@@ -56,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick,
                 메뉴판 입장하기
               </Button>
             ) : (
-                <Button 
+              <Button
                 onClick={onRegisterClick}
                 variant="primary"
                 className="rounded-full px-5 py-2 text-sm shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 bg-orange-500 hover:bg-orange-600 focus:ring-orange-500"
@@ -80,7 +81,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick,
             SideDish
           </div>
           <p className="text-slate-500 text-sm mb-8 text-center max-w-md leading-relaxed">
-            세상의 모든 셰프(개발자)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br/>
+            세상의 모든 셰프(개발자)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br />
             솔직한 미식평을 나누는 공간입니다.
           </p>
           <div className="flex gap-6 mb-8 text-slate-400 text-sm font-medium">
@@ -94,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick,
         </div>
       </footer>
     </div>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout

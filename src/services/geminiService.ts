@@ -1,19 +1,20 @@
-import { GoogleGenAI, Type } from "@google/genai";
+'use server'
 
-// Initialize the Gemini API client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+import { GoogleGenAI, Type } from "@google/genai"
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 
 export const refineDescription = async (rawDescription: string): Promise<string> => {
-  if (!rawDescription.trim()) return '';
+  if (!rawDescription.trim()) return ''
 
   try {
     const prompt = `
       Role: Creative Copywriter & Head Chef for 'SideDish'.
       Platform: 'SideDish' (A platform where developers serve their side projects like delicious dishes).
       Target Audience: Tech enthusiasts, developers, and potential users looking for "tasty" new apps.
-      
+
       Task: Rewrite the following project description to be appetizing, engaging, and clear.
-      
+
       Guidelines:
       1. **Hook**: Start with a sentence that makes the user's mouth water (metaphorically).
       2. **Structure**: Use short paragraphs.
@@ -22,25 +23,25 @@ export const refineDescription = async (rawDescription: string): Promise<string>
       5. **Markdown**: Use bolding for emphasis.
 
       Input Draft: "${rawDescription}"
-      
+
       Output: Only the refined description text in Markdown.
-    `;
+    `
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
-    });
+    })
 
-    return response.text.trim();
+    return response.text?.trim() || ''
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error("AI 요약 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    console.error("Gemini API Error:", error)
+    throw new Error("AI 요약 생성에 실패했습니다. 잠시 후 다시 시도해주세요.")
   }
-};
+}
 
 export const generateProjectContent = async (draft: string): Promise<{ shortDescription: string, description: string, tags: string[] }> => {
   if (!draft.trim()) {
-    throw new Error("설명 내용을 입력해주세요.");
+    throw new Error("설명 내용을 입력해주세요.")
   }
 
   try {
@@ -54,10 +55,10 @@ export const generateProjectContent = async (draft: string): Promise<{ shortDesc
       Task: Transform the draft into a high-converting "Menu Description".
 
       Instructions by Field:
-      1. **shortDescription** (Max 80 chars): 
-         - Create a "Tasting Spoon" hook. 
+      1. **shortDescription** (Max 80 chars):
+         - Create a "Tasting Spoon" hook.
          - Focus on the flavor (value) and texture (experience).
-         - Example: "개발자의 야근을 줄여주는 달콤한 자동화 툴" 
+         - Example: "개발자의 야근을 줄여주는 달콤한 자동화 툴"
 
       2. **description**:
          - Structure as a "Chef's Recommendation" narrative using Markdown.
@@ -72,7 +73,7 @@ export const generateProjectContent = async (draft: string): Promise<{ shortDesc
          - Mix **Tech Ingredients** (React, AI) with **Flavor Profiles** (Productivity, Healing, Game).
 
       Output Format: JSON only.
-    `;
+    `
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -84,7 +85,7 @@ export const generateProjectContent = async (draft: string): Promise<{ shortDesc
           properties: {
             shortDescription: { type: Type.STRING },
             description: { type: Type.STRING },
-            tags: { 
+            tags: {
               type: Type.ARRAY,
               items: { type: Type.STRING }
             }
@@ -92,17 +93,17 @@ export const generateProjectContent = async (draft: string): Promise<{ shortDesc
           required: ["shortDescription", "description", "tags"]
         }
       }
-    });
+    })
 
     if (!response.text) {
-        throw new Error("AI returned empty response");
+      throw new Error("AI returned empty response")
     }
 
-    const result = JSON.parse(response.text);
-    return result;
+    const result = JSON.parse(response.text)
+    return result
 
   } catch (error) {
-    console.error("Gemini Generate Content Error:", error);
-    throw new Error("AI 콘텐츠 생성에 실패했습니다.");
+    console.error("Gemini Generate Content Error:", error)
+    throw new Error("AI 콘텐츠 생성에 실패했습니다.")
   }
-};
+}
