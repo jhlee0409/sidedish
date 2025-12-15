@@ -22,28 +22,46 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
-let app: FirebaseApp
-let db: Firestore
-let auth: Auth
+// Check if Firebase is properly configured
+export function isFirebaseConfigured(): boolean {
+  return !!(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId
+  )
+}
+
+let app: FirebaseApp | null = null
+let db: Firestore | null = null
+let auth: Auth | null = null
 let analytics: Analytics | null = null
 
-export function getFirebaseApp(): FirebaseApp {
+export function getFirebaseApp(): FirebaseApp | null {
+  if (!isFirebaseConfigured()) {
+    console.warn('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
+    return null
+  }
   if (!app) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
   }
   return app
 }
 
-export function getDb(): Firestore {
+export function getDb(): Firestore | null {
+  const firebaseApp = getFirebaseApp()
+  if (!firebaseApp) return null
   if (!db) {
-    db = getFirestore(getFirebaseApp())
+    db = getFirestore(firebaseApp)
   }
   return db
 }
 
-export function getFirebaseAuth(): Auth {
+export function getFirebaseAuth(): Auth | null {
+  const firebaseApp = getFirebaseApp()
+  if (!firebaseApp) return null
   if (!auth) {
-    auth = getAuth(getFirebaseApp())
+    auth = getAuth(firebaseApp)
   }
   return auth
 }
@@ -51,10 +69,13 @@ export function getFirebaseAuth(): Auth {
 export async function getFirebaseAnalytics(): Promise<Analytics | null> {
   if (typeof window === 'undefined') return null
 
+  const firebaseApp = getFirebaseApp()
+  if (!firebaseApp) return null
+
   if (!analytics) {
     const supported = await isSupported()
     if (supported) {
-      analytics = getAnalytics(getFirebaseApp())
+      analytics = getAnalytics(firebaseApp)
     }
   }
   return analytics
@@ -67,6 +88,9 @@ const githubProvider = new GithubAuthProvider()
 // Sign in with Google
 export async function signInWithGoogle(): Promise<FirebaseUser> {
   const auth = getFirebaseAuth()
+  if (!auth) {
+    throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
+  }
   const result = await signInWithPopup(auth, googleProvider)
   return result.user
 }
@@ -74,6 +98,9 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
 // Sign in with GitHub
 export async function signInWithGithub(): Promise<FirebaseUser> {
   const auth = getFirebaseAuth()
+  if (!auth) {
+    throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
+  }
   const result = await signInWithPopup(auth, githubProvider)
   return result.user
 }
@@ -81,12 +108,20 @@ export async function signInWithGithub(): Promise<FirebaseUser> {
 // Sign out
 export async function signOut(): Promise<void> {
   const auth = getFirebaseAuth()
+  if (!auth) {
+    throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
+  }
   await firebaseSignOut(auth)
 }
 
 // Auth state observer
 export function onAuthChange(callback: (user: FirebaseUser | null) => void): () => void {
   const auth = getFirebaseAuth()
+  if (!auth) {
+    // If Firebase is not configured, immediately call with null and return a no-op unsubscribe
+    callback(null)
+    return () => {}
+  }
   return onAuthStateChanged(auth, callback)
 }
 

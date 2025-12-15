@@ -6,6 +6,7 @@ import {
   signInWithGoogle,
   signInWithGithub,
   signOut,
+  isFirebaseConfigured,
   FirebaseUser,
 } from '@/lib/firebase'
 
@@ -22,6 +23,7 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null
   isLoading: boolean
   isAuthenticated: boolean
+  isConfigured: boolean
   signInWithGoogle: () => Promise<void>
   signInWithGithub: () => Promise<void>
   signOut: () => Promise<void>
@@ -52,8 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isConfigured] = useState(() => isFirebaseConfigured())
 
   useEffect(() => {
+    if (!isConfigured) {
+      setIsLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthChange((fbUser) => {
       if (fbUser) {
         setFirebaseUser(fbUser)
@@ -66,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [isConfigured])
 
   const handleSignInWithGoogle = useCallback(async () => {
     try {
@@ -118,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     firebaseUser,
     isLoading,
     isAuthenticated: !!user,
+    isConfigured,
     signInWithGoogle: handleSignInWithGoogle,
     signInWithGithub: handleSignInWithGithub,
     signOut: handleSignOut,
