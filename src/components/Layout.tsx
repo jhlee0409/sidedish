@@ -10,11 +10,10 @@ import LoginModal from './LoginModal'
 
 interface LayoutProps {
   children: React.ReactNode
-  onLogoClick: () => void
   isLanding?: boolean
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = false }) => {
+const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
   const [scrolled, setScrolled] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const { isAuthenticated } = useAuth()
@@ -40,9 +39,9 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = fals
             }
           `}
         >
-          <div
+          <Link
+            href={isLanding ? '/dashboard' : '/'}
             className="flex items-center gap-2 cursor-pointer group"
-            onClick={onLogoClick}
           >
             <div className={`p-1.5 rounded-full group-hover:rotate-12 transition-transform duration-300 ${scrolled || !isLanding ? 'bg-orange-500' : 'bg-white/20 backdrop-blur-sm'}`}>
               <Utensils className={`w-5 h-5 ${scrolled || !isLanding ? 'text-white' : 'text-slate-900'}`} />
@@ -50,19 +49,20 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = fals
             <span className={`font-bold text-lg tracking-tight ${scrolled || !isLanding ? 'text-slate-800' : 'text-slate-900'}`}>
               SideDish
             </span>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-3">
             {isLanding ? (
               <>
                 {isAuthenticated ? (
-                  <Button
-                    onClick={onLogoClick}
-                    className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
-                    icon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    메뉴판 입장하기
-                  </Button>
+                  <Link href="/dashboard">
+                    <Button
+                      className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
+                      icon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      메뉴판 입장하기
+                    </Button>
+                  </Link>
                 ) : (
                   <>
                     <Link href="/login">
