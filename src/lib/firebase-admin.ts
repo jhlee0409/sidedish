@@ -7,33 +7,40 @@ let adminDb: Firestore
 // Server-side Firebase Admin initialization
 // For server-side operations in API routes
 function getFirebaseAdminConfig() {
+  // Option 1: Full JSON service account key (recommended)
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+
+  if (serviceAccountKey) {
+    try {
+      const serviceAccount = JSON.parse(serviceAccountKey)
+      console.log('Firebase Admin: Using FIREBASE_SERVICE_ACCOUNT_KEY')
+      return {
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id,
+      }
+    } catch (e) {
+      console.error('Firebase Admin: Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY', e)
+    }
+  }
+
+  // Option 2: Individual environment variables
   const projectId = process.env.FIREBASE_PROJECT_ID
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
 
-  // Debug logging
-  console.log('Firebase Admin Config Check:')
-  console.log('- FIREBASE_PROJECT_ID:', projectId ? 'SET' : 'NOT SET')
-  console.log('- FIREBASE_CLIENT_EMAIL:', clientEmail ? 'SET' : 'NOT SET')
-  console.log('- FIREBASE_PRIVATE_KEY:', privateKey ? `SET (length: ${privateKey.length})` : 'NOT SET')
-
-  // Check if service account credentials are available
   if (clientEmail && privateKey) {
-    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n')
-    console.log('- Private key starts with:', formattedPrivateKey.substring(0, 30))
-
+    console.log('Firebase Admin: Using individual env vars')
     return {
       credential: cert({
         projectId: projectId,
         clientEmail: clientEmail,
-        privateKey: formattedPrivateKey,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
       }),
       projectId: projectId,
     }
   }
 
-  console.warn('Firebase Admin: Running without service account credentials (limited functionality)')
-  // Fallback to project ID only (limited functionality, no token verification)
+  console.warn('Firebase Admin: No credentials configured')
   return {
     projectId: projectId,
   }
