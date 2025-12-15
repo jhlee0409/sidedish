@@ -138,9 +138,10 @@ export default function MenuRegisterPage() {
 
     // Save to localStorage for Dashboard to pick up
     const existingProjects = JSON.parse(localStorage.getItem('sidedish_projects') || '[]')
+    const projectId = Date.now().toString()
     const newProject = {
       ...formData,
-      id: Date.now().toString(),
+      id: projectId,
       likes: 0,
       createdAt: new Date().toISOString(),
       reactions: {},
@@ -148,8 +149,8 @@ export default function MenuRegisterPage() {
     }
     localStorage.setItem('sidedish_projects', JSON.stringify([newProject, ...existingProjects]))
 
-    // Navigate back to dashboard
-    router.push('/?registered=true')
+    // Navigate to the new project's detail page
+    router.push(`/menu/${projectId}`)
   }
 
   const linkConfig = getLinkConfig(formData.platform)
