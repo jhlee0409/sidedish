@@ -126,12 +126,12 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
               찜한 메뉴
             </Link>
             <Link
-              href="/mypage?tab=reviews"
+              href="/mypage?tab=whispers"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <MessageCircle className="w-5 h-5 text-slate-400" />
-              내 리뷰
+              받은 피드백
             </Link>
           </div>
 
