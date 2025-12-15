@@ -106,16 +106,18 @@ const LandingPage: React.FC = () => {
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
-                  <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
-                </div>
-              ))}
-              <span className="pl-6 text-sm font-semibold text-slate-600">
-                {chefCount !== null ? `+${formatNumber(chefCount)}명의 셰프들` : '셰프들과 함께'}
-              </span>
-            </div>
+            {chefCount !== null && chefCount >= 50 && (
+              <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
+                    <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
+                  </div>
+                ))}
+                <span className="pl-6 text-sm font-semibold text-slate-600">
+                  +{formatNumber(chefCount)}명의 셰프들
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -278,14 +280,12 @@ const LandingPage: React.FC = () => {
               내 주방(프로젝트) 오픈하기
             </Button>
           </Link>
-          <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
-            <Users className="w-4 h-4" />
-            {chefCount !== null ? (
-              <>지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 셰프가 활동 중입니다</>
-            ) : (
-              <>많은 셰프들이 활동 중입니다</>
-            )}
-          </p>
+          {chefCount !== null && chefCount >= 50 && (
+            <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
+              <Users className="w-4 h-4" />
+              지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 셰프가 활동 중입니다
+            </p>
+          )}
         </div>
       </section>
     </div>
