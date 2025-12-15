@@ -276,7 +276,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
             <div className="flex items-center gap-1 text-red-500 font-medium">
               <Heart className="w-4 h-4 fill-current" />
-              <span>{likeCount}명이 입맛을 다셨습니다</span>
+              <span>{likeCount}명이 찜했습니다</span>
             </div>
           </div>
         </div>
