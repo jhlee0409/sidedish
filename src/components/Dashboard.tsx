@@ -4,29 +4,40 @@ import { useState, useRef, useEffect } from 'react'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
 import ProjectDetail from './ProjectDetail'
-import ProjectFormModal from './ProjectFormModal'
 import { MOCK_PROJECTS } from '@/lib/constants'
-import { Project, CreateProjectInput } from '@/lib/types'
+import { Project } from '@/lib/types'
 import { Search, Filter, TrendingUp, Utensils, Star, ChefHat } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('All')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   const galleryRef = useRef<HTMLDivElement>(null)
 
+  // Load projects from localStorage on mount
+  useEffect(() => {
+    const storedProjects = localStorage.getItem('sidedish_projects')
+    if (storedProjects) {
+      try {
+        const parsed = JSON.parse(storedProjects)
+        const projectsWithDates = parsed.map((p: Project & { createdAt: string }) => ({
+          ...p,
+          createdAt: new Date(p.createdAt)
+        }))
+        setProjects([...projectsWithDates, ...MOCK_PROJECTS])
+      } catch (e) {
+        console.error('Failed to parse stored projects:', e)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (selectedProject) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [selectedProject])
-
-  const handleRegisterClick = () => {
-    setIsModalOpen(true)
-  }
 
   const handleExploreClick = () => {
     if (selectedProject) {
@@ -35,18 +46,6 @@ const Dashboard: React.FC = () => {
     } else {
       galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }
-
-  const handleCreateProject = (input: CreateProjectInput) => {
-    const newProject: Project = {
-      ...input,
-      id: Date.now().toString(),
-      likes: 0,
-      createdAt: new Date(),
-      reactions: {},
-      comments: [],
-    }
-    setProjects(prev => [newProject, ...prev])
   }
 
   const filteredProjects = projects.filter(p => {
@@ -77,18 +76,13 @@ const Dashboard: React.FC = () => {
           project={selectedProject}
           onBack={() => setSelectedProject(null)}
         />
-        <ProjectFormModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleCreateProject}
-        />
       </div>
     )
   }
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen">
-      <Hero onRegisterClick={handleRegisterClick} onExploreClick={handleExploreClick} />
+      <Hero onExploreClick={handleExploreClick} />
 
       <div ref={galleryRef} className="container mx-auto px-4 pb-20 max-w-7xl animate-in fade-in slide-in-from-bottom-8 duration-700">
 
@@ -186,12 +180,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      <ProjectFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateProject}
-      />
     </div>
   )
 }
