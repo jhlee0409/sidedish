@@ -2,13 +2,10 @@
 
 import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, ChefHat, Users, Lock, Zap, MousePointerClick } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import Button from './Button'
 
-interface LandingPageProps {
-  onStartClick: () => void
-}
-
-const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
+const LandingPage: React.FC = () => {
   return (
     <div className="w-full overflow-hidden">
       {/* 1. Hero Section */}
@@ -42,13 +39,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
-            <Button
-              onClick={onStartClick}
-              className="w-full sm:w-auto h-16 px-10 text-xl rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-xl hover:shadow-2xl shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300"
-            >
-              <span className="mr-2">지금 시식하러 가기</span>
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+            <Link href="/dashboard">
+              <Button
+                className="w-full sm:w-auto h-16 px-10 text-xl rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-xl hover:shadow-2xl shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300"
+              >
+                <span className="mr-2">지금 시식하러 가기</span>
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
             <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
@@ -212,12 +210,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStartClick }) => {
             당신의 하드디스크 속에서 잠자고 있는 프로젝트를 깨워주세요.<br />
             SideDish가 세상과 연결되는 첫 번째 테이블이 되어드리겠습니다.
           </p>
-          <Button
-            onClick={onStartClick}
-            className="h-16 px-12 text-xl rounded-full bg-orange-600 hover:bg-orange-500 text-white shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all duration-300"
-          >
-            내 주방(프로젝트) 오픈하기
-          </Button>
+          <Link href="/dashboard">
+            <Button
+              className="h-16 px-12 text-xl rounded-full bg-orange-600 hover:bg-orange-500 text-white shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all duration-300"
+            >
+              내 주방(프로젝트) 오픈하기
+            </Button>
+          </Link>
           <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
             <Users className="w-4 h-4" />
             지금 <span className="text-white font-bold">2,403명</span>의 셰프가 활동 중입니다

@@ -9,6 +9,7 @@ import {
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2
 } from 'lucide-react'
+import Markdown from 'react-markdown'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -22,6 +23,7 @@ import {
   createWhisper,
 } from '@/lib/api-client'
 import { ProjectResponse, CommentResponse } from '@/lib/db-types'
+import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
 import LoginModal from '@/components/LoginModal'
 
 export default function MenuDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,8 +43,6 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
 
-  const EMOJI_LIST = ['🔥', '👏', '🎉', '💡', '🥰']
-
   useEffect(() => {
     const loadProject = async () => {
       try {
@@ -53,7 +53,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         ])
 
         setProject(projectData)
-        setReactions(projectData.reactions || {})
+        setReactions(normalizeReactions(projectData.reactions || {}))
         setComments(commentsData)
         setLikeCount(projectData.likes)
 
@@ -76,7 +76,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     loadProject()
   }, [id, isAuthenticated])
 
-  const handleReaction = async (emoji: string) => {
+  const handleReaction = async (reactionKey: string) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
@@ -85,18 +85,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     // Optimistic update
     setReactions(prev => ({
       ...prev,
-      [emoji]: (prev[emoji] || 0) + 1
+      [reactionKey]: (prev[reactionKey] || 0) + 1
     }))
 
     try {
-      const result = await addReaction(id, emoji)
+      const result = await addReaction(id, reactionKey)
       setReactions(result.reactions)
     } catch (error) {
       console.error('Failed to add reaction:', error)
       // Revert on error
       setReactions(prev => ({
         ...prev,
-        [emoji]: Math.max((prev[emoji] || 1) - 1, 0)
+        [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
       }))
     }
   }
@@ -248,9 +248,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               <ArrowLeft className="w-5 h-5" />
               <span className="font-medium">돌아가기</span>
             </button>
-            <Link href="/" className="flex items-center gap-2">
-              <Utensils className="w-5 h-5 text-orange-500" />
-              <span className="font-bold text-slate-900">SideDish</span>
+            <Link href="/">
+              <Image
+                src="/sidedish_logo.png"
+                alt="SideDish"
+                width={32}
+                height={32}
+                className="h-8 w-8"
+              />
             </Link>
             <div className="w-24" />
           </div>
@@ -276,7 +281,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
             <div className="flex items-center gap-1 text-red-500 font-medium">
               <Heart className="w-4 h-4 fill-current" />
-              <span>{likeCount}명이 입맛을 다셨습니다</span>
+              <span>{likeCount}명이 찜했습니다</span>
             </div>
           </div>
         </div>
@@ -301,9 +306,11 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <Utensils className="w-6 h-6 text-orange-500" />
                 메뉴 소개
               </h3>
-              <p className="whitespace-pre-wrap leading-relaxed text-slate-600">
-                {project.description || project.shortDescription}
-              </p>
+              <div className="leading-relaxed text-slate-600 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&_strong]:text-slate-900 [&_strong]:font-semibold [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-3 [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-5 [&>h2]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>h3]:mt-4 [&>h3]:mb-2">
+                <Markdown>
+                  {project.description || project.shortDescription}
+                </Markdown>
+              </div>
             </div>
 
             {/* Tags */}
@@ -330,15 +337,15 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 이 메뉴 맛 평가하기
               </h4>
               <div className="flex flex-wrap gap-3">
-                {EMOJI_LIST.map((emoji) => (
+                {REACTION_KEYS.map((key) => (
                   <button
-                    key={emoji}
-                    onClick={() => handleReaction(emoji)}
+                    key={key}
+                    onClick={() => handleReaction(key)}
                     className="group flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 rounded-full transition-all active:scale-95"
                   >
-                    <span className="text-2xl group-hover:scale-110 transition-transform block">{emoji}</span>
+                    <span className="text-2xl group-hover:scale-110 transition-transform block">{REACTION_EMOJI_MAP[key]}</span>
                     <span className="text-sm font-bold text-slate-600 group-hover:text-orange-600 min-w-[1.2rem]">
-                      {reactions[emoji] || 0}
+                      {reactions[key] || 0}
                     </span>
                   </button>
                 ))}
@@ -444,7 +451,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                       }`}
                     >
                       <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />
-                      {liked ? '찜함' : '찜하기'} ({likeCount})
+                      {liked ? '찜함' : '찜하기'}
                     </Button>
                     <Button variant="outline" className="w-full py-4 rounded-xl text-sm">
                       <Share2 className="w-4 h-4 mr-1.5" />

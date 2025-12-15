@@ -1,5 +1,42 @@
 import { Project } from './types'
 
+// 리액션 이모지 매핑 (DB에는 key로 저장, UI에서는 emoji로 표시)
+export const REACTION_EMOJI_MAP: Record<string, string> = {
+  fire: '🔥',
+  clap: '👏',
+  party: '🎉',
+  idea: '💡',
+  love: '🥰',
+}
+
+// 역방향 매핑 (이모지 → key) - 기존 데이터 하위 호환성용
+export const EMOJI_TO_KEY_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(REACTION_EMOJI_MAP).map(([key, emoji]) => [emoji, key])
+)
+
+// 리액션 키 목록
+export const REACTION_KEYS = Object.keys(REACTION_EMOJI_MAP) as Array<keyof typeof REACTION_EMOJI_MAP>
+
+// 기존 이모지 키를 새 키로 변환하는 유틸리티
+export function normalizeReactions(reactions: Record<string, number>): Record<string, number> {
+  const normalized: Record<string, number> = {}
+
+  for (const [key, count] of Object.entries(reactions)) {
+    // 이미 새 키 형식이면 그대로 사용
+    if (REACTION_EMOJI_MAP[key]) {
+      normalized[key] = (normalized[key] || 0) + count
+    }
+    // 이모지 키면 새 키로 변환
+    else if (EMOJI_TO_KEY_MAP[key]) {
+      const newKey = EMOJI_TO_KEY_MAP[key]
+      normalized[newKey] = (normalized[newKey] || 0) + count
+    }
+    // 알 수 없는 키는 무시
+  }
+
+  return normalized
+}
+
 export const MOCK_PROJECTS: Project[] = [
   {
     id: '1',

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Utensils, Plus, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
+import { Plus, ArrowRight } from 'lucide-react'
 import Button from './Button'
 import UserMenu from './UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,11 +11,10 @@ import LoginModal from './LoginModal'
 
 interface LayoutProps {
   children: React.ReactNode
-  onLogoClick: () => void
   isLanding?: boolean
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = false }) => {
+const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
   const [scrolled, setScrolled] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const { isAuthenticated } = useAuth()
@@ -40,29 +40,31 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = fals
             }
           `}
         >
-          <div
+          <Link
+            href={isLanding ? '/dashboard' : '/'}
             className="flex items-center gap-2 cursor-pointer group"
-            onClick={onLogoClick}
           >
-            <div className={`p-1.5 rounded-full group-hover:rotate-12 transition-transform duration-300 ${scrolled || !isLanding ? 'bg-orange-500' : 'bg-white/20 backdrop-blur-sm'}`}>
-              <Utensils className={`w-5 h-5 ${scrolled || !isLanding ? 'text-white' : 'text-slate-900'}`} />
-            </div>
-            <span className={`font-bold text-lg tracking-tight ${scrolled || !isLanding ? 'text-slate-800' : 'text-slate-900'}`}>
-              SideDish
-            </span>
-          </div>
+            <Image
+              src="/sidedish_logo.png"
+              alt="SideDish"
+              width={36}
+              height={36}
+              className="h-9 w-9 group-hover:scale-105 transition-transform duration-300"
+            />
+          </Link>
 
           <div className="flex items-center gap-3">
             {isLanding ? (
               <>
                 {isAuthenticated ? (
-                  <Button
-                    onClick={onLogoClick}
-                    className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
-                    icon={<ArrowRight className="w-4 h-4" />}
-                  >
-                    메뉴판 입장하기
-                  </Button>
+                  <Link href="/dashboard">
+                    <Button
+                      className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
+                      icon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      메뉴판 입장하기
+                    </Button>
+                  </Link>
                 ) : (
                   <>
                     <Link href="/login">
@@ -109,9 +111,14 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = fals
 
       <footer className="bg-white border-t border-slate-100 py-16 mt-0 relative z-10">
         <div className="container mx-auto px-4 flex flex-col items-center">
-          <div className="flex justify-center items-center gap-2 mb-6 text-slate-900 font-bold text-xl tracking-tight opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-            <Utensils className="w-6 h-6 text-orange-500" />
-            SideDish
+          <div className="mb-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+            <Image
+              src="/sidedish_logo.png"
+              alt="SideDish"
+              width={48}
+              height={48}
+              className="h-12 w-12"
+            />
           </div>
           <p className="text-slate-500 text-sm mb-8 text-center max-w-md leading-relaxed">
             세상의 모든 셰프(개발자)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br />
