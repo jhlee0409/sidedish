@@ -1,17 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Utensils, Plus, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { Utensils, Plus, ArrowRight, User } from 'lucide-react'
 import Button from './Button'
 
 interface LayoutProps {
   children: React.ReactNode
   onLogoClick: () => void
-  onRegisterClick: () => void
   isLanding?: boolean
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick, isLanding = false }) => {
+const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, isLanding = false }) => {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -50,21 +50,29 @@ const Layout: React.FC<LayoutProps> = ({ children, onLogoClick, onRegisterClick,
           <div className="flex items-center gap-3">
             {isLanding ? (
               <Button
-                onClick={onRegisterClick}
+                onClick={onLogoClick}
                 className="rounded-full px-6 py-2.5 text-sm font-bold shadow-xl shadow-orange-500/20 bg-slate-900 text-white hover:bg-slate-800 hover:-translate-y-0.5 transition-all"
                 icon={<ArrowRight className="w-4 h-4" />}
               >
                 메뉴판 입장하기
               </Button>
             ) : (
-              <Button
-                onClick={onRegisterClick}
-                variant="primary"
-                className="rounded-full px-5 py-2 text-sm shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 bg-orange-500 hover:bg-orange-600 focus:ring-orange-500"
-                icon={<Plus className="w-4 h-4" />}
-              >
-                메뉴 등록
-              </Button>
+              <>
+                <Link href="/menu/register">
+                  <Button
+                    variant="primary"
+                    className="rounded-full px-5 py-2 text-sm shadow-md shadow-orange-500/20 hover:shadow-orange-500/40 bg-orange-500 hover:bg-orange-600 focus:ring-orange-500"
+                    icon={<Plus className="w-4 h-4" />}
+                  >
+                    메뉴 등록
+                  </Button>
+                </Link>
+                <Link href="/mypage">
+                  <button className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors">
+                    <User className="w-5 h-5" />
+                  </button>
+                </Link>
+              </>
             )}
           </div>
         </div>

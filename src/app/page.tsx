@@ -16,19 +16,17 @@ export default function Home() {
   }
 
   const handleLogoClick = () => {
-    setCurrentView('LANDING')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleRegisterClick = () => {
-    setCurrentView('DASHBOARD')
+    if (currentView === 'LANDING') {
+      setCurrentView('DASHBOARD')
+    } else {
+      setCurrentView('LANDING')
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
     <Layout
       onLogoClick={handleLogoClick}
-      onRegisterClick={handleRegisterClick}
       isLanding={currentView === 'LANDING'}
     >
       {currentView === 'LANDING' ? (

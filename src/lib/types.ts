@@ -31,4 +31,27 @@ export interface User {
   id: string
   name: string
   avatarUrl: string
+  createdAt: Date
+}
+
+export interface UserComment extends Comment {
+  projectId: string
+  projectTitle: string
+}
+
+export interface Whisper {
+  id: string
+  projectId: string
+  projectTitle: string
+  senderName: string
+  content: string
+  createdAt: Date
+  isRead: boolean
+}
+
+export interface UserData {
+  user: User
+  likedProjectIds: string[]
+  comments: UserComment[]
+  whispers: Whisper[]
 }
