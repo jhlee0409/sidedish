@@ -6,16 +6,30 @@ let adminDb: Firestore
 
 // Server-side Firebase Admin initialization
 // For server-side operations in API routes
-const firebaseAdminConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
+function getFirebaseAdminConfig() {
+  // Check if service account credentials are available
+  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    return {
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        // Private key needs to have newlines restored (Vercel escapes them)
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }),
+      projectId: process.env.FIREBASE_PROJECT_ID,
+    }
+  }
+
+  // Fallback to project ID only (limited functionality, no token verification)
+  return {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  }
 }
 
 export function getAdminApp(): App {
   if (!adminApp) {
     if (getApps().length === 0) {
-      // In production, use service account or default credentials
-      // For development without service account, use project ID only
-      adminApp = initializeApp(firebaseAdminConfig)
+      adminApp = initializeApp(getFirebaseAdminConfig())
     } else {
       adminApp = getApps()[0]
     }
