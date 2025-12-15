@@ -44,14 +44,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/whispers - Create a new whisper (can be anonymous, but auth is optional)
+// POST /api/whispers - Create a new whisper (requires auth)
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const user = await verifyAuth(request)
+    if (!user) {
+      return unauthorizedResponse()
+    }
+
     const db = getAdminDb()
     const body: {
       projectId: string
       content: string
-      senderName?: string
     } = await request.json()
 
     // Validate required fields
@@ -73,9 +78,6 @@ export async function POST(request: NextRequest) {
 
     const projectData = projectDoc.data()!
 
-    // Check if authenticated (optional for whispers - they can be anonymous)
-    const user = await verifyAuth(request)
-
     const now = Timestamp.now()
     const whisperRef = db.collection(COLLECTIONS.WHISPERS).doc()
 
@@ -84,8 +86,8 @@ export async function POST(request: NextRequest) {
       projectId: body.projectId,
       projectTitle: projectData.title || '',
       projectAuthorId: projectData.authorId,
-      senderName: user?.name || body.senderName || 'Anonymous',
-      senderId: user?.uid || null,
+      senderName: user.name || 'Anonymous',
+      senderId: user.uid,
       content: body.content,
       isRead: false,
       createdAt: now,
