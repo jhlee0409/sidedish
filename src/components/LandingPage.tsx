@@ -1,11 +1,70 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, ChefHat, Users, Lock, Zap, MousePointerClick } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
 
+const CACHE_KEY = 'sidedish_stats'
+const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in ms
+
+interface CachedStats {
+  chefCount: number
+  menuCount: number
+  cachedAt: number
+}
+
 const LandingPage: React.FC = () => {
+  const [chefCount, setChefCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      // Check localStorage cache first
+      try {
+        const cached = localStorage.getItem(CACHE_KEY)
+        if (cached) {
+          const parsedCache: CachedStats = JSON.parse(cached)
+          const now = Date.now()
+
+          // If cache is still valid (within 24 hours), use it
+          if (now - parsedCache.cachedAt < CACHE_DURATION) {
+            setChefCount(parsedCache.chefCount)
+            return
+          }
+        }
+      } catch {
+        // Ignore localStorage errors
+      }
+
+      // Fetch fresh data from API
+      try {
+        const response = await fetch('/api/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setChefCount(data.chefCount)
+
+          // Cache the result
+          const cacheData: CachedStats = {
+            chefCount: data.chefCount,
+            menuCount: data.menuCount,
+            cachedAt: Date.now(),
+          }
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
+        }
+      } catch {
+        // Keep showing nothing if fetch fails
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  // Format number with commas (e.g., 2400 -> 2,400)
+  const formatNumber = (num: number) => {
+    return num.toLocaleString('ko-KR')
+  }
+
   return (
     <div className="w-full overflow-hidden">
       {/* 1. Hero Section */}
@@ -53,7 +112,9 @@ const LandingPage: React.FC = () => {
                   <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
                 </div>
               ))}
-              <span className="pl-6 text-sm font-semibold text-slate-600">+2,400명의 셰프들</span>
+              <span className="pl-6 text-sm font-semibold text-slate-600">
+                {chefCount !== null ? `+${formatNumber(chefCount)}명의 셰프들` : '셰프들과 함께'}
+              </span>
             </div>
           </div>
         </div>
@@ -219,7 +280,11 @@ const LandingPage: React.FC = () => {
           </Link>
           <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
             <Users className="w-4 h-4" />
-            지금 <span className="text-white font-bold">2,403명</span>의 셰프가 활동 중입니다
+            {chefCount !== null ? (
+              <>지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 셰프가 활동 중입니다</>
+            ) : (
+              <>많은 셰프들이 활동 중입니다</>
+            )}
           </p>
         </div>
       </section>
