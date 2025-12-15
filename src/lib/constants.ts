@@ -1,5 +1,17 @@
 import { Project } from './types'
 
+// 리액션 이모지 매핑 (DB에는 key로 저장, UI에서는 emoji로 표시)
+export const REACTION_EMOJI_MAP: Record<string, string> = {
+  fire: '🔥',
+  clap: '👏',
+  party: '🎉',
+  idea: '💡',
+  love: '🥰',
+}
+
+// 리액션 키 목록
+export const REACTION_KEYS = Object.keys(REACTION_EMOJI_MAP) as Array<keyof typeof REACTION_EMOJI_MAP>
+
 export const MOCK_PROJECTS: Project[] = [
   {
     id: '1',

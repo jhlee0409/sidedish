@@ -23,6 +23,7 @@ import {
   createWhisper,
 } from '@/lib/api-client'
 import { ProjectResponse, CommentResponse } from '@/lib/db-types'
+import { REACTION_EMOJI_MAP, REACTION_KEYS } from '@/lib/constants'
 import LoginModal from '@/components/LoginModal'
 
 export default function MenuDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,8 +42,6 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [likeCount, setLikeCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
-
-  const EMOJI_LIST = ['🔥', '👏', '🎉', '💡', '🥰']
 
   useEffect(() => {
     const loadProject = async () => {
@@ -77,7 +76,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     loadProject()
   }, [id, isAuthenticated])
 
-  const handleReaction = async (emoji: string) => {
+  const handleReaction = async (reactionKey: string) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
@@ -86,18 +85,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     // Optimistic update
     setReactions(prev => ({
       ...prev,
-      [emoji]: (prev[emoji] || 0) + 1
+      [reactionKey]: (prev[reactionKey] || 0) + 1
     }))
 
     try {
-      const result = await addReaction(id, emoji)
+      const result = await addReaction(id, reactionKey)
       setReactions(result.reactions)
     } catch (error) {
       console.error('Failed to add reaction:', error)
       // Revert on error
       setReactions(prev => ({
         ...prev,
-        [emoji]: Math.max((prev[emoji] || 1) - 1, 0)
+        [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
       }))
     }
   }
@@ -336,15 +335,15 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 이 메뉴 맛 평가하기
               </h4>
               <div className="flex flex-wrap gap-3">
-                {EMOJI_LIST.map((emoji) => (
+                {REACTION_KEYS.map((key) => (
                   <button
-                    key={emoji}
-                    onClick={() => handleReaction(emoji)}
+                    key={key}
+                    onClick={() => handleReaction(key)}
                     className="group flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 rounded-full transition-all active:scale-95"
                   >
-                    <span className="text-2xl group-hover:scale-110 transition-transform block">{emoji}</span>
+                    <span className="text-2xl group-hover:scale-110 transition-transform block">{REACTION_EMOJI_MAP[key]}</span>
                     <span className="text-sm font-bold text-slate-600 group-hover:text-orange-600 min-w-[1.2rem]">
-                      {reactions[emoji] || 0}
+                      {reactions[key] || 0}
                     </span>
                   </button>
                 ))}
