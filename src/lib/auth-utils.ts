@@ -15,11 +15,19 @@ export async function verifyAuth(request: NextRequest): Promise<AuthenticatedUse
     const authHeader = request.headers.get('authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Auth failed: No Bearer token')
       return null
     }
 
     const token = authHeader.split('Bearer ')[1]
     if (!token) {
+      console.log('Auth failed: Empty token')
+      return null
+    }
+
+    // Check if credentials are configured
+    if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      console.error('Auth failed: FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY not configured')
       return null
     }
 
