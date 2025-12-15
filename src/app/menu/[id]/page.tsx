@@ -76,9 +76,16 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     loadProject()
   }, [id, isAuthenticated])
 
+  // Check if this is the user's own project
+  const isOwnProject = user?.id === project?.authorId
+
   const handleReaction = async (reactionKey: string) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
+      return
+    }
+
+    if (isOwnProject) {
       return
     }
 
@@ -172,6 +179,10 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
     if (!isAuthenticated) {
       setShowLoginModal(true)
+      return
+    }
+
+    if (isOwnProject) {
       return
     }
 
@@ -336,15 +347,23 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <Sparkles className="w-5 h-5 text-yellow-500" />
                 이 메뉴 맛 평가하기
               </h4>
+              {isOwnProject && (
+                <p className="text-sm text-slate-400 mb-3">자신의 게시물에는 리액션을 남길 수 없습니다.</p>
+              )}
               <div className="flex flex-wrap gap-3">
                 {REACTION_KEYS.map((key) => (
                   <button
                     key={key}
                     onClick={() => handleReaction(key)}
-                    className="group flex items-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 rounded-full transition-all active:scale-95"
+                    disabled={isOwnProject}
+                    className={`group flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all ${
+                      isOwnProject
+                        ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-50'
+                        : 'bg-slate-50 hover:bg-orange-50 border-slate-200 hover:border-orange-200 active:scale-95'
+                    }`}
                   >
-                    <span className="text-2xl group-hover:scale-110 transition-transform block">{REACTION_EMOJI_MAP[key]}</span>
-                    <span className="text-sm font-bold text-slate-600 group-hover:text-orange-600 min-w-[1.2rem]">
+                    <span className={`text-2xl transition-transform block ${!isOwnProject && 'group-hover:scale-110'}`}>{REACTION_EMOJI_MAP[key]}</span>
+                    <span className={`text-sm font-bold min-w-[1.2rem] ${isOwnProject ? 'text-slate-400' : 'text-slate-600 group-hover:text-orange-600'}`}>
                       {reactions[key] || 0}
                     </span>
                   </button>
@@ -444,10 +463,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                     <Button
                       variant="secondary"
                       onClick={handleLikeToggle}
+                      disabled={isOwnProject}
+                      title={isOwnProject ? '자신의 게시물은 찜할 수 없습니다' : undefined}
                       className={`w-full py-4 rounded-xl text-sm transition-all ${
-                        liked
-                          ? 'bg-pink-500 text-white hover:bg-pink-600'
-                          : 'bg-pink-50 text-pink-600 hover:bg-pink-100 hover:text-pink-700'
+                        isOwnProject
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                          : liked
+                            ? 'bg-pink-500 text-white hover:bg-pink-600'
+                            : 'bg-pink-50 text-pink-600 hover:bg-pink-100 hover:text-pink-700'
                       }`}
                     >
                       <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />

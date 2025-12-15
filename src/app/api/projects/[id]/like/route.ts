@@ -33,6 +33,15 @@ export async function POST(
       )
     }
 
+    // Check if user is trying to like their own project
+    const projectData = projectDoc.data()
+    if (projectData?.authorId === user.uid) {
+      return NextResponse.json(
+        { error: '자신의 게시물은 찜할 수 없습니다.' },
+        { status: 403 }
+      )
+    }
+
     // Check if user already liked this project
     const likeId = `${user.uid}_${id}`
     const likeRef = db.collection(COLLECTIONS.LIKES).doc(likeId)
