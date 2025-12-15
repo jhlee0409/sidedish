@@ -6,16 +6,50 @@ let adminDb: Firestore
 
 // Server-side Firebase Admin initialization
 // For server-side operations in API routes
-const firebaseAdminConfig = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
+function getFirebaseAdminConfig() {
+  // Option 1: Full JSON service account key (recommended)
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+
+  if (serviceAccountKey) {
+    try {
+      const serviceAccount = JSON.parse(serviceAccountKey)
+      console.log('Firebase Admin: Using FIREBASE_SERVICE_ACCOUNT_KEY')
+      return {
+        credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id,
+      }
+    } catch (e) {
+      console.error('Firebase Admin: Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY', e)
+    }
+  }
+
+  // Option 2: Individual environment variables
+  const projectId = process.env.FIREBASE_PROJECT_ID
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+
+  if (clientEmail && privateKey) {
+    console.log('Firebase Admin: Using individual env vars')
+    return {
+      credential: cert({
+        projectId: projectId,
+        clientEmail: clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
+      }),
+      projectId: projectId,
+    }
+  }
+
+  console.warn('Firebase Admin: No credentials configured')
+  return {
+    projectId: projectId,
+  }
 }
 
 export function getAdminApp(): App {
   if (!adminApp) {
     if (getApps().length === 0) {
-      // In production, use service account or default credentials
-      // For development without service account, use project ID only
-      adminApp = initializeApp(firebaseAdminConfig)
+      adminApp = initializeApp(getFirebaseAdminConfig())
     } else {
       adminApp = getApps()[0]
     }

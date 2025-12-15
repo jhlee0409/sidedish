@@ -105,8 +105,10 @@ export async function POST(request: NextRequest) {
     // Verify authentication
     const user = await verifyAuth(request)
     if (!user) {
+      console.log('POST /api/projects: Authentication failed')
       return unauthorizedResponse()
     }
+    console.log('POST /api/projects: User authenticated:', user.uid)
 
     const db = getAdminDb()
     const body: Omit<CreateProjectInput, 'authorId' | 'authorName'> = await request.json()
@@ -140,7 +142,9 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     }
 
+    console.log('POST /api/projects: Writing to Firestore...')
     await projectRef.set(projectData)
+    console.log('POST /api/projects: Project created:', projectRef.id)
 
     const response: ProjectResponse = {
       ...projectData,
@@ -151,8 +155,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
     console.error('Error creating project:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: '프로젝트 생성에 실패했습니다.' },
+      { error: '프로젝트 생성에 실패했습니다.', details: errorMessage },
       { status: 500 }
     )
   }
