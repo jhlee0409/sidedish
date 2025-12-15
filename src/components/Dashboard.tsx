@@ -4,29 +4,40 @@ import { useState, useRef, useEffect } from 'react'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
 import ProjectDetail from './ProjectDetail'
-import ProjectFormModal from './ProjectFormModal'
 import { MOCK_PROJECTS } from '@/lib/constants'
-import { Project, CreateProjectInput } from '@/lib/types'
+import { Project } from '@/lib/types'
 import { Search, Filter, TrendingUp, Utensils, Star, ChefHat } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('All')
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
   const galleryRef = useRef<HTMLDivElement>(null)
 
+  // Load projects from localStorage on mount
+  useEffect(() => {
+    const storedProjects = localStorage.getItem('sidedish_projects')
+    if (storedProjects) {
+      try {
+        const parsed = JSON.parse(storedProjects)
+        const projectsWithDates = parsed.map((p: Project & { createdAt: string }) => ({
+          ...p,
+          createdAt: new Date(p.createdAt)
+        }))
+        setProjects([...projectsWithDates, ...MOCK_PROJECTS])
+      } catch (e) {
+        console.error('Failed to parse stored projects:', e)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (selectedProject) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [selectedProject])
-
-  const handleRegisterClick = () => {
-    setIsModalOpen(true)
-  }
 
   const handleExploreClick = () => {
     if (selectedProject) {
@@ -35,18 +46,6 @@ const Dashboard: React.FC = () => {
     } else {
       galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }
-
-  const handleCreateProject = (input: CreateProjectInput) => {
-    const newProject: Project = {
-      ...input,
-      id: Date.now().toString(),
-      likes: 0,
-      createdAt: new Date(),
-      reactions: {},
-      comments: [],
-    }
-    setProjects(prev => [newProject, ...prev])
   }
 
   const filteredProjects = projects.filter(p => {
@@ -77,28 +76,23 @@ const Dashboard: React.FC = () => {
           project={selectedProject}
           onBack={() => setSelectedProject(null)}
         />
-        <ProjectFormModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleCreateProject}
-        />
       </div>
     )
   }
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen">
-      <Hero onRegisterClick={handleRegisterClick} onExploreClick={handleExploreClick} />
+      <Hero onExploreClick={handleExploreClick} />
 
       <div ref={galleryRef} className="container mx-auto px-4 pb-20 max-w-7xl animate-in fade-in slide-in-from-bottom-8 duration-700">
 
         {/* Menu Picker Section (Search & Filter) */}
         <div className="relative -mt-10 mb-16 z-20">
-          <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-4 shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-4 shadow-xl shadow-slate-200/50 max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-3 items-center">
 
               {/* Search Input */}
-              <div className="relative w-full flex-1 group">
+              <div className="relative w-full md:flex-[3] group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                 </div>
@@ -112,7 +106,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Divider (Desktop) */}
-              <div className="hidden md:block w-px h-10 bg-slate-200"></div>
+              <div className="hidden md:block w-px h-8 bg-slate-200"></div>
 
               {/* Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 no-scrollbar justify-start md:justify-center">
@@ -120,12 +114,11 @@ const Dashboard: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-3.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap border-2 ${activeTab === tab.id
-                      ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/20 transform scale-105'
-                      : 'bg-white border-transparent text-slate-500 hover:bg-slate-50 hover:border-slate-100'
+                    className={`px-3 py-2 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap border ${activeTab === tab.id
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/20'
+                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
                       }`}
                   >
-                    {tab.id === activeTab && tab.icon}
                     {tab.label}
                   </button>
                 ))}
@@ -186,12 +179,6 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      <ProjectFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateProject}
-      />
     </div>
   )
 }

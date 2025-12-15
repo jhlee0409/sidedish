@@ -1,14 +1,14 @@
 'use client'
 
+import Link from 'next/link'
 import { ArrowRight, ChefHat } from 'lucide-react'
 import Button from './Button'
 
 interface HeroProps {
-  onRegisterClick: () => void
   onExploreClick: () => void
 }
 
-const Hero: React.FC<HeroProps> = ({ onRegisterClick, onExploreClick }) => {
+const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
   return (
     <section className="relative overflow-hidden pt-12 pb-24 lg:pt-28 lg:pb-32">
       {/* Modern Gradient Background */}
@@ -43,14 +43,15 @@ const Hero: React.FC<HeroProps> = ({ onRegisterClick, onExploreClick }) => {
           >
             메뉴판(프로젝트) 둘러보기
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full sm:w-auto px-10 py-4 text-lg h-16 rounded-full bg-white text-slate-600 shadow-lg hover:shadow-xl hover:text-orange-600 transition-all duration-300 border border-slate-100 hover:border-orange-100"
-            onClick={onRegisterClick}
-            icon={<ArrowRight className="w-5 h-5" />}
-          >
-            내 요리 등록하기
-          </Button>
+          <Link href="/menu/register">
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto px-10 py-4 text-lg h-16 rounded-full bg-white text-slate-600 shadow-lg hover:shadow-xl hover:text-orange-600 transition-all duration-300 border border-slate-100 hover:border-orange-100"
+              icon={<ArrowRight className="w-5 h-5" />}
+            >
+              내 요리 등록하기
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

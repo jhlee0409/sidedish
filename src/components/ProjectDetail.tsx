@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send, Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette, Globe, Github, User, ChefHat, Utensils } from 'lucide-react'
 import { Project, Comment } from '@/lib/types'
 import Button from './Button'
+import { getUser, saveUserComment, saveWhisper, isProjectLiked, toggleLikeProject } from '@/lib/storage'
 
 interface ProjectDetailProps {
   project: Project
@@ -17,6 +18,15 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
   const [newComment, setNewComment] = useState('')
   const [whisperMessage, setWhisperMessage] = useState('')
   const [isWhisperSent, setIsWhisperSent] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(project.likes)
+  const [userName, setUserName] = useState('Guest Gourmet')
+
+  useEffect(() => {
+    setLiked(isProjectLiked(project.id))
+    const user = getUser()
+    setUserName(user.name)
+  }, [project.id])
 
   const EMOJI_LIST = ['🔥', '👏', '🎉', '💡', '🥰']
 
@@ -33,10 +43,17 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
 
     const comment: Comment = {
       id: Date.now().toString(),
-      author: 'Guest Gourmet',
+      author: userName,
       content: newComment,
       createdAt: new Date(),
     }
+
+    // Save to user's comment list
+    saveUserComment({
+      ...comment,
+      projectId: project.id,
+      projectTitle: project.title,
+    })
 
     setComments(prev => [comment, ...prev])
     setNewComment('')
@@ -46,12 +63,29 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
     e.preventDefault()
     if (!whisperMessage.trim()) return
 
+    // Save whisper to project owner's feedback list
+    saveWhisper({
+      id: Date.now().toString(),
+      projectId: project.id,
+      projectTitle: project.title,
+      senderName: userName,
+      content: whisperMessage,
+      createdAt: new Date(),
+      isRead: false,
+    })
+
     setIsWhisperSent(true)
     setWhisperMessage('')
 
     setTimeout(() => {
       setIsWhisperSent(false)
     }, 3000)
+  }
+
+  const handleLikeToggle = () => {
+    const isNowLiked = toggleLikeProject(project.id)
+    setLiked(isNowLiked)
+    setLikeCount(prev => isNowLiked ? prev + 1 : prev - 1)
   }
 
   const getCTAContent = () => {
@@ -251,9 +285,17 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
                 )}
 
                 <div className="grid grid-cols-2 gap-3 mt-3">
-                  <Button variant="secondary" className="w-full py-4 rounded-xl text-sm bg-pink-50 text-pink-600 hover:bg-pink-100 hover:text-pink-700">
-                    <Heart className="w-4 h-4 mr-1.5" />
-                    찜하기 ({project.likes})
+                  <Button
+                    variant="secondary"
+                    onClick={handleLikeToggle}
+                    className={`w-full py-4 rounded-xl text-sm transition-all ${
+                      liked
+                        ? 'bg-pink-500 text-white hover:bg-pink-600'
+                        : 'bg-pink-50 text-pink-600 hover:bg-pink-100 hover:text-pink-700'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />
+                    {liked ? '찜함' : '찜하기'} ({likeCount})
                   </Button>
                   <Button variant="outline" className="w-full py-4 rounded-xl text-sm">
                     <Share2 className="w-4 h-4 mr-1.5" />
