@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Utensils, Plus, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
+import { Plus, ArrowRight } from 'lucide-react'
 import Button from './Button'
 import UserMenu from './UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
@@ -43,12 +44,13 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
             href={isLanding ? '/dashboard' : '/'}
             className="flex items-center gap-2 cursor-pointer group"
           >
-            <div className={`p-1.5 rounded-full group-hover:rotate-12 transition-transform duration-300 ${scrolled || !isLanding ? 'bg-orange-500' : 'bg-white/20 backdrop-blur-sm'}`}>
-              <Utensils className={`w-5 h-5 ${scrolled || !isLanding ? 'text-white' : 'text-slate-900'}`} />
-            </div>
-            <span className={`font-bold text-lg tracking-tight ${scrolled || !isLanding ? 'text-slate-800' : 'text-slate-900'}`}>
-              SideDish
-            </span>
+            <Image
+              src="/sidedish_logo.png"
+              alt="SideDish"
+              width={120}
+              height={32}
+              className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+            />
           </Link>
 
           <div className="flex items-center gap-3">
@@ -109,9 +111,14 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
 
       <footer className="bg-white border-t border-slate-100 py-16 mt-0 relative z-10">
         <div className="container mx-auto px-4 flex flex-col items-center">
-          <div className="flex justify-center items-center gap-2 mb-6 text-slate-900 font-bold text-xl tracking-tight opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-            <Utensils className="w-6 h-6 text-orange-500" />
-            SideDish
+          <div className="mb-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+            <Image
+              src="/sidedish_logo.png"
+              alt="SideDish"
+              width={140}
+              height={36}
+              className="h-9 w-auto"
+            />
           </div>
           <p className="text-slate-500 text-sm mb-8 text-center max-w-md leading-relaxed">
             세상의 모든 셰프(개발자)들이 만든 맛있는 사이드 프로젝트를 맛보고,<br />

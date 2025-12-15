@@ -249,9 +249,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               <ArrowLeft className="w-5 h-5" />
               <span className="font-medium">돌아가기</span>
             </button>
-            <Link href="/" className="flex items-center gap-2">
-              <Utensils className="w-5 h-5 text-orange-500" />
-              <span className="font-bold text-slate-900">SideDish</span>
+            <Link href="/">
+              <Image
+                src="/sidedish_logo.png"
+                alt="SideDish"
+                width={100}
+                height={28}
+                className="h-7 w-auto"
+              />
             </Link>
             <div className="w-24" />
           </div>
