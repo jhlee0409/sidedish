@@ -47,9 +47,9 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
             <Image
               src="/sidedish_logo.png"
               alt="SideDish"
-              width={120}
-              height={32}
-              className="h-8 w-auto group-hover:scale-105 transition-transform duration-300"
+              width={36}
+              height={36}
+              className="h-9 w-9 group-hover:scale-105 transition-transform duration-300"
             />
           </Link>
 
@@ -115,9 +115,9 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
             <Image
               src="/sidedish_logo.png"
               alt="SideDish"
-              width={140}
-              height={36}
-              className="h-9 w-auto"
+              width={48}
+              height={48}
+              className="h-12 w-12"
             />
           </div>
           <p className="text-slate-500 text-sm mb-8 text-center max-w-md leading-relaxed">

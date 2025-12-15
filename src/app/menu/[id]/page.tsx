@@ -253,9 +253,9 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               <Image
                 src="/sidedish_logo.png"
                 alt="SideDish"
-                width={100}
-                height={28}
-                className="h-7 w-auto"
+                width={32}
+                height={32}
+                className="h-8 w-8"
               />
             </Link>
             <div className="w-24" />
