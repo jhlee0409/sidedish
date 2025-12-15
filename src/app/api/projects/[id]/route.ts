@@ -3,6 +3,7 @@ import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { UpdateProjectInput, ProjectResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { del } from '@vercel/blob'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -101,6 +102,18 @@ export async function PATCH(
     if (body.githubUrl !== undefined) updateData.githubUrl = body.githubUrl
     if (body.platform !== undefined) updateData.platform = body.platform
 
+    // Delete old image from Vercel Blob if image is being updated
+    if (body.imageUrl !== undefined && body.imageUrl !== projectData.imageUrl) {
+      const oldImageUrl = projectData.imageUrl
+      if (oldImageUrl && oldImageUrl.includes('blob.vercel-storage.com')) {
+        try {
+          await del(oldImageUrl)
+        } catch (error) {
+          console.error('Error deleting old image from Vercel Blob:', error)
+        }
+      }
+    }
+
     await docRef.update(updateData)
 
     // Fetch updated document
@@ -164,6 +177,17 @@ export async function DELETE(
     const projectData = doc.data()!
     if (projectData.authorId !== user.uid) {
       return forbiddenResponse('이 프로젝트를 삭제할 권한이 없습니다.')
+    }
+
+    // Delete image from Vercel Blob if it exists
+    const imageUrl = projectData.imageUrl
+    if (imageUrl && imageUrl.includes('blob.vercel-storage.com')) {
+      try {
+        await del(imageUrl)
+      } catch (error) {
+        console.error('Error deleting image from Vercel Blob:', error)
+        // Continue with project deletion even if image deletion fails
+      }
     }
 
     // Delete related comments
