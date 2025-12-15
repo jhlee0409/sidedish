@@ -88,11 +88,11 @@ const Dashboard: React.FC = () => {
 
         {/* Menu Picker Section (Search & Filter) */}
         <div className="relative -mt-10 mb-16 z-20">
-          <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-4 shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2.5rem] p-4 shadow-xl shadow-slate-200/50 max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-3 items-center">
 
               {/* Search Input */}
-              <div className="relative w-full flex-1 group">
+              <div className="relative w-full md:flex-[3] group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                 </div>
@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Divider (Desktop) */}
-              <div className="hidden md:block w-px h-10 bg-slate-200"></div>
+              <div className="hidden md:block w-px h-8 bg-slate-200"></div>
 
               {/* Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 no-scrollbar justify-start md:justify-center">
@@ -114,9 +114,9 @@ const Dashboard: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-5 py-3.5 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap border-2 ${activeTab === tab.id
-                      ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/20 transform scale-105'
-                      : 'bg-white border-transparent text-slate-500 hover:bg-slate-50 hover:border-slate-100'
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all duration-300 whitespace-nowrap border ${activeTab === tab.id
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-md shadow-slate-900/20'
+                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
                       }`}
                   >
                     {tab.id === activeTab && tab.icon}
