@@ -1,0 +1,7 @@
+{
+  "name": "node-domexception",
+  "version": "1.0.0",
+  "description": "Shim that uses native DOMException (Node.js 18+)",
+  "main": "index.js",
+  "type": "module"
+}
