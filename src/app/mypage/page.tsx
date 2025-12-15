@@ -56,7 +56,7 @@ export default function MyPage() {
       // Load liked projects
       try {
         const likesResponse = await getUserLikes(user.id)
-        const likedProjectPromises = likesResponse.projectIds.map(id =>
+        const likedProjectPromises = likesResponse.likedProjectIds.map(id =>
           getProject(id).catch(() => null)
         )
         const likedProjectResults = await Promise.all(likedProjectPromises)

@@ -134,9 +134,9 @@ export async function checkLiked(projectId: string): Promise<{ liked: boolean }>
   return handleResponse<{ liked: boolean }>(response)
 }
 
-export async function getUserLikes(userId: string): Promise<{ projectIds: string[] }> {
+export async function getUserLikes(userId: string): Promise<{ likedProjectIds: string[] }> {
   const response = await fetchWithAuth(`/api/users/${userId}/likes`)
-  return handleResponse<{ projectIds: string[] }>(response)
+  return handleResponse<{ likedProjectIds: string[] }>(response)
 }
 
 // ============ Reactions API ============
@@ -153,7 +153,8 @@ export async function addReaction(projectId: string, emoji: string): Promise<{ r
 
 export async function getProjectComments(projectId: string): Promise<CommentResponse[]> {
   const response = await fetch(`/api/projects/${projectId}/comments`)
-  return handleResponse<CommentResponse[]>(response)
+  const result = await handleResponse<{ data: CommentResponse[] }>(response)
+  return result.data
 }
 
 export async function createComment(projectId: string, content: string): Promise<CommentResponse> {
@@ -178,7 +179,8 @@ export async function deleteComment(commentId: string): Promise<void> {
 
 export async function getWhispers(): Promise<WhisperResponse[]> {
   const response = await fetchWithAuth('/api/whispers')
-  return handleResponse<WhisperResponse[]>(response)
+  const result = await handleResponse<{ data: WhisperResponse[] }>(response)
+  return result.data
 }
 
 export async function createWhisper(data: {
