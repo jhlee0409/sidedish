@@ -444,7 +444,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                       }`}
                     >
                       <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />
-                      {liked ? '찜함' : '찜하기'} ({likeCount})
+                      {liked ? '찜함' : '찜하기'}
                     </Button>
                     <Button variant="outline" className="w-full py-4 rounded-xl text-sm">
                       <Share2 className="w-4 h-4 mr-1.5" />
