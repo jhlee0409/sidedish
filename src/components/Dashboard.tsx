@@ -1,66 +1,75 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
-import ProjectDetail from './ProjectDetail'
-import { MOCK_PROJECTS } from '@/lib/constants'
-import { Project } from '@/lib/types'
-import { Search, Filter, TrendingUp, Utensils, Star, ChefHat } from 'lucide-react'
+import { getProjects } from '@/lib/api-client'
+import { ProjectResponse } from '@/lib/db-types'
+import { Search, Filter, TrendingUp, Utensils, Star, ChefHat, Loader2 } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS)
+  const router = useRouter()
+  const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('All')
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | undefined>()
 
   const galleryRef = useRef<HTMLDivElement>(null)
 
-  // Load projects from localStorage on mount
-  useEffect(() => {
-    const storedProjects = localStorage.getItem('sidedish_projects')
-    if (storedProjects) {
-      try {
-        const parsed = JSON.parse(storedProjects)
-        const projectsWithDates = parsed.map((p: Project & { createdAt: string }) => ({
-          ...p,
-          createdAt: new Date(p.createdAt)
-        }))
-        setProjects([...projectsWithDates, ...MOCK_PROJECTS])
-      } catch (e) {
-        console.error('Failed to parse stored projects:', e)
-      }
-    }
-  }, [])
+  // Load projects from API
+  const loadProjects = useCallback(async (cursor?: string) => {
+    try {
+      setIsLoading(true)
+      const platform = activeTab === 'All' ? undefined :
+        activeTab === 'Tech' ? 'WEB' :
+        activeTab === 'Design' ? 'DESIGN' : undefined
 
-  useEffect(() => {
-    if (selectedProject) {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      const response = await getProjects({
+        limit: 20,
+        cursor,
+        platform,
+        search: searchTerm || undefined,
+      })
+
+      if (cursor) {
+        setProjects(prev => [...prev, ...response.data])
+      } else {
+        setProjects(response.data)
+      }
+      setHasMore(response.hasMore)
+      setNextCursor(response.nextCursor)
+    } catch (error) {
+      console.error('Failed to load projects:', error)
+    } finally {
+      setIsLoading(false)
     }
-  }, [selectedProject])
+  }, [activeTab, searchTerm])
+
+  // Load projects on mount and when filters change
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
 
   const handleExploreClick = () => {
-    if (selectedProject) {
-      setSelectedProject(null)
-      setTimeout(() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-    } else {
-      galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleLoadMore = () => {
+    if (hasMore && nextCursor) {
+      loadProjects(nextCursor)
     }
   }
 
-  const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-
-    const matchesTab = activeTab === 'All' ? true :
-      activeTab === 'Tech' ? p.tags.some(t => ['Tech', 'React', 'App', 'Web'].includes(t)) :
-        p.tags.some(t => t.toLowerCase().includes(activeTab.toLowerCase()) ||
-          (activeTab === 'Culture' && ['요리', '여행', '영화'].includes(t)) ||
-          (activeTab === 'Design' && ['사진', '예술'].includes(t))
-        )
-
-    return matchesSearch && matchesTab
-  })
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadProjects()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabs = [
     { id: 'All', label: '전체 메뉴', icon: <Utensils className="w-4 h-4" /> },
@@ -69,15 +78,8 @@ const Dashboard: React.FC = () => {
     { id: 'Life', label: '라이프스타일', icon: <Star className="w-4 h-4" /> },
   ]
 
-  if (selectedProject) {
-    return (
-      <div className="pt-8 bg-[#F8FAFC] min-h-screen">
-        <ProjectDetail
-          project={selectedProject}
-          onBack={() => setSelectedProject(null)}
-        />
-      </div>
-    )
+  const handleProjectClick = (project: ProjectResponse) => {
+    router.push(`/menu/${project.id}`)
   }
 
   return (
@@ -147,16 +149,41 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Grid */}
-        {filteredProjects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
-            {filteredProjects.map(project => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onClick={() => setSelectedProject(project)}
-              />
-            ))}
+        {isLoading && projects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-32">
+            <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
+            <p className="text-slate-500">맛있는 메뉴를 준비하고 있습니다...</p>
           </div>
+        ) : projects.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
+              {projects.map(project => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onClick={() => handleProjectClick(project)}
+                />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="flex justify-center mt-12">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoading}
+                  className="px-8 py-4 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:border-orange-300 hover:text-orange-600 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      로딩 중...
+                    </>
+                  ) : (
+                    '더 많은 메뉴 보기'
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center bg-white rounded-[2.5rem] border-2 border-slate-100 border-dashed relative overflow-hidden group">
             <div className="absolute inset-0 bg-slate-50/50 group-hover:bg-orange-50/30 transition-colors"></div>

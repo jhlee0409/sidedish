@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X } from 'lucide-react'
+import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2 } from 'lucide-react'
 import Button from '@/components/Button'
-import { CreateProjectInput, ProjectPlatform } from '@/lib/types'
+import { ProjectPlatform } from '@/lib/types'
 import { generateProjectContent } from '@/services/geminiService'
+import { useAuth } from '@/contexts/AuthContext'
+import { createProject, uploadImage } from '@/lib/api-client'
+import LoginModal from '@/components/LoginModal'
 
 const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
   { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
@@ -52,23 +55,46 @@ const getLinkConfig = (platform: ProjectPlatform) => {
   }
 }
 
+interface FormData {
+  title: string
+  shortDescription: string
+  description: string
+  tags: string[]
+  imageUrl: string
+  link: string
+  githubUrl: string
+  platform: ProjectPlatform
+}
+
 export default function MenuRegisterPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState<CreateProjectInput>({
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     shortDescription: '',
     description: '',
     tags: [],
-    imageUrl: `https://picsum.photos/seed/${Math.random()}/600/400`,
-    author: 'Anonymous',
+    imageUrl: '',
     link: '',
     githubUrl: '',
     platform: 'WEB'
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setShowLoginModal(true)
+    }
+  }, [authLoading, isAuthenticated])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -83,9 +109,12 @@ export default function MenuRegisterPage() {
         return
       }
 
+      setSelectedFile(file)
+
+      // Create preview URL
       const reader = new FileReader()
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result as string }))
+        setPreviewUrl(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
@@ -129,28 +158,56 @@ export default function MenuRegisterPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
+
     if (!formData.title || !formData.shortDescription) {
       alert('필수 항목을 입력해주세요.')
       return
     }
 
-    // Save to localStorage for Dashboard to pick up
-    const existingProjects = JSON.parse(localStorage.getItem('sidedish_projects') || '[]')
-    const projectId = Date.now().toString()
-    const newProject = {
-      ...formData,
-      id: projectId,
-      likes: 0,
-      createdAt: new Date().toISOString(),
-      reactions: {},
-      comments: [],
-    }
-    localStorage.setItem('sidedish_projects', JSON.stringify([newProject, ...existingProjects]))
+    setIsSubmitting(true)
+    try {
+      let imageUrl = formData.imageUrl
 
-    // Navigate to the new project's detail page
-    router.push(`/menu/${projectId}`)
+      // Upload image if a file was selected
+      if (selectedFile) {
+        try {
+          const uploadResult = await uploadImage(selectedFile)
+          imageUrl = uploadResult.url
+        } catch (error) {
+          console.error('Image upload failed:', error)
+          alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
+      // Create project via API
+      const project = await createProject({
+        title: formData.title,
+        description: formData.description,
+        shortDescription: formData.shortDescription,
+        tags: formData.tags,
+        imageUrl: imageUrl || `https://picsum.photos/seed/${Date.now()}/600/400`,
+        link: formData.link,
+        githubUrl: formData.githubUrl,
+        platform: formData.platform,
+      })
+
+      // Navigate to the new project's detail page
+      router.push(`/menu/${project.id}`)
+    } catch (error) {
+      console.error('Failed to create project:', error)
+      alert('메뉴 등록에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const linkConfig = getLinkConfig(formData.platform)
@@ -217,14 +274,9 @@ export default function MenuRegisterPage() {
                   <ChefHat className="w-4 h-4 text-slate-500" />
                   총괄 셰프 (작성자)
                 </label>
-                <input
-                  type="text"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                  placeholder="예: 여행작가 김감성"
-                />
+                <div className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-600">
+                  {user?.name || '로그인이 필요합니다'}
+                </div>
               </div>
             </div>
 
@@ -255,9 +307,9 @@ export default function MenuRegisterPage() {
                   className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {formData.imageUrl ? (
+                  {(previewUrl || formData.imageUrl) ? (
                     <>
-                      <Image src={formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
+                      <Image src={previewUrl || formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
                           <Upload className="w-4 h-4 text-slate-700" />
@@ -411,15 +463,39 @@ export default function MenuRegisterPage() {
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
               <Link href="/">
-                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6">취소</Button>
+                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting}>취소</Button>
               </Link>
-              <Button type="submit" variant="primary" className="w-full sm:w-auto px-8 rounded-xl shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 text-white">
-                메뉴 등록 완료
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full sm:w-auto px-8 rounded-xl shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+                disabled={isSubmitting || !isAuthenticated}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    등록 중...
+                  </span>
+                ) : (
+                  '메뉴 등록 완료'
+                )}
               </Button>
             </div>
           </form>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => {
+          setShowLoginModal(false)
+          if (!isAuthenticated) {
+            router.push('/')
+          }
+        }}
+        onSuccess={() => setShowLoginModal(false)}
+      />
     </div>
   )
 }

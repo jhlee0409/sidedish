@@ -7,104 +7,176 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils
+  Globe, Github, User, ChefHat, Utensils, Loader2
 } from 'lucide-react'
-import { Project, Comment } from '@/lib/types'
 import Button from '@/components/Button'
-import { getUser, saveUserComment, saveWhisper, isProjectLiked, toggleLikeProject, getProjectById } from '@/lib/storage'
-import { MOCK_PROJECTS } from '@/lib/constants'
+import { useAuth } from '@/contexts/AuthContext'
+import {
+  getProject,
+  getProjectComments,
+  createComment,
+  toggleLike,
+  checkLiked,
+  addReaction,
+  createWhisper,
+} from '@/lib/api-client'
+import { ProjectResponse, CommentResponse } from '@/lib/db-types'
+import LoginModal from '@/components/LoginModal'
 
 export default function MenuDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const [project, setProject] = useState<Project | null>(null)
+  const { user, isAuthenticated } = useAuth()
+
+  const [project, setProject] = useState<ProjectResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [reactions, setReactions] = useState<{ [key: string]: number }>({})
-  const [comments, setComments] = useState<Comment[]>([])
+  const [comments, setComments] = useState<CommentResponse[]>([])
   const [newComment, setNewComment] = useState('')
   const [whisperMessage, setWhisperMessage] = useState('')
   const [isWhisperSent, setIsWhisperSent] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [userName, setUserName] = useState('Guest Gourmet')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
 
   const EMOJI_LIST = ['🔥', '👏', '🎉', '💡', '🥰']
 
   useEffect(() => {
-    // Try to find in user's projects first, then mock projects
-    let found = getProjectById(id)
-    if (!found) {
-      found = MOCK_PROJECTS.find(p => p.id === id) || null
+    const loadProject = async () => {
+      try {
+        setIsLoading(true)
+        const [projectData, commentsData] = await Promise.all([
+          getProject(id),
+          getProjectComments(id),
+        ])
+
+        setProject(projectData)
+        setReactions(projectData.reactions || {})
+        setComments(commentsData)
+        setLikeCount(projectData.likes)
+
+        // Check if user has liked this project
+        if (isAuthenticated) {
+          try {
+            const likeStatus = await checkLiked(id)
+            setLiked(likeStatus.liked)
+          } catch {
+            // User might not be authenticated, ignore error
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load project:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    if (found) {
-      setProject(found)
-      setReactions(found.reactions || {})
-      setComments(found.comments || [])
-      setLikeCount(found.likes)
-      setLiked(isProjectLiked(found.id))
+    loadProject()
+  }, [id, isAuthenticated])
+
+  const handleReaction = async (emoji: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
     }
 
-    const user = getUser()
-    setUserName(user.name)
-    setIsLoading(false)
-  }, [id])
-
-  const handleReaction = (emoji: string) => {
+    // Optimistic update
     setReactions(prev => ({
       ...prev,
       [emoji]: (prev[emoji] || 0) + 1
     }))
+
+    try {
+      const result = await addReaction(id, emoji)
+      setReactions(result.reactions)
+    } catch (error) {
+      console.error('Failed to add reaction:', error)
+      // Revert on error
+      setReactions(prev => ({
+        ...prev,
+        [emoji]: Math.max((prev[emoji] || 1) - 1, 0)
+      }))
+    }
   }
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newComment.trim() || !project) return
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      author: userName,
-      content: newComment,
-      createdAt: new Date(),
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
     }
 
-    saveUserComment({
-      ...comment,
-      projectId: project.id,
-      projectTitle: project.title,
-    })
-
-    setComments(prev => [comment, ...prev])
-    setNewComment('')
+    setIsSubmitting(true)
+    try {
+      const comment = await createComment(project.id, newComment)
+      setComments(prev => [comment, ...prev])
+      setNewComment('')
+    } catch (error) {
+      console.error('Failed to post comment:', error)
+      alert('댓글 등록에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleWhisperSubmit = (e: React.FormEvent) => {
+  const handleWhisperSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!whisperMessage.trim() || !project) return
 
-    saveWhisper({
-      id: Date.now().toString(),
-      projectId: project.id,
-      projectTitle: project.title,
-      senderName: userName,
-      content: whisperMessage,
-      createdAt: new Date(),
-      isRead: false,
-    })
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
 
-    setIsWhisperSent(true)
-    setWhisperMessage('')
+    setIsSubmitting(true)
+    try {
+      await createWhisper({
+        projectId: project.id,
+        projectTitle: project.title,
+        projectAuthorId: project.authorId,
+        content: whisperMessage,
+      })
 
-    setTimeout(() => {
-      setIsWhisperSent(false)
-    }, 3000)
+      setIsWhisperSent(true)
+      setWhisperMessage('')
+
+      setTimeout(() => {
+        setIsWhisperSent(false)
+      }, 3000)
+    } catch (error) {
+      console.error('Failed to send whisper:', error)
+      alert('비밀 메시지 전송에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleLikeToggle = () => {
+  const handleLikeToggle = async () => {
     if (!project) return
-    const isNowLiked = toggleLikeProject(project.id)
-    setLiked(isNowLiked)
-    setLikeCount(prev => isNowLiked ? prev + 1 : prev - 1)
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
+
+    // Optimistic update
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount(prev => wasLiked ? prev - 1 : prev + 1)
+
+    try {
+      const result = await toggleLike(project.id)
+      setLiked(result.liked)
+      setLikeCount(result.likes)
+    } catch (error) {
+      console.error('Failed to toggle like:', error)
+      // Revert on error
+      setLiked(wasLiked)
+      setLikeCount(prev => wasLiked ? prev + 1 : prev - 1)
+    }
   }
 
   const getCTAContent = (platform: string) => {
@@ -124,7 +196,10 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">로딩 중...</div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+          <div className="text-slate-400">맛있는 메뉴를 준비하고 있습니다...</div>
+        </div>
       </div>
     )
   }
@@ -179,7 +254,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm md:text-base border-b border-slate-100 pb-8">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
               <ChefHat className="w-4 h-4 text-orange-500" />
-              <span className="font-semibold text-slate-700">{project.author} Chef</span>
+              <span className="font-semibold text-slate-700">{project.authorName} Chef</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -288,11 +363,11 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                   comments.map((comment) => (
                     <div key={comment.id} className="flex gap-4 p-4 bg-white rounded-2xl border border-slate-100/80">
                       <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex-shrink-0 flex items-center justify-center text-orange-600 font-bold text-sm">
-                        {comment.author.charAt(0)}
+                        {comment.authorName.charAt(0)}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-slate-800 text-sm">{comment.author}</span>
+                          <span className="font-bold text-slate-800 text-sm">{comment.authorName}</span>
                           <span className="text-xs text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="text-slate-600 text-sm leading-relaxed">{comment.content}</p>
@@ -400,10 +475,10 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               {/* Author Card */}
               <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4">
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
-                  {project.author.charAt(0).toUpperCase()}
+                  {project.authorName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">{project.author}</div>
+                  <div className="font-bold text-slate-900 text-sm">{project.authorName}</div>
                   <div className="text-xs text-slate-500 mt-0.5">Head Chef</div>
                 </div>
               </div>
@@ -411,6 +486,12 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   )
 }
