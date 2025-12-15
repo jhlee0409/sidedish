@@ -15,7 +15,7 @@ export default function SignupPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push('/')
+      router.push('/dashboard')
     }
   }, [authLoading, isAuthenticated, router])
 
@@ -24,7 +24,7 @@ export default function SignupPage() {
       setError(null)
       setIsLoading(true)
       await signInWithGoogle()
-      router.push('/')
+      router.push('/dashboard')
     } catch (err) {
       setError('Google 회원가입에 실패했습니다. 다시 시도해주세요.')
       console.error(err)
@@ -38,7 +38,7 @@ export default function SignupPage() {
       setError(null)
       setIsLoading(true)
       await signInWithGithub()
-      router.push('/')
+      router.push('/dashboard')
     } catch (err) {
       setError('GitHub 회원가입에 실패했습니다. 다시 시도해주세요.')
       console.error(err)

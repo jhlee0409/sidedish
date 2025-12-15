@@ -47,21 +47,32 @@ export default function MyPage() {
   )
 }
 
+const validTabs: TabType[] = ['menus', 'likes', 'whispers']
+
 function MyPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
-  // URL 쿼리스트링에서 탭 상태 읽기
-  const tabParam = searchParams.get('tab') as TabType | null
-  const validTabs: TabType[] = ['menus', 'likes', 'whispers']
-  const activeTab: TabType = tabParam && validTabs.includes(tabParam) ? tabParam : 'menus'
+  // URL 쿼리스트링에서 탭 상태 읽기 (state로 관리)
+  const [activeTab, setActiveTabState] = useState<TabType>('menus')
+
+  // URL 쿼리 파라미터와 탭 상태 동기화
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as TabType | null
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTabState(tabParam)
+    } else {
+      setActiveTabState('menus')
+    }
+  }, [searchParams])
 
   // 탭 변경 시 URL 업데이트
   const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabState(tab)
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', tab)
-    router.push(`/mypage?${params.toString()}`, { scroll: false })
+    router.replace(`/mypage?${params.toString()}`, { scroll: false })
   }, [router, searchParams])
   const [myProjects, setMyProjects] = useState<ProjectResponse[]>([])
   const [likedProjects, setLikedProjects] = useState<ProjectResponse[]>([])
@@ -178,7 +189,7 @@ function MyPageContent() {
           isOpen={showLoginModal}
           onClose={() => {
             setShowLoginModal(false)
-            router.push('/')
+            router.push('/dashboard')
           }}
         />
       </>
@@ -417,7 +428,7 @@ function MyPageContent() {
                   title="아직 찜한 메뉴가 없어요"
                   description="마음에 드는 요리를 발견하면 찜해보세요!"
                   action={
-                    <Link href="/">
+                    <Link href="/dashboard">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
                         메뉴판 둘러보기
                       </Button>

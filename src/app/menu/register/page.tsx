@@ -491,7 +491,7 @@ export default function MenuRegisterPage() {
         onClose={() => {
           setShowLoginModal(false)
           if (!isAuthenticated) {
-            router.push('/')
+            router.push('/dashboard')
           }
         }}
         onSuccess={() => setShowLoginModal(false)}

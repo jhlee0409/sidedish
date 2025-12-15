@@ -1,11 +1,70 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, ChefHat, Users, Lock, Zap, MousePointerClick } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
 
+const CACHE_KEY = 'sidedish_stats'
+const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in ms
+
+interface CachedStats {
+  chefCount: number
+  menuCount: number
+  cachedAt: number
+}
+
 const LandingPage: React.FC = () => {
+  const [chefCount, setChefCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      // Check localStorage cache first
+      try {
+        const cached = localStorage.getItem(CACHE_KEY)
+        if (cached) {
+          const parsedCache: CachedStats = JSON.parse(cached)
+          const now = Date.now()
+
+          // If cache is still valid (within 24 hours), use it
+          if (now - parsedCache.cachedAt < CACHE_DURATION) {
+            setChefCount(parsedCache.chefCount)
+            return
+          }
+        }
+      } catch {
+        // Ignore localStorage errors
+      }
+
+      // Fetch fresh data from API
+      try {
+        const response = await fetch('/api/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setChefCount(data.chefCount)
+
+          // Cache the result
+          const cacheData: CachedStats = {
+            chefCount: data.chefCount,
+            menuCount: data.menuCount,
+            cachedAt: Date.now(),
+          }
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
+        }
+      } catch {
+        // Keep showing nothing if fetch fails
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  // Format number with commas (e.g., 2400 -> 2,400)
+  const formatNumber = (num: number) => {
+    return num.toLocaleString('ko-KR')
+  }
+
   return (
     <div className="w-full overflow-hidden">
       {/* 1. Hero Section */}
@@ -47,14 +106,18 @@ const LandingPage: React.FC = () => {
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-            <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
-                  <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
-                </div>
-              ))}
-              <span className="pl-6 text-sm font-semibold text-slate-600">+2,400명의 셰프들</span>
-            </div>
+            {chefCount !== null && chefCount >= 50 && (
+              <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
+                    <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
+                  </div>
+                ))}
+                <span className="pl-6 text-sm font-semibold text-slate-600">
+                  +{formatNumber(chefCount)}명의 셰프들
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -217,10 +280,12 @@ const LandingPage: React.FC = () => {
               내 주방(프로젝트) 오픈하기
             </Button>
           </Link>
-          <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
-            <Users className="w-4 h-4" />
-            지금 <span className="text-white font-bold">2,403명</span>의 셰프가 활동 중입니다
-          </p>
+          {chefCount !== null && chefCount >= 50 && (
+            <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
+              <Users className="w-4 h-4" />
+              지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 셰프가 활동 중입니다
+            </p>
+          )}
         </div>
       </section>
     </div>
