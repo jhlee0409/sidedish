@@ -322,7 +322,7 @@ const LandingPage: React.FC = () => {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/menu/register">
-              <Button className="h-12 px-8 text-base font-semibold rounded-full bg-white text-orange-600 hover:bg-orange-50 transition-colors shadow-lg">
+              <Button className="h-12 px-8 text-base font-semibold rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-lg">
                 무료로 시작하기
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -330,7 +330,7 @@ const LandingPage: React.FC = () => {
             <Link href="/dashboard">
               <Button
                 variant="ghost"
-                className="h-12 px-8 text-base font-semibold rounded-full text-white border-2 border-white/30 hover:bg-white/10 transition-colors"
+                className="h-12 px-8 text-base font-semibold rounded-full text-white border-2 border-white hover:bg-white hover:text-orange-600 transition-colors"
               >
                 다른 프로젝트 구경하기
                 <ExternalLink className="w-4 h-4 ml-2" />
