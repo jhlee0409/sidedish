@@ -187,10 +187,7 @@ function MyPageContent() {
         </div>
         <LoginModal
           isOpen={showLoginModal}
-          onClose={() => {
-            setShowLoginModal(false)
-            router.push('/dashboard')
-          }}
+          onClose={() => setShowLoginModal(false)}
         />
       </>
     )

@@ -482,10 +482,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         </div>
         <LoginModal
           isOpen={showLoginModal}
-          onClose={() => {
-            setShowLoginModal(false)
-            router.push('/dashboard')
-          }}
+          onClose={() => setShowLoginModal(false)}
         />
       </>
     )
@@ -810,12 +807,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
-        onClose={() => {
-          setShowLoginModal(false)
-          if (!isAuthenticated) {
-            router.push('/dashboard')
-          }
-        }}
+        onClose={() => setShowLoginModal(false)}
         onSuccess={() => setShowLoginModal(false)}
       />
     </div>

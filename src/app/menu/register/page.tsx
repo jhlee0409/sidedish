@@ -800,12 +800,7 @@ export default function MenuRegisterPage() {
       {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
-        onClose={() => {
-          setShowLoginModal(false)
-          if (!isAuthenticated) {
-            router.push('/dashboard')
-          }
-        }}
+        onClose={() => setShowLoginModal(false)}
         onSuccess={() => setShowLoginModal(false)}
       />
     </div>
