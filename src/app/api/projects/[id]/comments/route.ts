@@ -8,7 +8,7 @@ interface RouteContext {
   params: Promise<{ id: string }>
 }
 
-// GET /api/projects/[id]/comments - Get all comments for a project (public)
+// GET /api/projects/[id]/comments - Get comments for a project with pagination (public)
 export async function GET(
   request: NextRequest,
   context: RouteContext
@@ -16,6 +16,10 @@ export async function GET(
   try {
     const { id } = await context.params
     const db = getAdminDb()
+    const searchParams = request.nextUrl.searchParams
+
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    const cursor = searchParams.get('cursor')
 
     // Check if project exists
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
@@ -26,29 +30,44 @@ export async function GET(
       )
     }
 
-    // Note: Firestore requires a composite index for where + orderBy on different fields
-    // To avoid index requirement, we fetch without orderBy and sort in JavaScript
-    const snapshot = await db
+    // Use composite index (projectId + createdAt) for efficient query
+    let query = db
       .collection(COLLECTIONS.COMMENTS)
       .where('projectId', '==', id)
-      .get()
+      .orderBy('createdAt', 'desc')
 
-    const comments: CommentResponse[] = snapshot.docs
-      .map(doc => {
-        const data = doc.data()
-        return {
-          id: doc.id,
-          projectId: data.projectId,
-          authorId: data.authorId,
-          authorName: data.authorName,
-          avatarUrl: data.avatarUrl,
-          content: data.content,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        }
-      })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    // Apply cursor-based pagination
+    if (cursor) {
+      const cursorDoc = await db.collection(COLLECTIONS.COMMENTS).doc(cursor).get()
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc)
+      }
+    }
 
-    return NextResponse.json({ data: comments })
+    const snapshot = await query.limit(limit + 1).get()
+    const hasMore = snapshot.docs.length > limit
+    const docs = snapshot.docs.slice(0, limit)
+
+    const comments: CommentResponse[] = docs.map(doc => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        projectId: data.projectId,
+        authorId: data.authorId,
+        authorName: data.authorName,
+        avatarUrl: data.avatarUrl,
+        content: data.content,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      }
+    })
+
+    const nextCursor = hasMore ? docs[docs.length - 1]?.id : undefined
+
+    return NextResponse.json({
+      data: comments,
+      nextCursor,
+      hasMore,
+    })
   } catch (error) {
     console.error('Error fetching comments:', error)
     return NextResponse.json(

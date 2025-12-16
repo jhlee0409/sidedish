@@ -10,38 +10,40 @@ export async function GET(request: NextRequest) {
     const db = getAdminDb()
     const searchParams = request.nextUrl.searchParams
 
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    const requestedLimit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
     const cursor = searchParams.get('cursor')
     const platform = searchParams.get('platform')
     const search = searchParams.get('search')?.toLowerCase()
     const authorId = searchParams.get('authorId')
 
-    // Build query - avoid composite index requirement by handling authorId separately
+    // For search queries, fetch more data to filter from (Firestore doesn't support full-text search)
+    // This ensures better search coverage while maintaining reasonable performance
+    const fetchLimit = search ? Math.min(requestedLimit * 5, 200) : requestedLimit
+
     const collection = db.collection(COLLECTIONS.PROJECTS)
 
-    // If authorId is provided, don't use orderBy to avoid composite index requirement
-    // We'll sort client-side instead
+    // Use composite index for authorId + createdAt queries
     let query: FirebaseFirestore.Query = authorId
-      ? collection.where('authorId', '==', authorId)
+      ? collection.where('authorId', '==', authorId).orderBy('createdAt', 'desc')
       : collection.orderBy('createdAt', 'desc')
 
-    // Filter by platform (only when not filtering by author)
+    // Filter by platform using composite index
     if (platform && platform !== 'All' && !authorId) {
       query = query.where('platform', '==', platform)
     }
 
-    // Pagination cursor (only when using orderBy)
-    if (cursor && !authorId) {
+    // Pagination cursor
+    if (cursor) {
       const cursorDoc = await db.collection(COLLECTIONS.PROJECTS).doc(cursor).get()
       if (cursorDoc.exists) {
         query = query.startAfter(cursorDoc)
       }
     }
 
-    // Fetch one extra to check if there are more
-    const snapshot = await query.limit(limit + 1).get()
+    // Fetch extra for search filtering and pagination check
+    const snapshot = await query.limit(fetchLimit + 1).get()
 
-    let projects: ProjectResponse[] = snapshot.docs.slice(0, limit).map(doc => {
+    let projects: ProjectResponse[] = snapshot.docs.slice(0, fetchLimit).map(doc => {
       const data = doc.data()
       return {
         id: doc.id,
@@ -62,15 +64,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Sort by createdAt descending for authorId queries (client-side sort)
-    if (authorId) {
-      projects.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    }
-
-    // Client-side search filtering (for title and tags)
+    // Client-side search filtering (Firestore doesn't support full-text search)
     if (search) {
       projects = projects.filter(p =>
         p.title.toLowerCase().includes(search) ||
+        p.shortDescription?.toLowerCase().includes(search) ||
         p.tags.some(tag => tag.toLowerCase().includes(search))
       )
     }
@@ -80,13 +78,24 @@ export async function GET(request: NextRequest) {
       projects = projects.filter(p => p.platform === platform)
     }
 
-    const hasMore = snapshot.docs.length > limit
-    const nextCursor = hasMore && !authorId ? snapshot.docs[limit - 1]?.id : undefined
+    // Apply requested limit after filtering
+    const hasMoreFromDb = snapshot.docs.length > fetchLimit
+    const hasMoreAfterFilter = projects.length > requestedLimit
+    const hasMore = hasMoreFromDb || hasMoreAfterFilter
+
+    // Slice to requested limit
+    const resultProjects = projects.slice(0, requestedLimit)
+
+    // Use the last returned project's ID as cursor for next page
+    const lastDoc = search
+      ? snapshot.docs.find(doc => doc.id === resultProjects[resultProjects.length - 1]?.id)
+      : snapshot.docs[resultProjects.length - 1]
+    const nextCursor = hasMore ? lastDoc?.id : undefined
 
     const response: PaginatedResponse<ProjectResponse> = {
-      data: projects,
+      data: resultProjects,
       nextCursor,
-      hasMore: hasMore && !authorId,
+      hasMore,
     }
 
     return NextResponse.json(response)
