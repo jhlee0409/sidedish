@@ -361,7 +361,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
             <div className="w-1 h-1 bg-slate-300 rounded-full" />
             <div className="flex items-center gap-1 text-red-500 font-medium">
               <Heart className="w-4 h-4 fill-current" />
-              <span>{likeCount}명이 찜했습니다</span>
+              <span>{likeCount}명이 찜</span>
             </div>
           </div>
         </div>
@@ -465,7 +465,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="이 메뉴에 대한 솔직한 감상평을 남겨주세요..."
+                  placeholder="어땠어요?"
                   className="w-full pl-16 pr-14 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:bg-white focus:border-orange-500 outline-none transition-all resize-none min-h-[100px] placeholder:text-slate-400 text-slate-700"
                 />
                 <button
@@ -506,7 +506,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                   ))
                 ) : (
                   <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                    <p className="text-slate-400 text-sm">아직 등록된 리뷰가 없습니다.<br />첫 번째 미식가가 되어주세요!</p>
+                    <p className="text-slate-400 text-sm">아직 리뷰가 없어요.<br />첫 리뷰 남겨볼래요?</p>
                   </div>
                 )}
               </div>
@@ -539,7 +539,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               {/* Action Card */}
               <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
                 <h3 className="text-lg font-bold text-slate-900 mb-2">메뉴 시식하기</h3>
-                <p className="text-slate-500 text-sm mb-6">직접 방문해서 셰프의 요리를 맛보세요.</p>
+                <p className="text-slate-500 text-sm mb-6">직접 맛보러 가기</p>
 
                 <div className="space-y-3">
                   {project.link && (
@@ -620,8 +620,8 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
                       <Send className="w-5 h-5" />
                     </div>
-                    <p className="text-slate-800 font-bold text-sm">소중한 의견 감사합니다!</p>
-                    <p className="text-slate-500 text-xs mt-1">셰프에게 잘 전달되었습니다.</p>
+                    <p className="text-slate-800 font-bold text-sm">메시지 보냈어요!</p>
+                    <p className="text-slate-500 text-xs mt-1">셰프가 곧 확인할 거예요</p>
                   </div>
                 )}
               </div>
