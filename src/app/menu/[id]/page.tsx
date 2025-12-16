@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import Button from '@/components/Button'
@@ -21,8 +21,9 @@ import {
   checkLiked,
   addReaction,
   createWhisper,
+  getUser,
 } from '@/lib/api-client'
-import { ProjectResponse, CommentResponse } from '@/lib/db-types'
+import { ProjectResponse, CommentResponse, UserResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
@@ -43,6 +44,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [likeCount, setLikeCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(null)
 
   useEffect(() => {
     const loadProject = async () => {
@@ -57,6 +59,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         setReactions(normalizeReactions(projectData.reactions || {}))
         setComments(commentsData)
         setLikeCount(projectData.likes)
+
+        // Fetch author profile
+        try {
+          const author = await getUser(projectData.authorId)
+          setAuthorProfile(author)
+        } catch {
+          // Author profile fetch failed, use fallback
+        }
 
         // Check if user has liked this project
         if (isAuthenticated) {
@@ -270,7 +280,17 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               />
               <span className="font-bold text-slate-900">SideDish</span>
             </Link>
-            <div className="w-24" />
+            <div className="w-24 flex justify-end">
+              {isOwnProject && (
+                <Link
+                  href={`/menu/edit/${project.id}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  <span>수정</span>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -530,9 +550,19 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
               {/* Author Card */}
               <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
-                  {project.authorName.charAt(0).toUpperCase()}
-                </div>
+                {authorProfile?.avatarUrl ? (
+                  <Image
+                    src={authorProfile.avatarUrl}
+                    alt={project.authorName}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
+                    {project.authorName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="font-bold text-slate-900 text-sm">{project.authorName}</div>
                   <div className="text-xs text-slate-500 mt-0.5">Head Chef</div>
