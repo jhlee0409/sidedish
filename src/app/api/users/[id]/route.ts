@@ -126,58 +126,63 @@ export async function DELETE(
       )
     }
 
-    // Delete user's projects
-    const projectsSnapshot = await db
-      .collection(COLLECTIONS.PROJECTS)
-      .where('authorId', '==', id)
-      .get()
+    // Fetch all related data in parallel for better performance
+    const [projectsSnapshot, userCommentsSnapshot, userLikesSnapshot, userReactionsSnapshot] = await Promise.all([
+      db.collection(COLLECTIONS.PROJECTS).where('authorId', '==', id).get(),
+      db.collection(COLLECTIONS.COMMENTS).where('authorId', '==', id).get(),
+      db.collection(COLLECTIONS.LIKES).where('userId', '==', id).get(),
+      db.collection(COLLECTIONS.REACTIONS).where('userId', '==', id).get(),
+    ])
 
-    const batch = db.batch()
+    const projectIds = projectsSnapshot.docs.map(doc => doc.id)
 
-    // Delete each project and its related data
-    for (const projectDoc of projectsSnapshot.docs) {
-      // Delete comments for this project
-      const commentsSnapshot = await db
-        .collection(COLLECTIONS.COMMENTS)
-        .where('projectId', '==', projectDoc.id)
-        .get()
-      commentsSnapshot.docs.forEach(c => batch.delete(c.ref))
+    // Fetch all project-related data in parallel (comments, likes, whispers, reactions for all projects)
+    let projectRelatedDocs: FirebaseFirestore.DocumentReference[] = []
 
-      // Delete likes for this project
-      const likesSnapshot = await db
-        .collection(COLLECTIONS.LIKES)
-        .where('projectId', '==', projectDoc.id)
-        .get()
-      likesSnapshot.docs.forEach(l => batch.delete(l.ref))
+    if (projectIds.length > 0) {
+      // Process in chunks of 30 for 'in' query limit
+      const chunkPromises: Promise<FirebaseFirestore.QuerySnapshot>[] = []
 
-      // Delete whispers for this project
-      const whispersSnapshot = await db
-        .collection(COLLECTIONS.WHISPERS)
-        .where('projectId', '==', projectDoc.id)
-        .get()
-      whispersSnapshot.docs.forEach(w => batch.delete(w.ref))
+      for (let i = 0; i < projectIds.length; i += 30) {
+        const chunk = projectIds.slice(i, i + 30)
+        chunkPromises.push(
+          db.collection(COLLECTIONS.COMMENTS).where('projectId', 'in', chunk).get(),
+          db.collection(COLLECTIONS.LIKES).where('projectId', 'in', chunk).get(),
+          db.collection(COLLECTIONS.WHISPERS).where('projectId', 'in', chunk).get(),
+          db.collection(COLLECTIONS.REACTIONS).where('projectId', 'in', chunk).get(),
+        )
+      }
 
-      batch.delete(projectDoc.ref)
+      const results = await Promise.all(chunkPromises)
+      projectRelatedDocs = results.flatMap(snapshot => snapshot.docs.map(doc => doc.ref))
     }
 
-    // Delete user's comments on other projects
-    const userCommentsSnapshot = await db
-      .collection(COLLECTIONS.COMMENTS)
-      .where('authorId', '==', id)
-      .get()
-    userCommentsSnapshot.docs.forEach(c => batch.delete(c.ref))
+    // Collect all documents to delete
+    const allDocsToDelete: FirebaseFirestore.DocumentReference[] = [
+      ...projectsSnapshot.docs.map(doc => doc.ref),
+      ...userCommentsSnapshot.docs.map(doc => doc.ref),
+      ...userLikesSnapshot.docs.map(doc => doc.ref),
+      ...userReactionsSnapshot.docs.map(doc => doc.ref),
+      ...projectRelatedDocs,
+      docRef,
+    ]
 
-    // Delete user's likes
-    const userLikesSnapshot = await db
-      .collection(COLLECTIONS.LIKES)
-      .where('userId', '==', id)
-      .get()
-    userLikesSnapshot.docs.forEach(l => batch.delete(l.ref))
+    // Remove duplicates (user's own comments on their projects might be counted twice)
+    const uniqueDocs = [...new Map(allDocsToDelete.map(ref => [ref.path, ref])).values()]
 
-    // Delete the user
-    batch.delete(docRef)
+    // Firestore batch limit is 500 operations, split into multiple batches if needed
+    const BATCH_LIMIT = 500
+    const batches: FirebaseFirestore.WriteBatch[] = []
 
-    await batch.commit()
+    for (let i = 0; i < uniqueDocs.length; i += BATCH_LIMIT) {
+      const batch = db.batch()
+      const chunk = uniqueDocs.slice(i, i + BATCH_LIMIT)
+      chunk.forEach(ref => batch.delete(ref))
+      batches.push(batch)
+    }
+
+    // Execute all batches in parallel
+    await Promise.all(batches.map(batch => batch.commit()))
 
     return NextResponse.json({ success: true })
   } catch (error) {
