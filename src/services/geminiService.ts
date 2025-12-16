@@ -65,7 +65,7 @@ export const generateProjectContent = async (draft: string): Promise<{ shortDesc
 <style_guide>
 1. **톤앤매너**:
    - '해요체'를 사용하여 정중하면서도 위트 있게 작성하세요.
-   - 개발자스러운 딱딱한 용어보다는 사용자 입장에서의 효용(Benefit)을 강조하세요.
+   - 전문 용어보다는 일반 사용자 입장에서의 효용(Benefit)을 강조하세요.
    - 과도한 이모지 남발은 지양하고, 가독성을 높이는 용도로만 사용하세요.
 2. **금지사항**:
    - 입력 데이터에 없는 사실을 지어내지 마세요.

@@ -117,7 +117,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
     { value: 'APP', label: '모바일 앱', icon: <Smartphone className="w-4 h-4" /> },
     { value: 'GAME', label: '게임', icon: <Gamepad2 className="w-4 h-4" /> },
     { value: 'DESIGN', label: '디자인/작품', icon: <Palette className="w-4 h-4" /> },
-    { value: 'OTHER', label: '기타', icon: <Box className="w-4 h-4" /> },
+    { value: 'OTHER', label: '콘텐츠/기타', icon: <Box className="w-4 h-4" /> },
   ]
 
   const getLinkConfig = (platform: ProjectPlatform) => {
@@ -149,8 +149,8 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
       default:
         return {
           label: '프로젝트 링크',
-          placeholder: '프로젝트를 확인할 수 있는 URL',
-          desc: '프로젝트와 관련된 웹페이지 주소를 입력해주세요.'
+          placeholder: 'https://notion.so/... 또는 YouTube, 뉴스레터 등',
+          desc: '노션, 유튜브, 뉴스레터, 전자책, 커뮤니티 등 어떤 링크든 괜찮아요.'
         }
     }
   }
@@ -300,7 +300,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
                 onChange={handleChange}
                 rows={6}
                 className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
-                placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요. (예: 리액트로 버무린 모바일 친화적인 투두리스트. 귀여운 고양이 테마가 별미입니다.)"
+                placeholder="프로젝트에 대해 자유롭게 적어주세요. (예: 노션으로 정리한 여행 계획 템플릿이에요 / 피그마로 만든 앱 디자인 시안입니다 / 버블로 만든 예약 서비스예요)"
               />
 
               <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
@@ -373,7 +373,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
-                GitHub 링크 <span className="text-xs font-normal text-slate-400">(선택)</span>
+                GitHub / 소스 링크 <span className="text-xs font-normal text-slate-400">(선택)</span>
               </label>
               <div className="relative">
                 <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -383,7 +383,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
                   value={formData.githubUrl}
                   onChange={handleChange}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                  placeholder="소스코드가 있다면 공유해주세요"
+                  placeholder="코드가 있다면 공유해주세요 (없어도 OK!)"
                 />
               </div>
             </div>

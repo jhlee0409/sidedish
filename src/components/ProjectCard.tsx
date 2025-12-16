@@ -4,6 +4,7 @@ import { Heart, ArrowUpRight, User, Smartphone, Globe, Gamepad2, Palette, Box } 
 import Image from 'next/image'
 import { ProjectPlatform } from '@/lib/types'
 import { ProjectResponse } from '@/lib/db-types'
+import { getProjectThumbnail } from '@/lib/og-utils'
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -29,7 +30,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <Image
-          src={project.imageUrl}
+          src={getProjectThumbnail(project)}
           alt={project.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"

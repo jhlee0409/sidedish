@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, ChefHat, Users, Lock, Zap, MousePointerClick } from 'lucide-react'
+import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, Users, Lock, Zap } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
@@ -86,15 +86,15 @@ const LandingPage: React.FC = () => {
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-            세상을 바꾸는<br />
+            만들었다면,<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-500 to-orange-600 animate-gradient-x bg-[length:200%_auto]">
-              맛있는 아이디어
+              세상에 내놓을 시간
             </span>
           </h1>
 
           <p className="max-w-2xl mx-auto text-xl text-slate-600 mb-12 leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-            혼자서 정성껏 요리한 당신의 사이드 프로젝트.<br className="hidden md:block" />
-            <span className="text-slate-900 font-bold">SideDish</span>에서 미식가들에게 가장 먼저 대접해보세요.
+            사이드 프로젝트부터 디자인 포트폴리오까지.<br className="hidden md:block" />
+            AI 셰프가 당신의 작품을 가장 맛있는 <span className="text-slate-900 font-bold">&apos;메인 요리&apos;</span>로 소개해드립니다.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
@@ -102,7 +102,7 @@ const LandingPage: React.FC = () => {
               <Button
                 className="w-full sm:w-auto h-16 px-10 text-xl rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-xl hover:shadow-2xl shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300"
               >
-                <span className="mr-2">지금 시식하러 가기</span>
+                <span className="mr-2">내 프로젝트 무료로 등록하기</span>
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
@@ -114,7 +114,7 @@ const LandingPage: React.FC = () => {
                   </div>
                 ))}
                 <span className="pl-6 text-sm font-semibold text-slate-600">
-                  +{formatNumber(chefCount)}명의 셰프들
+                  +{formatNumber(chefCount)}명의 메이커들
                 </span>
               </div>
             )}
@@ -128,7 +128,7 @@ const LandingPage: React.FC = () => {
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">For Every Creator</p>
         </div>
         <div className="flex justify-center gap-4 md:gap-16 flex-wrap px-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-          {['Frontend Developer', 'UX Designer', 'Product Manager', 'Indie Hacker', 'Student'].map((role, idx) => (
+          {['Developer', 'Designer', 'Creator', 'Indie Hacker', 'Student', 'Dreamer'].map((role, idx) => (
             <span key={idx} className="text-xl md:text-3xl font-bold text-slate-300 select-none">
               {role}
             </span>
@@ -145,8 +145,8 @@ const LandingPage: React.FC = () => {
               <span className="text-orange-600">플레이팅은 저희가 할게요</span>
             </h2>
             <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              개발하기도 바쁜데 홍보글까지 고민하지 마세요.<br />
-              SideDish는 창작자가 오직 제품에만 집중할 수 있는 환경을 제공합니다.
+              만들기도 바쁜데 홍보글까지 고민하지 마세요.<br />
+              SideDish는 메이커가 오직 창작에만 집중할 수 있는 환경을 제공합니다.
             </p>
           </div>
 
@@ -158,11 +158,10 @@ const LandingPage: React.FC = () => {
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6 text-orange-500">
                   <Sparkles className="w-7 h-7" />
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">Gemini AI 수석 셰프</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">글솜씨가 없어도 괜찮아요</h3>
                 <p className="text-slate-600 text-lg leading-relaxed">
-                  &quot;이 프로젝트 짱인데 설명할 방법이 없네...&quot;<br />
-                  대충 적어도 찰떡같이 바꿔주는 <span className="font-bold text-slate-900">AI 카피라이팅</span> 기능으로
-                  당신의 프로젝트를 매력적으로 포장해드립니다.
+                  &quot;기능은 좋은데, 설명을 못 하겠네...&quot;<br />
+                  걱정 마세요. 투박한 기획안이나 기능 명세만 입력하면, AI가 <span className="font-bold text-slate-900">사람들의 클릭을 부르는 매력적인 소개글</span>로 바꿔드립니다.
                 </p>
               </div>
               <div className="absolute right-[-20px] bottom-[-40px] md:right-[-50px] md:bottom-[-50px] w-80 md:w-96 shadow-2xl rounded-xl overflow-hidden border-4 border-white/50 rotate-[-6deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 relative h-60">
@@ -176,9 +175,9 @@ const LandingPage: React.FC = () => {
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
                   <MessageSquareMore className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">소곤소곤 피드백</h3>
+                <h3 className="text-2xl font-bold mb-3">부담 없는 첫 공개</h3>
                 <p className="text-orange-100 leading-relaxed">
-                  공개적으로 말하기 힘든 버그 제보나 조언은 <span className="font-bold text-white">비밀 쪽지</span>로 남겨주세요. 상처 없이 성장할 수 있습니다.
+                  완벽하지 않아도 괜찮아요. MVP라도 좋습니다. <span className="font-bold text-white">비밀 쪽지</span>로 안전하게 피드백 받고, 프로덕트를 점차 발전시켜보세요.
                 </p>
               </div>
               <Lock className="absolute -right-6 -bottom-6 w-32 h-32 text-orange-400/30 group-hover:rotate-12 transition-transform duration-500" />
@@ -190,9 +189,9 @@ const LandingPage: React.FC = () => {
                 <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
                   <TrendingUp className="w-6 h-6 text-yellow-400" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">미식가들의 선택</h3>
+                <h3 className="text-2xl font-bold mb-3">당신의 첫 번째 팬을 만나세요</h3>
                 <p className="text-slate-400 leading-relaxed">
-                  단순 나열이 아닌, 미식가(유저)들의 반응에 따라 <span className="text-yellow-400 font-bold">Trending Menu</span>에 선정될 기회를 드립니다.
+                  혼자 간직하던 프로젝트가 모두의 &apos;최애 메뉴&apos;로. 단순한 조회수를 넘어, 당신의 아이디어에 열광하는 <span className="text-yellow-400 font-bold">찐팬(Fan)</span>들을 가장 먼저 만나보세요.
                 </p>
               </div>
               <Zap className="absolute -right-4 -bottom-4 w-32 h-32 text-slate-800 group-hover:text-yellow-500/20 group-hover:scale-110 transition-all duration-500" />
@@ -201,65 +200,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Feature Details (Tabs / Grid) */}
-      <section className="py-24 bg-[#F8FAFC]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-            <div className="order-2 md:order-1 relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-200 to-purple-200 rounded-full blur-[80px] opacity-60"></div>
-              <div className="relative bg-white p-6 rounded-3xl shadow-xl border border-slate-100 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-                {/* Mock UI for Project Card */}
-                <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-4 overflow-hidden relative">
-                  <Image src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800" fill className="object-cover" alt="Project" />
-                  <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
-                    <ChefHat className="w-3 h-3 text-orange-500" />
-                    Minji Chef
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="h-6 bg-slate-100 rounded-full w-3/4"></div>
-                  <div className="h-4 bg-slate-50 rounded-full w-full"></div>
-                  <div className="h-4 bg-slate-50 rounded-full w-2/3"></div>
-                </div>
-                <div className="mt-6 flex gap-2">
-                  <div className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-xs font-bold">React</div>
-                  <div className="px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-xs font-bold">TypeScript</div>
-                </div>
-              </div>
-            </div>
-            <div className="order-1 md:order-2 space-y-8">
-              <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-bold">
-                Detail View
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-                한 눈에 들어오는<br />
-                맛있는 디테일
-              </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                스크롤을 내려도 따라오는 <span className="font-bold text-slate-900">Sticky Action Bar</span>로 전환율을 높이고,
-                16:9 비율의 시원한 이미지로 프로젝트의 첫인상을 결정합니다.
-                방문자들은 메뉴판을 보듯 자연스럽게 당신의 앱을 경험하게 됩니다.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  '몰입감을 주는 글래스모피즘(Glassmorphism) 디자인',
-                  '직관적인 CTA(Call to Action) 버튼 배치',
-                  '실시간 반응형 리액션 시스템'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                      <MousePointerClick className="w-3.5 h-3.5" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. CTA Section */}
+      {/* 4. CTA Section */}
       <section className="py-32 bg-slate-900 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl overflow-hidden pointer-events-none">
           <div className="absolute top-[20%] left-[20%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -270,20 +211,20 @@ const LandingPage: React.FC = () => {
             Ready to Serve?
           </h2>
           <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-            당신의 하드디스크 속에서 잠자고 있는 프로젝트를 깨워주세요.<br />
-            SideDish가 세상과 연결되는 첫 번째 테이블이 되어드리겠습니다.
+            서랍 속 사이드 프로젝트, 혼자만 쓰던 앱, 공개 못한 포트폴리오.<br />
+            SideDish에서 첫 번째 팬을 만나보세요.
           </p>
           <Link href="/dashboard">
             <Button
               className="h-16 px-12 text-xl rounded-full bg-orange-600 hover:bg-orange-500 text-white shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all duration-300"
             >
-              내 주방(프로젝트) 오픈하기
+              내 프로젝트 무료로 등록하기
             </Button>
           </Link>
           {chefCount !== null && chefCount >= 50 && (
             <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
               <Users className="w-4 h-4" />
-              지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 셰프가 활동 중입니다
+              지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 메이커가 활동 중입니다
             </p>
           )}
         </div>
