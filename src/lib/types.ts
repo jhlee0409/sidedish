@@ -55,3 +55,48 @@ export interface UserData {
   comments: UserComment[]
   whispers: Whisper[]
 }
+
+// AI Generation Types
+export interface AiGeneratedContent {
+  shortDescription: string
+  description: string
+  tags: string[]
+  generatedAt: number // timestamp
+}
+
+export interface AiGenerationCandidate {
+  id: string
+  content: AiGeneratedContent
+  isSelected: boolean
+}
+
+export interface DraftData {
+  id: string // unique draft ID
+  title: string
+  shortDescription: string
+  description: string
+  tags: string[]
+  imageUrl: string
+  link: string
+  githubUrl: string
+  platform: ProjectPlatform
+  aiCandidates: AiGenerationCandidate[]
+  selectedCandidateId: string | null
+  generationCount: number
+  lastSavedAt: number
+  createdAt: number
+}
+
+export interface AiUsageRecord {
+  draftId: string
+  userId: string
+  generationCount: number
+  lastGeneratedAt: number
+}
+
+export interface DailyAiUsage {
+  userId: string
+  date: string // YYYY-MM-DD
+  count: number
+  lastGeneratedAt: number
+}
