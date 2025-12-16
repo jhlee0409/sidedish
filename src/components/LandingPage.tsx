@@ -65,7 +65,7 @@ const LandingPage: React.FC = () => {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-sm text-orange-700 font-medium mb-8 border border-orange-200/50">
                   <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                  {chefCount ? `${chefCount.toLocaleString()}명의 셰프가 요리 중` : '사이드 프로젝트 맛집'}
+                  {chefCount ? `셰프 ${chefCount.toLocaleString()}명+` : '사이드 프로젝트 맛집'}
                 </div>
 
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.15] mb-6">
