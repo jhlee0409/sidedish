@@ -24,6 +24,7 @@ import {
 } from '@/lib/api-client'
 import { ProjectResponse, CommentResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
+import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
 
 export default function MenuDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -305,7 +306,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
             {/* Hero Image */}
             <div className="rounded-3xl overflow-hidden bg-slate-100 border border-slate-100 shadow-sm aspect-video relative group">
               <Image
-                src={project.imageUrl}
+                src={getProjectThumbnail(project)}
                 alt={project.title}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
