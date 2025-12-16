@@ -197,7 +197,10 @@ const Dashboard: React.FC = () => {
                 직접 셰프가 되어 첫 번째 요리를 등록해보시는 건 어때요?
               </p>
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => {
+                  setSearchTerm('')
+                  setActiveTab('All')
+                }}
                 className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:border-orange-200 hover:text-orange-600 hover:shadow-md transition-all"
               >
                 전체 메뉴판 다시보기
