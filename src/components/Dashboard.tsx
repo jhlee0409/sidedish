@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
   const [isLoading, setIsLoading] = useState(true)
   const [hasMore, setHasMore] = useState(false)
@@ -19,6 +20,14 @@ const Dashboard: React.FC = () => {
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Debounce search term - only update debouncedSearch after 300ms of no typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   // Load projects from API with abort support
   const loadProjects = useCallback(async (cursor?: string) => {
@@ -41,7 +50,7 @@ const Dashboard: React.FC = () => {
         limit: 20,
         cursor,
         platform,
-        search: searchTerm || undefined,
+        search: debouncedSearch || undefined,
       }, abortController.signal)
 
       // Only update state if this request wasn't aborted
@@ -66,7 +75,7 @@ const Dashboard: React.FC = () => {
         setIsLoading(false)
       }
     }
-  }, [activeTab, searchTerm])
+  }, [activeTab, debouncedSearch])
 
   // Load projects on mount and when filters change
   useEffect(() => {
@@ -89,14 +98,6 @@ const Dashboard: React.FC = () => {
       loadProjects(nextCursor)
     }
   }
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadProjects()
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchTerm]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabs = [
     { id: 'All', label: '전체 메뉴', icon: <Utensils className="w-4 h-4" /> },
