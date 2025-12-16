@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'SideDish - 메이커가 요리한 맛있는 사이드 프로젝트',
@@ -19,6 +20,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   )

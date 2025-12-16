@@ -9,6 +9,7 @@ import {
   Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2,
   ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle
 } from 'lucide-react'
+import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import { ProjectPlatform, DraftData } from '@/lib/types'
@@ -254,7 +255,7 @@ export default function MenuRegisterPage() {
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("파일 크기는 5MB 이하여야 합니다.")
+        toast.error("파일 크기는 5MB 이하여야 합니다.")
         return
       }
 
@@ -273,7 +274,7 @@ export default function MenuRegisterPage() {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       if (formData.tags.length >= 5) {
-        alert('태그는 최대 5개까지 추가할 수 있습니다.')
+        toast.error('태그는 최대 5개까지 추가할 수 있습니다.')
         return
       }
       if (!formData.tags.includes(tagInput.trim())) {
@@ -409,7 +410,7 @@ export default function MenuRegisterPage() {
     }
 
     if (!formData.title || !formData.shortDescription) {
-      alert('필수 항목을 입력해주세요.')
+      toast.error('필수 항목을 입력해주세요.')
       return
     }
 
@@ -424,7 +425,7 @@ export default function MenuRegisterPage() {
           imageUrl = uploadResult.url
         } catch (error) {
           console.error('Image upload failed:', error)
-          alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+          toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
           setIsSubmitting(false)
           return
         }
@@ -452,7 +453,7 @@ export default function MenuRegisterPage() {
       router.push(`/menu/${project.id}`)
     } catch (error) {
       console.error('Failed to create project:', error)
-      alert('메뉴 등록에 실패했습니다. 다시 시도해주세요.')
+      toast.error('메뉴 등록에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
