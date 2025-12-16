@@ -47,8 +47,8 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
             <Image
               src="/sidedish_logo_wide.png"
               alt="SideDish"
-              width={120}
-              height={36}
+              width={1200}
+              height={670}
               className="h-9 w-auto group-hover:scale-105 transition-transform duration-300"
             />
           </Link>
