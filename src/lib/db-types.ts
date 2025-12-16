@@ -5,6 +5,12 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
 
+// Reaction types - strongly typed reaction keys
+export type ReactionKey = 'fire' | 'clap' | 'party' | 'idea' | 'love'
+
+// Reactions can be partial since not all reactions may have counts
+export type Reactions = Partial<Record<ReactionKey, number>>
+
 // Firestore document structure for Projects
 export interface ProjectDoc {
   id: string
@@ -16,7 +22,7 @@ export interface ProjectDoc {
   authorId: string
   authorName: string
   likes: number
-  reactions: { [key: string]: number }
+  reactions: Reactions
   link: string
   githubUrl?: string
   platform: ProjectPlatform
@@ -128,7 +134,7 @@ export interface ProjectResponse {
   authorId: string
   authorName: string
   likes: number
-  reactions: { [key: string]: number }
+  reactions: Reactions
   link: string
   githubUrl?: string
   platform: ProjectPlatform

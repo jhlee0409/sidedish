@@ -1,7 +1,7 @@
-import { Project } from './types'
+import { Project, ReactionKey, Reactions } from './types'
 
 // 리액션 이모지 매핑 (DB에는 key로 저장, UI에서는 emoji로 표시)
-export const REACTION_EMOJI_MAP: Record<string, string> = {
+export const REACTION_EMOJI_MAP: Record<ReactionKey, string> = {
   fire: '🔥',
   clap: '👏',
   party: '🎉',
@@ -10,20 +10,29 @@ export const REACTION_EMOJI_MAP: Record<string, string> = {
 }
 
 // 역방향 매핑 (이모지 → key) - 기존 데이터 하위 호환성용
-export const EMOJI_TO_KEY_MAP: Record<string, string> = Object.fromEntries(
+export const EMOJI_TO_KEY_MAP: Record<string, ReactionKey> = Object.fromEntries(
   Object.entries(REACTION_EMOJI_MAP).map(([key, emoji]) => [emoji, key])
-)
+) as Record<string, ReactionKey>
 
 // 리액션 키 목록
-export const REACTION_KEYS = Object.keys(REACTION_EMOJI_MAP) as Array<keyof typeof REACTION_EMOJI_MAP>
+export const REACTION_KEYS: readonly ReactionKey[] = ['fire', 'clap', 'party', 'idea', 'love'] as const
+
+// Type guard to check if a string is a valid ReactionKey
+export function isReactionKey(key: string): key is ReactionKey {
+  return key in REACTION_EMOJI_MAP
+}
+
+// Input type for normalizeReactions - accepts both legacy Record<string, number> and Reactions
+type ReactionsInput = Record<string, number> | Reactions
 
 // 기존 이모지 키를 새 키로 변환하는 유틸리티
-export function normalizeReactions(reactions: Record<string, number>): Record<string, number> {
-  const normalized: Record<string, number> = {}
+export function normalizeReactions(reactions: ReactionsInput): Reactions {
+  const normalized: Reactions = {}
 
   for (const [key, count] of Object.entries(reactions)) {
+    if (count === undefined) continue
     // 이미 새 키 형식이면 그대로 사용
-    if (REACTION_EMOJI_MAP[key]) {
+    if (isReactionKey(key)) {
       normalized[key] = (normalized[key] || 0) + count
     }
     // 이모지 키면 새 키로 변환
@@ -47,7 +56,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/jeju/600/400',
     author: 'FilmWalker',
     likes: 342,
-    reactions: { '🔥': 12, '👏': 45, '🥰': 89 },
+    reactions: { fire: 12, clap: 45, love: 89 },
     comments: [
       { id: 'c1', author: 'Traveler_Kim', content: '사진 색감이 너무 좋아요! 어떤 카메라 쓰시나요?', createdAt: new Date('2024-01-16') },
       { id: 'c2', author: 'JejuLover', content: '다음 휴가 때 꼭 가봐야겠네요.', createdAt: new Date('2024-01-18') }
@@ -65,7 +74,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/code/600/400',
     author: 'DevKim',
     likes: 124,
-    reactions: { '💻': 56, '🚀': 23 },
+    reactions: { fire: 56, party: 23 },
     comments: [
       { id: 'c1', author: 'JuniorDev', content: '진짜 필요했던 기능이에요. VSCode 익스텐션도 있나요?', createdAt: new Date('2023-10-16') }
     ],
@@ -83,7 +92,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/morning/600/400',
     author: 'Sunrise',
     likes: 512,
-    reactions: { '💪': 120, '☀️': 200 },
+    reactions: { clap: 120, idea: 200 },
     comments: [],
     link: 'https://example.com/morning',
     platform: 'APP',
@@ -98,7 +107,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/retro/600/400',
     author: 'PixelArtist',
     likes: 215,
-    reactions: { '🎨': 40, '🕹️': 88 },
+    reactions: { love: 40, party: 88 },
     comments: [],
     link: 'https://retrolog.io',
     githubUrl: 'https://github.com/pixel/retro',
@@ -114,7 +123,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/game/600/400',
     author: 'GameDev_Lee',
     likes: 189,
-    reactions: { '🎮': 67, '👾': 90 },
+    reactions: { fire: 67, idea: 90 },
     comments: [],
     link: 'https://itch.io/example',
     platform: 'GAME',
@@ -129,7 +138,7 @@ export const MOCK_PROJECTS: Project[] = [
     imageUrl: 'https://picsum.photos/seed/map/600/400',
     author: 'NomadLife',
     likes: 156,
-    reactions: { '🗺️': 33, '✈️': 41 },
+    reactions: { clap: 33, party: 41 },
     comments: [],
     link: 'https://indiemap.world',
     platform: 'WEB',
