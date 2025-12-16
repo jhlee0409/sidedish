@@ -9,7 +9,7 @@ import {
   isFirebaseConfigured,
   FirebaseUser,
 } from '@/lib/firebase'
-import { initApiClient } from '@/lib/api-client'
+import { initApiClient, updateUser } from '@/lib/api-client'
 
 export interface User {
   id: string
@@ -63,10 +63,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const unsubscribe = onAuthChange((fbUser) => {
+    const unsubscribe = onAuthChange(async (fbUser) => {
       if (fbUser) {
         setFirebaseUser(fbUser)
         setUser(firebaseUserToUser(fbUser))
+
+        // Sync user profile to Firestore (updateUser creates if not exists)
+        try {
+          await updateUser(fbUser.uid, {
+            name: fbUser.displayName || 'Anonymous Chef',
+            avatarUrl: fbUser.photoURL || '',
+          })
+        } catch (error) {
+          console.error('Failed to sync user profile:', error)
+        }
       } else {
         setFirebaseUser(null)
         setUser(null)
