@@ -45,13 +45,12 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
             className="flex items-center gap-2 cursor-pointer group"
           >
             <Image
-              src="/sidedish_logo.png"
+              src="/sidedish_logo_wide.png"
               alt="SideDish"
-              width={36}
+              width={120}
               height={36}
-              className="h-9 w-9 group-hover:scale-105 transition-transform duration-300 rounded-full"
+              className="h-9 w-auto group-hover:scale-105 transition-transform duration-300"
             />
-            <span className="font-bold text-lg text-slate-900">SideDish</span>
           </Link>
 
           <div className="flex items-center gap-3">
