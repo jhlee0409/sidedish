@@ -86,15 +86,15 @@ const LandingPage: React.FC = () => {
           </div>
 
           <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-            상상만 했던 아이디어,<br />
+            만들었다면,<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-500 to-orange-600 animate-gradient-x bg-[length:200%_auto]">
-              세상 밖으로
+              세상에 내놓을 시간
             </span>
           </h1>
 
           <p className="max-w-2xl mx-auto text-xl text-slate-600 mb-12 leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-            노코드 툴로 만든 앱부터 노션 기획안까지.<br className="hidden md:block" />
-            AI 수석 셰프가 당신의 프로젝트를 가장 맛있는 <span className="text-slate-900 font-bold">&apos;메인 요리&apos;</span>로 소개해드립니다.
+            사이드 프로젝트부터 디자인 포트폴리오까지.<br className="hidden md:block" />
+            AI 셰프가 당신의 작품을 가장 맛있는 <span className="text-slate-900 font-bold">&apos;메인 요리&apos;</span>로 소개해드립니다.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
@@ -128,7 +128,7 @@ const LandingPage: React.FC = () => {
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">For Every Creator</p>
         </div>
         <div className="flex justify-center gap-4 md:gap-16 flex-wrap px-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-          {['No-code Maker', 'Content Creator', 'PM & Planner', 'Designer', 'Indie Hacker', 'Student', 'Marketer'].map((role, idx) => (
+          {['Developer', 'Designer', 'Creator', 'Indie Hacker', 'Student', 'Dreamer'].map((role, idx) => (
             <span key={idx} className="text-xl md:text-3xl font-bold text-slate-300 select-none">
               {role}
             </span>
@@ -175,9 +175,9 @@ const LandingPage: React.FC = () => {
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
                   <MessageSquareMore className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">두려움 없는 아이디어 검증</h3>
+                <h3 className="text-2xl font-bold mb-3">부담 없는 첫 공개</h3>
                 <p className="text-orange-100 leading-relaxed">
-                  완벽하지 않아도 시작할 수 있어요. 초기 아이디어 단계라도 괜찮습니다. <span className="font-bold text-white">비밀 쪽지</span>로 안전하게 피드백을 받고, 프로덕트를 점차 발전시켜보세요.
+                  완벽하지 않아도 괜찮아요. MVP라도 좋습니다. <span className="font-bold text-white">비밀 쪽지</span>로 안전하게 피드백 받고, 프로덕트를 점차 발전시켜보세요.
                 </p>
               </div>
               <Lock className="absolute -right-6 -bottom-6 w-32 h-32 text-orange-400/30 group-hover:rotate-12 transition-transform duration-500" />
@@ -221,8 +221,8 @@ const LandingPage: React.FC = () => {
                   <div className="h-4 bg-slate-50 rounded-full w-2/3"></div>
                 </div>
                 <div className="mt-6 flex gap-2">
-                  <div className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-xs font-bold">React</div>
-                  <div className="px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-xs font-bold">TypeScript</div>
+                  <div className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-xs font-bold">생산성</div>
+                  <div className="px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-xs font-bold">라이프스타일</div>
                 </div>
               </div>
             </div>
@@ -269,8 +269,8 @@ const LandingPage: React.FC = () => {
             Ready to Serve?
           </h2>
           <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-            머릿속에만 있던 아이디어, 노션에 적어둔 기획안, 완성하지 못한 프로젝트.<br />
-            SideDish에서 세상과 연결되는 첫 번째 순간을 만들어보세요.
+            서랍 속 사이드 프로젝트, 혼자만 쓰던 앱, 공개 못한 포트폴리오.<br />
+            SideDish에서 첫 번째 팬을 만나보세요.
           </p>
           <Link href="/dashboard">
             <Button
