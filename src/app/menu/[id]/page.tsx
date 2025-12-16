@@ -10,8 +10,10 @@ import {
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil
 } from 'lucide-react'
 import Markdown from 'react-markdown'
+import { toast } from 'sonner'
 import Button from '@/components/Button'
 import UserMenu from '@/components/UserMenu'
+import ConfirmModal from '@/components/ConfirmModal'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   getProject,
@@ -47,6 +49,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(null)
   const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
+  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
 
   useEffect(() => {
     const loadProject = async () => {
@@ -192,22 +195,22 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       // Revert on error
       setComments(prev => prev.filter(c => c.id !== tempId))
       setNewComment(commentContent)
-      alert('댓글 등록에 실패했습니다.')
+      toast.error('댓글 등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('댓글을 삭제하시겠습니까?')) return
-
     try {
       await deleteComment(commentId)
       setComments(prev => prev.filter(c => c.id !== commentId))
+      toast.success('댓글이 삭제되었습니다.')
     } catch (error) {
       console.error('Failed to delete comment:', error)
-      alert('댓글 삭제에 실패했습니다.')
+      toast.error('댓글 삭제에 실패했습니다.')
     }
+    setDeleteCommentId(null)
   }
 
   const handleWhisperSubmit = async (e: React.FormEvent) => {
@@ -236,7 +239,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       }, 3000)
     } catch (error) {
       console.error('Failed to send whisper:', error)
-      alert('비밀 메시지 전송에 실패했습니다.')
+      toast.error('비밀 메시지 전송에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
@@ -492,7 +495,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                           </div>
                           {user && comment.authorId === user.id && (
                             <button
-                              onClick={() => handleDeleteComment(comment.id)}
+                              onClick={() => setDeleteCommentId(comment.id)}
                               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                               title="댓글 삭제"
                             >
@@ -576,7 +579,29 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                       <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />
                       {liked ? '찜함' : '찜하기'}
                     </Button>
-                    <Button variant="outline" className="w-full py-4 rounded-xl text-sm">
+                    <Button
+                      variant="outline"
+                      className="w-full py-4 rounded-xl text-sm"
+                      onClick={async () => {
+                        const shareData = {
+                          title: project.title,
+                          text: project.shortDescription,
+                          url: window.location.href,
+                        }
+                        if (navigator.share) {
+                          try {
+                            await navigator.share(shareData)
+                          } catch (err) {
+                            if ((err as Error).name !== 'AbortError') {
+                              console.error('Share failed:', err)
+                            }
+                          }
+                        } else {
+                          await navigator.clipboard.writeText(window.location.href)
+                          toast.success('링크가 복사되었습니다!')
+                        }
+                      }}
+                    >
                       <Share2 className="w-4 h-4 mr-1.5" />
                       공유
                     </Button>
@@ -655,6 +680,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+      />
+
+      {/* Delete Comment Confirm Modal */}
+      <ConfirmModal
+        isOpen={!!deleteCommentId}
+        onClose={() => setDeleteCommentId(null)}
+        onConfirm={() => deleteCommentId && handleDeleteComment(deleteCommentId)}
+        title="댓글 삭제"
+        message="댓글을 삭제하시겠습니까?"
+        confirmText="삭제"
+        cancelText="취소"
+        variant="danger"
       />
     </div>
   )

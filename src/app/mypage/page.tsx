@@ -9,6 +9,7 @@ import {
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
   Globe, Smartphone, Gamepad2, Palette, Box, Loader2
 } from 'lucide-react'
+import { toast } from 'sonner'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -118,9 +119,9 @@ function MyPageContent() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setShowLoginModal(true)
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -133,9 +134,10 @@ function MyPageContent() {
       await deleteProjectApi(projectId)
       setMyProjects(prev => prev.filter(p => p.id !== projectId))
       setDeleteConfirmId(null)
+      toast.success('메뉴가 삭제되었습니다.')
     } catch (error) {
       console.error('Failed to delete project:', error)
-      alert('프로젝트 삭제에 실패했습니다.')
+      toast.error('메뉴 삭제에 실패했습니다.')
     }
   }
 
@@ -187,10 +189,7 @@ function MyPageContent() {
         </div>
         <LoginModal
           isOpen={showLoginModal}
-          onClose={() => {
-            setShowLoginModal(false)
-            router.push('/dashboard')
-          }}
+          onClose={() => setShowLoginModal(false)}
         />
       </>
     )

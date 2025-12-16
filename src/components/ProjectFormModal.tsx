@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { X, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils } from 'lucide-react'
+import { toast } from 'sonner'
 import Button from './Button'
 import { CreateProjectInput, ProjectPlatform } from '@/lib/types'
 import { generateProjectContent } from '@/services/geminiService'
@@ -41,7 +42,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("파일 크기는 5MB 이하여야 합니다.")
+        toast.error("파일 크기는 5MB 이하여야 합니다.")
         return
       }
 
@@ -69,7 +70,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
 
   const handleAiGenerate = async () => {
     if (!formData.description) {
-      alert("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!")
+      toast.error("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!")
       return
     }
 
@@ -85,7 +86,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
       }))
     } catch (error) {
       console.error(error)
-      alert('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      toast.error('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setIsAiLoading(false)
     }
@@ -94,7 +95,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title || !formData.shortDescription) {
-      alert('필수 항목을 입력해주세요.')
+      toast.error('필수 항목을 입력해주세요.')
       return
     }
     onSubmit(formData)

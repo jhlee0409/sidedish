@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import { ProjectPlatform, AiGenerationCandidate } from '@/lib/types'
@@ -173,17 +174,17 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     loadProject()
   }, [id])
 
-  // Check if user is authorized to edit
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setShowLoginModal(true)
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, router])
 
   // Check ownership when both project and user are loaded
   useEffect(() => {
     if (project && user && project.authorId !== user.id) {
-      alert('이 메뉴를 수정할 권한이 없습니다.')
+      toast.error('이 메뉴를 수정할 권한이 없습니다.')
       router.push('/mypage')
     }
   }, [project, user, router])
@@ -230,7 +231,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("파일 크기는 5MB 이하여야 합니다.")
+        toast.error("파일 크기는 5MB 이하여야 합니다.")
         return
       }
 
@@ -391,7 +392,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     }
 
     if (!formData.title || !formData.shortDescription) {
-      alert('필수 항목을 입력해주세요.')
+      toast.error('필수 항목을 입력해주세요.')
       return
     }
 
@@ -408,7 +409,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
           imageUrl = uploadResult.url
         } catch (error) {
           console.error('Image upload failed:', error)
-          alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+          toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
           setIsSubmitting(false)
           return
         }
@@ -429,7 +430,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       router.push('/mypage')
     } catch (error) {
       console.error('Failed to update project:', error)
-      alert('메뉴 수정에 실패했습니다. 다시 시도해주세요.')
+      toast.error('메뉴 수정에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
@@ -482,10 +483,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         </div>
         <LoginModal
           isOpen={showLoginModal}
-          onClose={() => {
-            setShowLoginModal(false)
-            router.push('/dashboard')
-          }}
+          onClose={() => setShowLoginModal(false)}
         />
       </>
     )
@@ -810,12 +808,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
-        onClose={() => {
-          setShowLoginModal(false)
-          if (!isAuthenticated) {
-            router.push('/dashboard')
-          }
-        }}
+        onClose={() => setShowLoginModal(false)}
         onSuccess={() => setShowLoginModal(false)}
       />
     </div>
