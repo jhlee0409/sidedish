@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle } from 'lucide-react'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
-import { ProjectPlatform, AiGenerationCandidate, AiGeneratedContent } from '@/lib/types'
+import { ProjectPlatform, AiGenerationCandidate } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
@@ -706,16 +706,13 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                 )}
               </div>
 
-              {/* AI Candidate Selector */}
-              {aiCandidates.length > 0 && (
-                <AiCandidateSelector
-                  candidates={aiCandidates}
-                  selectedCandidateId={selectedCandidateId}
-                  onSelect={handleCandidateSelect}
-                  remainingGenerations={aiLimitInfo.remainingForDraft}
-                  maxGenerations={aiLimitInfo.maxPerDraft}
-                />
-              )}
+              {/* AI Candidate Selector - Always show 3 buttons */}
+              <AiCandidateSelector
+                candidates={aiCandidates}
+                selectedCandidateId={selectedCandidateId}
+                onSelect={handleCandidateSelect}
+                maxGenerations={aiLimitInfo.maxPerDraft}
+              />
             </div>
 
             <div className="space-y-2">

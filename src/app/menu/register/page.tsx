@@ -693,13 +693,12 @@ export default function MenuRegisterPage() {
                 )}
               </div>
 
-              {/* AI Candidate Selector */}
-              {draft && draft.aiCandidates.length > 0 && (
+              {/* AI Candidate Selector - Always show 3 buttons */}
+              {draft && (
                 <AiCandidateSelector
                   candidates={draft.aiCandidates}
                   selectedCandidateId={draft.selectedCandidateId}
                   onSelect={handleCandidateSelect}
-                  remainingGenerations={aiLimitInfo.remainingForDraft}
                   maxGenerations={aiLimitInfo.maxPerDraft}
                 />
               )}
