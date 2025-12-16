@@ -65,26 +65,24 @@ const LandingPage: React.FC = () => {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full text-sm text-orange-700 font-medium mb-8 border border-orange-200/50">
                   <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                  {chefCount ? `${chefCount.toLocaleString()}명의 메이커가 함께하는 중` : '메이커들의 플레이그라운드'}
+                  {chefCount ? `${chefCount.toLocaleString()}명의 셰프가 요리 중` : '사이드 프로젝트 맛집'}
                 </div>
 
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.15] mb-6">
-                  서랍 속 프로젝트,
+                  당신의 사이드,
                   <br />
-                  <span className="text-orange-600">메인 요리</span>로
-                  <br />
-                  대접하세요
+                  오늘의 <span className="text-orange-600">메인 디쉬</span>로
                 </h1>
 
                 <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-md">
-                  혼자 끙끙대며 만든 사이드 프로젝트, 이제 세상에 내놓을 시간이에요.
-                  AI가 멋진 소개글도 써드릴게요.
+                  &ldquo;언젠간 보여줘야지&rdquo; 미뤄둔 프로젝트, 여기가 바로 그 무대예요.
+                  AI 에디터가 맛있는 소개글까지 곁들여 드릴게요.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-10">
                   <Link href="/menu/register">
                     <Button className="h-12 px-6 text-base font-semibold rounded-full bg-orange-600 text-white hover:bg-orange-700 transition-colors shadow-lg shadow-orange-600/25">
-                      내 프로젝트 올리기
+                      메뉴판에 올리기
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </Link>
@@ -93,7 +91,7 @@ const LandingPage: React.FC = () => {
                       variant="outline"
                       className="h-12 px-6 text-base font-semibold rounded-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all"
                     >
-                      구경하기
+                      오늘의 메뉴 보기
                     </Button>
                   </Link>
                 </div>
@@ -104,13 +102,13 @@ const LandingPage: React.FC = () => {
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <Sparkles className="w-4 h-4 text-orange-500" />
                     </div>
-                    <span>AI 소개글 무료</span>
+                    <span>AI 레시피 작성</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-600">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <MessageSquare className="w-4 h-4 text-orange-500" />
                     </div>
-                    <span>비밀 피드백</span>
+                    <span>비밀 귓속말</span>
                   </div>
                 </div>
               </div>
@@ -174,17 +172,17 @@ const LandingPage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 text-center">
             <div>
               <p className="text-3xl font-bold text-slate-900">{menuCount ? menuCount.toLocaleString() : '—'}+</p>
-              <p className="text-sm text-slate-500">등록된 프로젝트</p>
+              <p className="text-sm text-slate-500">오늘의 메뉴</p>
             </div>
             <div className="w-px h-10 bg-slate-200 hidden sm:block" />
             <div>
               <p className="text-3xl font-bold text-slate-900">{chefCount ? chefCount.toLocaleString() : '—'}+</p>
-              <p className="text-sm text-slate-500">활동 메이커</p>
+              <p className="text-sm text-slate-500">사이드 셰프</p>
             </div>
             <div className="w-px h-10 bg-slate-200 hidden sm:block" />
             <div>
               <p className="text-3xl font-bold text-orange-600">3초</p>
-              <p className="text-sm text-slate-500">AI 소개글 생성</p>
+              <p className="text-sm text-slate-500">레시피 완성</p>
             </div>
           </div>
         </div>
@@ -197,27 +195,27 @@ const LandingPage: React.FC = () => {
           <div className="mb-32">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
-                <span className="text-orange-600 font-semibold text-sm mb-4 block">글솜씨가 없어도</span>
+                <span className="text-orange-600 font-semibold text-sm mb-4 block">재료만 던져주세요</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
-                  &ldquo;기능은 좋은데<br />
-                  설명을 어떻게 하지...&rdquo;
+                  &ldquo;코드는 잘 짜는데<br />
+                  글은 영...&rdquo;
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  투박한 기획서도 괜찮아요. AI가 클릭을 부르는 매력적인 소개글로 바꿔드려요.
-                  개발자가 마케터일 필요 없잖아요.
+                  걱정 마세요. 대충 적은 메모도 AI 에디터가 군침 도는 레시피로 바꿔드려요.
+                  개발하느라 바쁜데, 마케팅까지 하실 필요 없잖아요.
                 </p>
               </div>
               <div className="bg-slate-900 rounded-2xl p-6 text-white">
                 <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
                   <Sparkles className="w-4 h-4 text-orange-400" />
-                  AI 소개글 생성
+                  AI 레시피 작성
                 </div>
                 <div className="space-y-3 font-mono text-sm">
-                  <p className="text-slate-500">// 입력: &quot;할일 관리 앱, React, 드래그앤드롭&quot;</p>
-                  <p className="text-orange-400">↓ AI 변환</p>
-                  <p className="text-emerald-400">&quot;바쁜 일상 속 할 일을 손쉽게 정리하세요.
-                  드래그 한 번으로 우선순위를 조절하고,
-                  완료의 쾌감을 느껴보세요.&quot;</p>
+                  <p className="text-slate-500">// 재료: &quot;할일 관리, React로 만듦, 드래그됨&quot;</p>
+                  <p className="text-orange-400">↓ 조리 중...</p>
+                  <p className="text-emerald-400">&quot;오늘 할 일, 드래그 한 번이면 끝.
+                  우선순위는 손가락이 정하고,
+                  완료 체크의 짜릿함은 당신의 것.&quot;</p>
                 </div>
               </div>
             </div>
@@ -234,24 +232,24 @@ const LandingPage: React.FC = () => {
                     </div>
                     <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm">
                       <p className="text-sm text-slate-600">
-                        &ldquo;온보딩 플로우가 조금 길게 느껴져요.
-                        3단계로 줄이면 이탈률이 낮아질 것 같아요!&rdquo;
+                        &ldquo;온보딩이 좀 긴 것 같아요.
+                        3단계면 충분할 듯! 화이팅이에요 🔥&rdquo;
                       </p>
-                      <p className="text-xs text-slate-400 mt-2">익명의 개발자</p>
+                      <p className="text-xs text-slate-400 mt-2">익명의 손님</p>
                     </div>
                   </div>
-                  <p className="text-sm text-orange-600 font-medium pl-13">비공개 피드백이 도착했어요</p>
+                  <p className="text-sm text-orange-600 font-medium pl-13">귓속말이 도착했어요</p>
                 </div>
               </div>
               <div className="order-1 lg:order-2">
-                <span className="text-orange-600 font-semibold text-sm mb-4 block">완벽하지 않아도</span>
+                <span className="text-orange-600 font-semibold text-sm mb-4 block">반쯤 익어도 괜찮아요</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
-                  MVP도 환영해요.<br />
-                  솔직한 피드백이 기다려요.
+                  완성 안 했어도 OK.<br />
+                  맛보기 버전도 환영해요.
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  완성작만 올릴 필요 없어요. 비밀 쪽지로 솔직한 피드백을 받고,
-                  프로덕트를 함께 발전시켜보세요.
+                  &ldquo;아직 부족한데...&rdquo; 싶어도 일단 올려보세요.
+                  비밀 귓속말로 솔직한 시식평을 받아볼 수 있어요.
                 </p>
               </div>
             </div>
@@ -261,22 +259,22 @@ const LandingPage: React.FC = () => {
           <div>
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
-                <span className="text-orange-600 font-semibold text-sm mb-4 block">혼자가 아니에요</span>
+                <span className="text-orange-600 font-semibold text-sm mb-4 block">단골손님을 만나요</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
-                  서랍 속 프로젝트가<br />
-                  누군가의 최애가 돼요
+                  혼자 먹기 아까운 요리,<br />
+                  누군가의 최애 메뉴가 돼요
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
                   &ldquo;이런 게 있었어?&rdquo; 당신의 프로젝트를 발견하고
-                  팬이 될 사람들이 기다리고 있어요.
+                  단골이 될 사람들이 기다리고 있어요.
                 </p>
               </div>
               <div className="relative">
                 <div className="flex flex-col gap-3">
                   {[
-                    { name: '김개발', comment: '진짜 이런 앱 찾고 있었어요!', likes: 24 },
-                    { name: '박디자이너', comment: 'UI가 너무 깔끔하네요 👏', likes: 18 },
-                    { name: '이창업', comment: '어떻게 만드셨어요? 대화하고 싶어요', likes: 12 },
+                    { name: '배고픈 개발자', comment: '딱 이런 거 찾고 있었어요!', likes: 24 },
+                    { name: '미식가 디자이너', comment: 'UI 맛집이네요 👏', likes: 18 },
+                    { name: '호기심 많은 PM', comment: '레시피 공유해주세요!', likes: 12 },
                   ].map((item, idx) => (
                     <div
                       key={idx}
@@ -314,16 +312,16 @@ const LandingPage: React.FC = () => {
 
         <div className="container mx-auto px-6 text-center relative z-10">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-            오늘, 첫 요리를 내어볼까요?
+            첫 요리, 오늘 내볼까요?
           </h2>
           <p className="text-lg text-orange-100 mb-10 max-w-xl mx-auto">
-            서랍 속에서 잠자는 프로젝트가 있다면,
-            지금이 세상에 선보일 완벽한 타이밍이에요.
+            서랍 속에서 식어가는 프로젝트가 있다면,
+            지금이 따끈따끈하게 서빙할 타이밍이에요.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/menu/register">
               <Button className="h-12 px-8 text-base font-semibold rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-lg">
-                무료로 시작하기
+                주방 입장하기
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -332,7 +330,7 @@ const LandingPage: React.FC = () => {
                 variant="ghost"
                 className="h-12 px-8 text-base font-semibold rounded-full text-white border-2 border-white hover:bg-white hover:text-orange-600 transition-colors"
               >
-                다른 프로젝트 구경하기
+                다른 메뉴 구경하기
                 <ExternalLink className="w-4 h-4 ml-2" />
               </Button>
             </Link>
