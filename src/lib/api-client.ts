@@ -18,6 +18,64 @@ export function initApiClient(tokenGetter: GetIdToken) {
   getIdToken = tokenGetter
 }
 
+// ============ Request Cache ============
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+}
+
+const requestCache = new Map<string, CacheEntry<unknown>>()
+const DEFAULT_CACHE_TTL = 30 * 1000 // 30 seconds
+const USER_CACHE_TTL = 5 * 60 * 1000 // 5 minutes for user profiles
+const AI_USAGE_CACHE_TTL = 60 * 1000 // 1 minute for AI usage
+
+function getCached<T>(key: string, ttl: number = DEFAULT_CACHE_TTL): T | null {
+  const entry = requestCache.get(key) as CacheEntry<T> | undefined
+  if (entry && Date.now() - entry.timestamp < ttl) {
+    return entry.data
+  }
+  requestCache.delete(key)
+  return null
+}
+
+function setCache<T>(key: string, data: T): void {
+  requestCache.set(key, { data, timestamp: Date.now() })
+}
+
+export function invalidateCache(pattern?: string): void {
+  if (!pattern) {
+    requestCache.clear()
+    return
+  }
+  for (const key of requestCache.keys()) {
+    if (key.includes(pattern)) {
+      requestCache.delete(key)
+    }
+  }
+}
+
+// ============ Request Deduplication ============
+const pendingRequests = new Map<string, Promise<unknown>>()
+
+async function deduplicatedFetch<T>(
+  key: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  // Check if there's already a pending request for this key
+  const pending = pendingRequests.get(key) as Promise<T> | undefined
+  if (pending) {
+    return pending
+  }
+
+  // Create the request and store it
+  const request = fetcher().finally(() => {
+    pendingRequests.delete(key)
+  })
+
+  pendingRequests.set(key, request)
+  return request
+}
+
 // Base fetch function with auth
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const headers: HeadersInit = {
@@ -75,6 +133,23 @@ export async function getProjects(params: GetProjectsParams = {}): Promise<Pagin
 
   const url = `/api/projects${searchParams.toString() ? `?${searchParams}` : ''}`
   const response = await fetch(url)
+  return handleResponse<PaginatedResponse<ProjectResponse>>(response)
+}
+
+// Version with AbortController support for search optimization
+export async function getProjectsWithAbort(
+  params: GetProjectsParams = {},
+  signal?: AbortSignal
+): Promise<PaginatedResponse<ProjectResponse>> {
+  const searchParams = new URLSearchParams()
+  if (params.limit) searchParams.set('limit', params.limit.toString())
+  if (params.cursor) searchParams.set('cursor', params.cursor)
+  if (params.platform) searchParams.set('platform', params.platform)
+  if (params.search) searchParams.set('search', params.search)
+  if (params.authorId) searchParams.set('authorId', params.authorId)
+
+  const url = `/api/projects${searchParams.toString() ? `?${searchParams}` : ''}`
+  const response = await fetch(url, { signal })
   return handleResponse<PaginatedResponse<ProjectResponse>>(response)
 }
 
@@ -160,6 +235,27 @@ export async function addReaction(projectId: string, emoji: string): Promise<{ r
   return { reactions: result.reactions }
 }
 
+// ============ Combined User Interactions API ============
+// Fetch both liked status and user reactions in parallel to reduce API calls
+export interface UserInteractions {
+  liked: boolean
+  userReactions: string[]
+  reactions: Record<string, number>
+}
+
+export async function getUserInteractions(projectId: string): Promise<UserInteractions> {
+  const [likeStatus, reactionsData] = await Promise.all([
+    checkLiked(projectId),
+    getUserReactions(projectId),
+  ])
+
+  return {
+    liked: likeStatus.liked,
+    userReactions: reactionsData.userReactions,
+    reactions: reactionsData.reactions,
+  }
+}
+
 // ============ Comments API ============
 
 export async function getProjectComments(projectId: string): Promise<CommentResponse[]> {
@@ -221,8 +317,21 @@ export async function markWhisperAsRead(whisperId: string): Promise<void> {
 // ============ Users API ============
 
 export async function getUser(userId: string): Promise<UserResponse> {
-  const response = await fetch(`/api/users/${userId}`)
-  return handleResponse<UserResponse>(response)
+  const cacheKey = `user:${userId}`
+
+  // Check cache first
+  const cached = getCached<UserResponse>(cacheKey, USER_CACHE_TTL)
+  if (cached) {
+    return cached
+  }
+
+  // Use deduplication to prevent multiple simultaneous requests for same user
+  return deduplicatedFetch(cacheKey, async () => {
+    const response = await fetch(`/api/users/${userId}`)
+    const data = await handleResponse<UserResponse>(response)
+    setCache(cacheKey, data)
+    return data
+  })
 }
 
 export async function createOrUpdateUser(data: { name: string; avatarUrl?: string }): Promise<UserResponse> {
@@ -309,6 +418,24 @@ export async function generateAiContent(draftId: string, description: string): P
 }
 
 export async function getAiUsageInfo(draftId: string): Promise<AiUsageInfo> {
-  const response = await fetchWithAuth(`/api/ai/generate?draftId=${encodeURIComponent(draftId)}`)
-  return handleResponse<AiUsageInfo>(response)
+  const cacheKey = `ai-usage:${draftId}`
+
+  // Check cache first (1 minute TTL)
+  const cached = getCached<AiUsageInfo>(cacheKey, AI_USAGE_CACHE_TTL)
+  if (cached) {
+    return cached
+  }
+
+  // Use deduplication to prevent multiple simultaneous requests
+  return deduplicatedFetch(cacheKey, async () => {
+    const response = await fetchWithAuth(`/api/ai/generate?draftId=${encodeURIComponent(draftId)}`)
+    const data = await handleResponse<AiUsageInfo>(response)
+    setCache(cacheKey, data)
+    return data
+  })
+}
+
+// Invalidate AI usage cache after generation (called after successful AI generation)
+export function invalidateAiUsageCache(draftId: string): void {
+  invalidateCache(`ai-usage:${draftId}`)
 }

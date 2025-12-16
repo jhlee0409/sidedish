@@ -19,9 +19,8 @@ import {
   createComment,
   deleteComment,
   toggleLike,
-  checkLiked,
   toggleReaction,
-  getUserReactions,
+  getUserInteractions,
   createWhisper,
   getUser,
 } from '@/lib/api-client'
@@ -53,6 +52,8 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
     const loadProject = async () => {
       try {
         setIsLoading(true)
+
+        // Load all data in parallel for optimal performance
         const [projectData, commentsData] = await Promise.all([
           getProject(id),
           getProjectComments(id),
@@ -63,27 +64,28 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         setComments(commentsData)
         setLikeCount(projectData.likes)
 
-        // Fetch author profile
-        try {
-          const author = await getUser(projectData.authorId)
-          setAuthorProfile(author)
-        } catch {
-          // Author profile fetch failed, use fallback
+        // Load author profile and user interactions in parallel (non-blocking)
+        const parallelPromises: Promise<unknown>[] = [
+          // Author profile (cached, won't block if already fetched)
+          getUser(projectData.authorId)
+            .then(author => setAuthorProfile(author))
+            .catch(() => {/* Author profile fetch failed, use fallback */}),
+        ]
+
+        // Add user interactions if authenticated
+        if (isAuthenticated) {
+          parallelPromises.push(
+            getUserInteractions(id)
+              .then(interactions => {
+                setLiked(interactions.liked)
+                setUserReactions(interactions.userReactions)
+              })
+              .catch(() => {/* User might not be authenticated, ignore error */})
+          )
         }
 
-        // Check if user has liked this project and get user reactions
-        if (isAuthenticated) {
-          try {
-            const [likeStatus, reactionsData] = await Promise.all([
-              checkLiked(id),
-              getUserReactions(id),
-            ])
-            setLiked(likeStatus.liked)
-            setUserReactions(reactionsData.userReactions)
-          } catch {
-            // User might not be authenticated, ignore error
-          }
-        }
+        // Execute in parallel (don't await - let them complete in background)
+        Promise.all(parallelPromises)
       } catch (error) {
         console.error('Failed to load project:', error)
       } finally {
@@ -154,20 +156,39 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newComment.trim() || !project) return
+    if (!newComment.trim() || !project || !user) return
 
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
     }
 
+    const commentContent = newComment.trim()
+    const tempId = `temp-${Date.now()}`
+
+    // Optimistic update - show comment immediately
+    const optimisticComment: CommentResponse = {
+      id: tempId,
+      content: commentContent,
+      authorId: user.id,
+      authorName: user.name,
+      projectId: project.id,
+      createdAt: new Date().toISOString(),
+    }
+
+    setComments(prev => [optimisticComment, ...prev])
+    setNewComment('')
     setIsSubmitting(true)
+
     try {
-      const comment = await createComment(project.id, newComment)
-      setComments(prev => [comment, ...prev])
-      setNewComment('')
+      const comment = await createComment(project.id, commentContent)
+      // Replace optimistic comment with real one
+      setComments(prev => prev.map(c => c.id === tempId ? comment : c))
     } catch (error) {
       console.error('Failed to post comment:', error)
+      // Revert on error
+      setComments(prev => prev.filter(c => c.id !== tempId))
+      setNewComment(commentContent)
       alert('댓글 등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)

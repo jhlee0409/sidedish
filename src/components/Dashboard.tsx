@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
-import { getProjects } from '@/lib/api-client'
+import { getProjectsWithAbort } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
 import { Search, Filter, TrendingUp, Utensils, Star, ChefHat, Loader2 } from 'lucide-react'
 
@@ -18,39 +18,66 @@ const Dashboard: React.FC = () => {
   const [nextCursor, setNextCursor] = useState<string | undefined>()
 
   const galleryRef = useRef<HTMLDivElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Load projects from API
+  // Load projects from API with abort support
   const loadProjects = useCallback(async (cursor?: string) => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
     try {
       setIsLoading(true)
       const platform = activeTab === 'All' ? undefined :
         activeTab === 'Tech' ? 'WEB' :
         activeTab === 'Design' ? 'DESIGN' : undefined
 
-      const response = await getProjects({
+      const response = await getProjectsWithAbort({
         limit: 20,
         cursor,
         platform,
         search: searchTerm || undefined,
-      })
+      }, abortController.signal)
 
-      if (cursor) {
-        setProjects(prev => [...prev, ...response.data])
-      } else {
-        setProjects(response.data)
+      // Only update state if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        if (cursor) {
+          setProjects(prev => [...prev, ...response.data])
+        } else {
+          setProjects(response.data)
+        }
+        setHasMore(response.hasMore)
+        setNextCursor(response.nextCursor)
       }
-      setHasMore(response.hasMore)
-      setNextCursor(response.nextCursor)
     } catch (error) {
+      // Ignore abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
       console.error('Failed to load projects:', error)
     } finally {
-      setIsLoading(false)
+      // Only set loading false if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setIsLoading(false)
+      }
     }
   }, [activeTab, searchTerm])
 
   // Load projects on mount and when filters change
   useEffect(() => {
     loadProjects()
+
+    // Cleanup: abort on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [loadProjects])
 
   const handleExploreClick = () => {
