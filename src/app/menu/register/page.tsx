@@ -611,6 +611,16 @@ export default function MenuRegisterPage() {
               </div>
             </div>
 
+            {/* AI Candidate Selector - Always show 3 buttons below thumbnail */}
+            {draft && (
+              <AiCandidateSelector
+                candidates={draft.aiCandidates}
+                selectedCandidateId={draft.selectedCandidateId}
+                onSelect={handleCandidateSelect}
+                maxGenerations={aiLimitInfo.maxPerDraft}
+              />
+            )}
+
             {/* AI Generation Section integrated with Description */}
             <div className="space-y-4">
               <div className="flex justify-between items-end mb-1">
@@ -692,16 +702,6 @@ export default function MenuRegisterPage() {
                   </div>
                 )}
               </div>
-
-              {/* AI Candidate Selector - Always show 3 buttons */}
-              {draft && (
-                <AiCandidateSelector
-                  candidates={draft.aiCandidates}
-                  selectedCandidateId={draft.selectedCandidateId}
-                  onSelect={handleCandidateSelect}
-                  maxGenerations={aiLimitInfo.maxPerDraft}
-                />
-              )}
             </div>
 
             <div className="space-y-2">

@@ -629,6 +629,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
+            {/* AI Candidate Selector - Always show 3 buttons below thumbnail */}
+            <AiCandidateSelector
+              candidates={aiCandidates}
+              selectedCandidateId={selectedCandidateId}
+              onSelect={handleCandidateSelect}
+              maxGenerations={aiLimitInfo.maxPerDraft}
+            />
+
             {/* AI Generation Section integrated with Description */}
             <div className="space-y-4">
               <div className="flex justify-between items-end mb-1">
@@ -705,14 +713,6 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   </div>
                 )}
               </div>
-
-              {/* AI Candidate Selector - Always show 3 buttons */}
-              <AiCandidateSelector
-                candidates={aiCandidates}
-                selectedCandidateId={selectedCandidateId}
-                onSelect={handleCandidateSelect}
-                maxGenerations={aiLimitInfo.maxPerDraft}
-              />
             </div>
 
             <div className="space-y-2">
