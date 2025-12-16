@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, ChefHat, Users, Lock, Zap, MousePointerClick } from 'lucide-react'
+import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, Users, Lock, Zap } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
@@ -200,65 +200,7 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Feature Details (Tabs / Grid) */}
-      <section className="py-24 bg-[#F8FAFC]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-            <div className="order-2 md:order-1 relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-200 to-purple-200 rounded-full blur-[80px] opacity-60"></div>
-              <div className="relative bg-white p-6 rounded-3xl shadow-xl border border-slate-100 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-                {/* Mock UI for Project Card */}
-                <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-4 overflow-hidden relative">
-                  <Image src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800" fill className="object-cover" alt="Project" />
-                  <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1">
-                    <ChefHat className="w-3 h-3 text-orange-500" />
-                    Minji Chef
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="h-6 bg-slate-100 rounded-full w-3/4"></div>
-                  <div className="h-4 bg-slate-50 rounded-full w-full"></div>
-                  <div className="h-4 bg-slate-50 rounded-full w-2/3"></div>
-                </div>
-                <div className="mt-6 flex gap-2">
-                  <div className="px-3 py-1 bg-orange-50 text-orange-600 rounded-lg text-xs font-bold">생산성</div>
-                  <div className="px-3 py-1 bg-slate-50 text-slate-500 rounded-lg text-xs font-bold">라이프스타일</div>
-                </div>
-              </div>
-            </div>
-            <div className="order-1 md:order-2 space-y-8">
-              <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-bold">
-                Detail View
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-                디자이너 없이도,<br />
-                전문가처럼 보여집니다
-              </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                복잡한 디자인 작업 없이도 <span className="font-bold text-slate-900">프로페셔널한 프로젝트 페이지</span>가 완성됩니다.
-                앱스토어 링크, 웹사이트, 노션 페이지, 유튜브 영상까지.
-                어떤 링크든 멋지게 소개해드립니다.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  '어떤 링크든 OK - 노션, 피그마, 유튜브까지',
-                  '모바일에서 가장 예쁘게 보이는 반응형 디자인',
-                  '실시간 반응으로 팬들과 소통하는 리액션 시스템'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                      <MousePointerClick className="w-3.5 h-3.5" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. CTA Section */}
+      {/* 4. CTA Section */}
       <section className="py-32 bg-slate-900 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl overflow-hidden pointer-events-none">
           <div className="absolute top-[20%] left-[20%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[120px] animate-pulse"></div>
