@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import Button from '@/components/Button'
+import UserMenu from '@/components/UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   getProject,
@@ -280,17 +281,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               />
               <span className="font-bold text-slate-900">SideDish</span>
             </Link>
-            <div className="w-24 flex justify-end">
-              {isOwnProject && (
-                <Link
-                  href={`/menu/edit/${project.id}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                >
-                  <Pencil className="w-4 h-4" />
-                  <span>수정</span>
-                </Link>
-              )}
-            </div>
+            <UserMenu onLoginClick={() => setShowLoginModal(true)} />
           </div>
         </div>
       </div>
@@ -458,6 +449,26 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           {/* Right Column: Sticky Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-28 space-y-6">
+              {/* Edit Button for Owner */}
+              {isOwnProject && (
+                <Link href={`/menu/edit/${project.id}`} className="block">
+                  <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all hover:-translate-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-xl">
+                          <Pencil className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold">메뉴 수정하기</p>
+                          <p className="text-xs text-white/80">내용을 수정하거나 업데이트하세요</p>
+                        </div>
+                      </div>
+                      <ArrowLeft className="w-5 h-5 rotate-180" />
+                    </div>
+                  </div>
+                </Link>
+              )}
+
               {/* Action Card */}
               <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
                 <h3 className="text-lg font-bold text-slate-900 mb-2">메뉴 시식하기</h3>
