@@ -576,7 +576,29 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                       <Heart className={`w-4 h-4 mr-1.5 ${liked ? 'fill-current' : ''}`} />
                       {liked ? '찜함' : '찜하기'}
                     </Button>
-                    <Button variant="outline" className="w-full py-4 rounded-xl text-sm">
+                    <Button
+                      variant="outline"
+                      className="w-full py-4 rounded-xl text-sm"
+                      onClick={async () => {
+                        const shareData = {
+                          title: project.title,
+                          text: project.shortDescription,
+                          url: window.location.href,
+                        }
+                        if (navigator.share) {
+                          try {
+                            await navigator.share(shareData)
+                          } catch (err) {
+                            if ((err as Error).name !== 'AbortError') {
+                              console.error('Share failed:', err)
+                            }
+                          }
+                        } else {
+                          await navigator.clipboard.writeText(window.location.href)
+                          alert('링크가 복사되었습니다!')
+                        }
+                      }}
+                    >
                       <Share2 className="w-4 h-4 mr-1.5" />
                       공유
                     </Button>
