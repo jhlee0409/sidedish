@@ -300,7 +300,8 @@ function MyPageContent() {
                   {myProjects.map(project => (
                     <div
                       key={project.id}
-                      className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/menu/${project.id}`)}
                     >
                       <div className="flex">
                         <div className="relative w-48 h-32 flex-shrink-0">
@@ -330,7 +331,7 @@ function MyPageContent() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                               <Link href={`/menu/edit/${project.id}`}>
                                 <button className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
                                   <Edit3 className="w-4 h-4" />
