@@ -70,8 +70,9 @@ const LandingPage: React.FC = () => {
                 </h1>
 
                 <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-md">
-                  &ldquo;언젠간 보여줘야지&rdquo; 하던 그 프로젝트, 이제 꺼내볼 때예요.
-                  소개글? AI가 대신 써드릴게요.
+                  만들기 쉬워진 시대, 올리기도 편해야죠.<br />
+                  여기선 여러분의 프로젝트가 오늘의 메뉴가 돼요.<br />
+                  소개글? 재료만 주면 AI가 써드릴게요.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-10">
@@ -192,12 +193,12 @@ const LandingPage: React.FC = () => {
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">재료만 던져주세요</span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
-                  &ldquo;코드는 잘 짜는데<br />
-                  글은 영...&rdquo;
+                  &ldquo;만들긴 했는데<br />
+                  소개글은 영...&rdquo;
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
                   대충 적은 메모 던져주세요. AI가 읽고 싶은 글로 바꿔놓을게요.
-                  개발하느라 바쁜데, 글까지 잘 쓸 필요 있나요.
+                  만드느라 바빴잖아요, 글까지 잘 쓸 필요 없어요.
                 </p>
               </div>
               <div className="bg-slate-900 rounded-2xl p-6 text-white">
@@ -206,11 +207,10 @@ const LandingPage: React.FC = () => {
                   AI 레시피 작성
                 </div>
                 <div className="space-y-3 font-mono text-sm">
-                  <p className="text-slate-500">// 재료: &quot;할일 관리, React로 만듦, 드래그됨&quot;</p>
+                  <p className="text-slate-500">// 재료: &quot;가계부 앱, 영수증 찍으면 자동 입력, 월별 리포트&quot;</p>
                   <p className="text-orange-400">↓ 조리 중...</p>
-                  <p className="text-emerald-400">&quot;할 일 쌓여서 머리 아프죠?
-                  드래그로 순서 바꾸고, 끝나면 체크.
-                  그게 다예요. 진짜로.&quot;</p>
+                  <p className="text-emerald-400">🍽️ 영수증 찍으면 가계부 끝.
+                  매달 어디에 새는지, 리포트로 한눈에 보여드려요.</p>
                 </div>
               </div>
             </div>
