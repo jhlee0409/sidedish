@@ -4,14 +4,17 @@ import { useState, useRef, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle } from 'lucide-react'
 import Button from '@/components/Button'
 import { ProjectPlatform } from '@/lib/types'
-import { generateProjectContent } from '@/services/geminiService'
 import { useAuth } from '@/contexts/AuthContext'
-import { getProject, updateProject, uploadImage } from '@/lib/api-client'
+import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
+
+const MIN_DESCRIPTION_LENGTH = 30
+const DEFAULT_MAX_PER_DRAFT = 3
+const DEFAULT_MAX_PER_DAY = 10
 
 const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
   { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
@@ -91,6 +94,16 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
+  // AI limit state (fetched from server)
+  const [aiLimitInfo, setAiLimitInfo] = useState({
+    remainingForDraft: DEFAULT_MAX_PER_DRAFT,
+    remainingForDay: DEFAULT_MAX_PER_DAY,
+    maxPerDraft: DEFAULT_MAX_PER_DRAFT,
+    maxPerDay: DEFAULT_MAX_PER_DAY,
+    cooldownRemaining: 0,
+  })
+  const [aiError, setAiError] = useState<string | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load project data
@@ -135,6 +148,39 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     }
   }, [project, user, router])
 
+  // Fetch AI usage info when project is loaded
+  useEffect(() => {
+    if (project && user) {
+      // Use project ID as draft ID for edit page
+      getAiUsageInfo(project.id)
+        .then(usage => {
+          setAiLimitInfo(prev => ({
+            ...prev,
+            remainingForDraft: usage.remainingForDraft,
+            remainingForDay: usage.remainingForDay,
+            maxPerDraft: usage.maxPerDraft,
+            maxPerDay: usage.maxPerDay,
+          }))
+        })
+        .catch(err => {
+          console.error('Failed to fetch AI usage info:', err)
+        })
+    }
+  }, [project, user])
+
+  // Cooldown timer
+  useEffect(() => {
+    if (aiLimitInfo.cooldownRemaining > 0) {
+      const timer = setInterval(() => {
+        setAiLimitInfo(prev => ({
+          ...prev,
+          cooldownRemaining: Math.max(0, prev.cooldownRemaining - 1),
+        }))
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [aiLimitInfo.cooldownRemaining])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -174,14 +220,31 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   }
 
   const handleAiGenerate = async () => {
-    if (!formData.description) {
-      alert("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!")
+    if (!project || !user?.id) return
+
+    setAiError(null)
+
+    // Validate minimum description length
+    if (formData.description.length < MIN_DESCRIPTION_LENGTH) {
+      setAiError(`최소 ${MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
+      return
+    }
+
+    // Pre-check limits (client-side, for UX)
+    if (aiLimitInfo.remainingForDraft <= 0) {
+      setAiError(`이 프로젝트는 이미 ${aiLimitInfo.maxPerDraft}번 AI 생성을 사용했습니다.`)
+      return
+    }
+
+    if (aiLimitInfo.remainingForDay <= 0) {
+      setAiError(`오늘의 AI 생성 한도(${aiLimitInfo.maxPerDay}회)를 모두 사용했습니다.`)
       return
     }
 
     setIsAiLoading(true)
     try {
-      const result = await generateProjectContent(formData.description)
+      // Use project ID as draft ID for edit page
+      const result = await generateAiContent(project.id, formData.description)
 
       setFormData(prev => ({
         ...prev,
@@ -189,9 +252,34 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         description: result.description,
         tags: result.tags
       }))
+
+      // Update limit info from server response
+      setAiLimitInfo(prev => ({
+        ...prev,
+        remainingForDraft: result.usage.remainingForDraft,
+        remainingForDay: result.usage.remainingForDay,
+        maxPerDraft: result.usage.maxPerDraft,
+        maxPerDay: result.usage.maxPerDay,
+        cooldownRemaining: 5,
+      }))
     } catch (error) {
       console.error(error)
-      alert('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      if (error instanceof ApiError) {
+        setAiError(error.message)
+        if (error.status === 429 && project) {
+          getAiUsageInfo(project.id)
+            .then(usage => {
+              setAiLimitInfo(prev => ({
+                ...prev,
+                remainingForDraft: usage.remainingForDraft,
+                remainingForDay: usage.remainingForDay,
+              }))
+            })
+            .catch(() => {})
+        }
+      } else {
+        setAiError('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      }
     } finally {
       setIsAiLoading(false)
     }
@@ -445,19 +533,52 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             </div>
 
             {/* AI Generation Section integrated with Description */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex justify-between items-end mb-1">
-                <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
-                <button
-                  type="button"
-                  onClick={handleAiGenerate}
-                  disabled={!formData.description || isAiLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  AI 셰프가 대신 작성하기
-                </button>
+                <div>
+                  <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    최소 {MIN_DESCRIPTION_LENGTH}자 이상 작성 후 AI 생성이 가능합니다
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>오늘 {aiLimitInfo.remainingForDay}회 남음</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={
+                      formData.description.length < MIN_DESCRIPTION_LENGTH ||
+                      isAiLoading ||
+                      aiLimitInfo.remainingForDraft === 0 ||
+                      aiLimitInfo.cooldownRemaining > 0
+                    }
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
+                  >
+                    {aiLimitInfo.cooldownRemaining > 0 ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        {aiLimitInfo.cooldownRemaining}초
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-3.5 h-3.5" />
+                        AI 셰프가 대신 작성하기 ({aiLimitInfo.remainingForDraft}/{aiLimitInfo.maxPerDraft})
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* AI Error Message */}
+              {aiError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{aiError}</span>
+                </div>
+              )}
 
               <div className="relative group">
                 <textarea
@@ -468,6 +589,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
                   placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요."
                 />
+
+                {/* Character count */}
+                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= MIN_DESCRIPTION_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
+                  {formData.description.length}자
+                  {formData.description.length < MIN_DESCRIPTION_LENGTH && (
+                    <span className="text-slate-400"> / 최소 {MIN_DESCRIPTION_LENGTH}자</span>
+                  )}
+                </div>
 
                 {isAiLoading && (
                   <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
