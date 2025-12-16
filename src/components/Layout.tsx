@@ -57,21 +57,14 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
                       </Button>
                     </Link>
                   ) : (
-                    <>
-                      <Link href="/login">
-                        <Button
-                          variant="ghost"
-                          className="h-9 px-4 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                        >
-                          로그인
-                        </Button>
-                      </Link>
-                      <Link href="/signup">
-                        <Button className="h-9 px-4 text-sm font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors">
-                          시작하기
-                        </Button>
-                      </Link>
-                    </>
+                    <Link href="/login">
+                      <Button
+                        variant="ghost"
+                        className="h-9 px-4 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        로그인
+                      </Button>
+                    </Link>
                   )}
                 </>
               ) : (
