@@ -776,9 +776,7 @@ export default function MenuRegisterPage() {
             </div>
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-              <Link href="/">
-                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting}>취소</Button>
-              </Link>
+              <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
               <Button
                 type="submit"
                 variant="primary"
