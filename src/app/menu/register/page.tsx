@@ -169,9 +169,9 @@ export default function MenuRegisterPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setShowLoginModal(true)
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, router])
 
   // Auto-save draft
   const autoSaveDraft = useCallback(() => {

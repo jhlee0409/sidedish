@@ -173,12 +173,12 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     loadProject()
   }, [id])
 
-  // Check if user is authorized to edit
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setShowLoginModal(true)
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, router])
 
   // Check ownership when both project and user are loaded
   useEffect(() => {

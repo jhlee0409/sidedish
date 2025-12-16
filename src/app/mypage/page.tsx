@@ -118,9 +118,9 @@ function MyPageContent() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setShowLoginModal(true)
+      router.push('/login')
     }
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, router])
 
   useEffect(() => {
     if (isAuthenticated && user) {
