@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, MessageSquareMore, ArrowRight, TrendingUp, Users, Lock, Zap } from 'lucide-react'
+import { Sparkles, MessageSquareMore, ArrowRight, Users, Lock, TrendingUp } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
 
 const CACHE_KEY = 'sidedish_stats'
-const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in ms
+const CACHE_DURATION = 24 * 60 * 60 * 1000
 
 interface CachedStats {
   chefCount: number
@@ -20,14 +20,11 @@ const LandingPage: React.FC = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      // Check localStorage cache first
       try {
         const cached = localStorage.getItem(CACHE_KEY)
         if (cached) {
           const parsedCache: CachedStats = JSON.parse(cached)
           const now = Date.now()
-
-          // If cache is still valid (within 24 hours), use it
           if (now - parsedCache.cachedAt < CACHE_DURATION) {
             setChefCount(parsedCache.chefCount)
             return
@@ -37,14 +34,11 @@ const LandingPage: React.FC = () => {
         // Ignore localStorage errors
       }
 
-      // Fetch fresh data from API
       try {
         const response = await fetch('/api/stats')
         if (response.ok) {
           const data = await response.json()
           setChefCount(data.chefCount)
-
-          // Cache the result
           const cacheData: CachedStats = {
             chefCount: data.chefCount,
             menuCount: data.menuCount,
@@ -56,175 +50,172 @@ const LandingPage: React.FC = () => {
         // Keep showing nothing if fetch fails
       }
     }
-
     fetchStats()
   }, [])
 
-  // Format number with commas (e.g., 2400 -> 2,400)
-  const formatNumber = (num: number) => {
-    return num.toLocaleString('ko-KR')
-  }
+  const formatNumber = (num: number) => num.toLocaleString('ko-KR')
 
   return (
-    <div className="w-full overflow-hidden">
-      {/* 1. Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 pb-32 overflow-hidden bg-[#F8FAFC]">
-        {/* Background Elements */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-20%] left-[50%] -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-orange-200/30 to-yellow-200/30 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] left-[10%] w-[500px] h-[500px] bg-purple-100/40 rounded-full blur-[100px]" />
-          <div className="absolute top-[20%] right-[5%] w-[300px] h-[300px] bg-red-100/40 rounded-full blur-[80px]" />
+    <div className="w-full">
+      {/* Hero Section - Clean, typography-focused */}
+      <section className="relative min-h-[90vh] flex items-center justify-center pt-24 pb-20 bg-slate-50">
+        {/* Subtle background accent */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-orange-50/80 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-100/40 rounded-full -translate-x-1/2 translate-y-1/2" />
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-orange-100 shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
-            </span>
-            <span className="text-sm font-bold text-slate-700">2025 New Season Open</span>
-          </div>
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-4xl">
+            {/* Minimal badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-10 text-sm font-medium text-slate-500 border border-slate-200 rounded-full bg-white">
+              <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+              사이드 프로젝트 플랫폼
+            </div>
 
-          <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.05] animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-            만들었다면,<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-500 to-orange-600 animate-gradient-x bg-[length:200%_auto]">
-              세상에 내놓을 시간
-            </span>
-          </h1>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-8">
+              만들었다면,
+              <br />
+              <span className="text-orange-500">세상에 내놓을 시간</span>
+            </h1>
 
-          <p className="max-w-2xl mx-auto text-xl text-slate-600 mb-12 leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-            사이드 프로젝트부터 디자인 포트폴리오까지.<br className="hidden md:block" />
-            AI 셰프가 당신의 작품을 가장 맛있는 <span className="text-slate-900 font-bold">&apos;메인 요리&apos;</span>로 소개해드립니다.
-          </p>
+            <p className="max-w-xl text-lg sm:text-xl text-slate-600 leading-relaxed mb-12">
+              사이드 프로젝트부터 포트폴리오까지.
+              <br className="hidden sm:block" />
+              AI가 당신의 작품을 가장 매력적으로 소개해드립니다.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
-            <Link href="/dashboard">
-              <Button
-                className="w-full sm:w-auto h-16 px-10 text-xl rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-xl hover:shadow-2xl shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300"
-              >
-                <span className="mr-2">내 프로젝트 무료로 등록하기</span>
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <Link href="/dashboard">
+                <Button className="h-14 px-8 text-base font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+                  프로젝트 등록하기
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  className="h-14 px-8 text-base font-semibold rounded-xl border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                >
+                  둘러보기
+                </Button>
+              </Link>
+            </div>
+
             {chefCount !== null && chefCount >= 50 && (
-              <div className="flex -space-x-4 items-center px-6 py-3 bg-white/60 backdrop-blur-sm rounded-full border border-white/50">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 overflow-hidden relative">
-                    <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="user" fill className="object-cover" />
-                  </div>
-                ))}
-                <span className="pl-6 text-sm font-semibold text-slate-600">
-                  +{formatNumber(chefCount)}명의 메이커들
-                </span>
+              <div className="flex items-center gap-3 mt-12 text-sm text-slate-500">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 overflow-hidden relative">
+                      <Image src={`https://picsum.photos/seed/${i * 123}/100/100`} alt="" fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+                <span>{formatNumber(chefCount)}명의 메이커가 함께하고 있어요</span>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* 2. Target Audience (Ticker) */}
-      <div className="w-full bg-slate-50 border-y border-slate-100 py-12 overflow-hidden">
-        <div className="container mx-auto px-4 mb-8 text-center">
-          <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">For Every Creator</p>
-        </div>
-        <div className="flex justify-center gap-4 md:gap-16 flex-wrap px-4 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-          {['Developer', 'Designer', 'Creator', 'Indie Hacker', 'Student', 'Dreamer'].map((role, idx) => (
-            <span key={idx} className="text-xl md:text-3xl font-bold text-slate-300 select-none">
-              {role}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* 3. Value Proposition (Bento Grid) */}
+      {/* Value Props - Clean grid */}
       <section className="py-24 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
-              재료만 준비하세요,<br />
-              <span className="text-orange-600">플레이팅은 저희가 할게요</span>
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="mb-16">
+            <p className="text-sm font-medium text-orange-500 mb-3">Why SideDish</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+              재료만 준비하세요,
+              <br />
+              플레이팅은 저희가 할게요
             </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              만들기도 바쁜데 홍보글까지 고민하지 마세요.<br />
-              SideDish는 메이커가 오직 창작에만 집중할 수 있는 환경을 제공합니다.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(300px,auto)]">
-
-            {/* Card 1: AI Writing (Large Left) */}
-            <div className="md:col-span-2 bg-[#F8FAFC] rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 border border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="lg:col-span-2 bg-slate-50 rounded-2xl p-8 lg:p-10 relative overflow-hidden group">
               <div className="relative z-10 max-w-md">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-6 text-orange-500">
-                  <Sparkles className="w-7 h-7" />
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm">
+                  <Sparkles className="w-5 h-5 text-orange-500" />
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">글솜씨가 없어도 괜찮아요</h3>
-                <p className="text-slate-600 text-lg leading-relaxed">
-                  &quot;기능은 좋은데, 설명을 못 하겠네...&quot;<br />
-                  걱정 마세요. 투박한 기획안이나 기능 명세만 입력하면, AI가 <span className="font-bold text-slate-900">사람들의 클릭을 부르는 매력적인 소개글</span>로 바꿔드립니다.
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">글솜씨가 없어도 괜찮아요</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  투박한 기획안이나 기능 명세만 입력하면, AI가 사람들의 클릭을 부르는 매력적인 소개글로 바꿔드립니다.
                 </p>
               </div>
-              <div className="absolute right-[-20px] bottom-[-40px] md:right-[-50px] md:bottom-[-50px] w-80 md:w-96 shadow-2xl rounded-xl overflow-hidden border-4 border-white/50 rotate-[-6deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 relative h-60">
-                <Image src="https://images.unsplash.com/photo-1664575602276-acd073f104c1?auto=format&fit=crop&q=80&w=800" alt="AI Writing UI" fill className="object-cover" />
+              <div className="absolute right-4 bottom-4 lg:right-8 lg:bottom-6 w-64 lg:w-80 h-48 rounded-xl overflow-hidden shadow-lg opacity-90 group-hover:opacity-100 transition-opacity">
+                <Image src="https://images.unsplash.com/photo-1664575602276-acd073f104c1?auto=format&fit=crop&q=80&w=800" alt="AI Writing" fill className="object-cover" />
               </div>
             </div>
 
-            {/* Card 2: Feedback (Right Top) */}
-            <div className="bg-orange-500 text-white rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group hover:bg-orange-600 transition-colors duration-300">
+            {/* Card 2 */}
+            <div className="bg-orange-500 rounded-2xl p-8 relative overflow-hidden">
               <div className="relative z-10">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
-                  <MessageSquareMore className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+                  <MessageSquareMore className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">부담 없는 첫 공개</h3>
+                <h3 className="text-xl font-semibold text-white mb-3">부담 없는 첫 공개</h3>
                 <p className="text-orange-100 leading-relaxed">
-                  완벽하지 않아도 괜찮아요. MVP라도 좋습니다. <span className="font-bold text-white">비밀 쪽지</span>로 안전하게 피드백 받고, 프로덕트를 점차 발전시켜보세요.
+                  완벽하지 않아도 괜찮아요. 비밀 쪽지로 안전하게 피드백 받고, 프로덕트를 발전시켜보세요.
                 </p>
               </div>
-              <Lock className="absolute -right-6 -bottom-6 w-32 h-32 text-orange-400/30 group-hover:rotate-12 transition-transform duration-500" />
+              <Lock className="absolute -right-4 -bottom-4 w-24 h-24 text-orange-400/30" />
             </div>
 
-            {/* Card 3: Discovery (Right Bottom) */}
-            <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group">
+            {/* Card 3 */}
+            <div className="bg-slate-900 rounded-2xl p-8 relative overflow-hidden">
               <div className="relative z-10">
-                <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
-                  <TrendingUp className="w-6 h-6 text-yellow-400" />
+                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6">
+                  <TrendingUp className="w-5 h-5 text-orange-400" />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">당신의 첫 번째 팬을 만나세요</h3>
+                <h3 className="text-xl font-semibold text-white mb-3">첫 번째 팬을 만나세요</h3>
                 <p className="text-slate-400 leading-relaxed">
-                  혼자 간직하던 프로젝트가 모두의 &apos;최애 메뉴&apos;로. 단순한 조회수를 넘어, 당신의 아이디어에 열광하는 <span className="text-yellow-400 font-bold">찐팬(Fan)</span>들을 가장 먼저 만나보세요.
+                  혼자 간직하던 프로젝트가 모두의 최애 메뉴로. 당신의 아이디어에 열광하는 팬들을 만나보세요.
                 </p>
               </div>
-              <Zap className="absolute -right-4 -bottom-4 w-32 h-32 text-slate-800 group-hover:text-yellow-500/20 group-hover:scale-110 transition-all duration-500" />
+            </div>
+
+            {/* Card 4 - Stats */}
+            <div className="lg:col-span-2 bg-slate-50 rounded-2xl p-8 lg:p-10">
+              <div className="grid grid-cols-3 gap-8">
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900">{chefCount ? formatNumber(chefCount) : '—'}+</p>
+                  <p className="text-sm text-slate-500 mt-1">메이커</p>
+                </div>
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900">100%</p>
+                  <p className="text-sm text-slate-500 mt-1">무료</p>
+                </div>
+                <div>
+                  <p className="text-3xl lg:text-4xl font-bold text-slate-900">3초</p>
+                  <p className="text-sm text-slate-500 mt-1">AI 소개글 생성</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. CTA Section */}
-      <section className="py-32 bg-slate-900 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl overflow-hidden pointer-events-none">
-          <div className="absolute top-[20%] left-[20%] w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-[120px] animate-pulse"></div>
-        </div>
-
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight">
+      {/* CTA Section - Minimal */}
+      <section className="py-24 bg-slate-900">
+        <div className="container mx-auto px-6 text-center max-w-3xl">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">
             Ready to Serve?
           </h2>
-          <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
-            서랍 속 사이드 프로젝트, 혼자만 쓰던 앱, 공개 못한 포트폴리오.<br />
+          <p className="text-lg text-slate-400 mb-10 leading-relaxed">
+            서랍 속 사이드 프로젝트, 혼자만 쓰던 앱, 공개 못한 포트폴리오.
+            <br className="hidden sm:block" />
             SideDish에서 첫 번째 팬을 만나보세요.
           </p>
           <Link href="/dashboard">
-            <Button
-              className="h-16 px-12 text-xl rounded-full bg-orange-600 hover:bg-orange-500 text-white shadow-2xl shadow-orange-500/30 hover:scale-105 transition-all duration-300"
-            >
-              내 프로젝트 무료로 등록하기
+            <Button className="h-14 px-10 text-base font-semibold rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-colors">
+              시작하기
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
           {chefCount !== null && chefCount >= 50 && (
-            <p className="mt-8 text-sm text-slate-500 flex items-center justify-center gap-2">
+            <p className="mt-10 text-sm text-slate-500 flex items-center justify-center gap-2">
               <Users className="w-4 h-4" />
-              지금 <span className="text-white font-bold">{formatNumber(chefCount)}명</span>의 메이커가 활동 중입니다
+              {formatNumber(chefCount)}명의 메이커가 활동 중
             </p>
           )}
         </div>
