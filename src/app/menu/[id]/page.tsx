@@ -20,7 +20,8 @@ import {
   deleteComment,
   toggleLike,
   checkLiked,
-  addReaction,
+  toggleReaction,
+  getUserReactions,
   createWhisper,
   getUser,
 } from '@/lib/api-client'
@@ -46,6 +47,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(null)
+  const [userReactions, setUserReactions] = useState<string[]>([])
 
   useEffect(() => {
     const loadProject = async () => {
@@ -69,11 +71,15 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           // Author profile fetch failed, use fallback
         }
 
-        // Check if user has liked this project
+        // Check if user has liked this project and get user reactions
         if (isAuthenticated) {
           try {
-            const likeStatus = await checkLiked(id)
+            const [likeStatus, reactionsData] = await Promise.all([
+              checkLiked(id),
+              getUserReactions(id),
+            ])
             setLiked(likeStatus.liked)
+            setUserReactions(reactionsData.userReactions)
           } catch {
             // User might not be authenticated, ignore error
           }
@@ -101,22 +107,48 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       return
     }
 
-    // Optimistic update
-    setReactions(prev => ({
-      ...prev,
-      [reactionKey]: (prev[reactionKey] || 0) + 1
-    }))
+    const hasReacted = userReactions.includes(reactionKey)
 
-    try {
-      const result = await addReaction(id, reactionKey)
-      setReactions(result.reactions)
-    } catch (error) {
-      console.error('Failed to add reaction:', error)
-      // Revert on error
+    // Optimistic update
+    if (hasReacted) {
+      setUserReactions(prev => prev.filter(r => r !== reactionKey))
       setReactions(prev => ({
         ...prev,
         [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
       }))
+    } else {
+      setUserReactions(prev => [...prev, reactionKey])
+      setReactions(prev => ({
+        ...prev,
+        [reactionKey]: (prev[reactionKey] || 0) + 1
+      }))
+    }
+
+    try {
+      const result = await toggleReaction(id, reactionKey)
+      setReactions(result.reactions)
+      // Update userReactions based on server response
+      if (result.reacted) {
+        setUserReactions(prev => prev.includes(reactionKey) ? prev : [...prev, reactionKey])
+      } else {
+        setUserReactions(prev => prev.filter(r => r !== reactionKey))
+      }
+    } catch (error) {
+      console.error('Failed to toggle reaction:', error)
+      // Revert on error
+      if (hasReacted) {
+        setUserReactions(prev => [...prev, reactionKey])
+        setReactions(prev => ({
+          ...prev,
+          [reactionKey]: (prev[reactionKey] || 0) + 1
+        }))
+      } else {
+        setUserReactions(prev => prev.filter(r => r !== reactionKey))
+        setReactions(prev => ({
+          ...prev,
+          [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
+        }))
+      }
     }
   }
 
@@ -364,23 +396,34 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <p className="text-sm text-slate-400 mb-3">자신의 게시물에는 리액션을 남길 수 없습니다.</p>
               )}
               <div className="flex flex-wrap gap-3">
-                {REACTION_KEYS.map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => handleReaction(key)}
-                    disabled={isOwnProject}
-                    className={`group flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all ${
-                      isOwnProject
-                        ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-50'
-                        : 'bg-slate-50 hover:bg-orange-50 border-slate-200 hover:border-orange-200 active:scale-95'
-                    }`}
-                  >
-                    <span className={`text-2xl transition-transform block ${!isOwnProject && 'group-hover:scale-110'}`}>{REACTION_EMOJI_MAP[key]}</span>
-                    <span className={`text-sm font-bold min-w-[1.2rem] ${isOwnProject ? 'text-slate-400' : 'text-slate-600 group-hover:text-orange-600'}`}>
-                      {reactions[key] || 0}
-                    </span>
-                  </button>
-                ))}
+                {REACTION_KEYS.map((key) => {
+                  const hasReacted = userReactions.includes(key)
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleReaction(key)}
+                      disabled={isOwnProject}
+                      className={`group flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all ${
+                        isOwnProject
+                          ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-50'
+                          : hasReacted
+                            ? 'bg-orange-100 border-orange-400 ring-2 ring-orange-400 ring-offset-1'
+                            : 'bg-slate-50 hover:bg-orange-50 border-slate-200 hover:border-orange-200 active:scale-95'
+                      }`}
+                    >
+                      <span className={`text-2xl transition-transform block ${!isOwnProject && 'group-hover:scale-110'}`}>{REACTION_EMOJI_MAP[key]}</span>
+                      <span className={`text-sm font-bold min-w-[1.2rem] ${
+                        isOwnProject
+                          ? 'text-slate-400'
+                          : hasReacted
+                            ? 'text-orange-600'
+                            : 'text-slate-600 group-hover:text-orange-600'
+                      }`}>
+                        {reactions[key] || 0}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

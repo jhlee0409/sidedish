@@ -141,12 +141,23 @@ export async function getUserLikes(userId: string): Promise<{ likedProjectIds: s
 
 // ============ Reactions API ============
 
-export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Record<string, number> }> {
+export async function toggleReaction(projectId: string, emoji: string): Promise<{ reacted: boolean; reactions: Record<string, number> }> {
   const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`, {
     method: 'POST',
     body: JSON.stringify({ emoji }),
   })
-  return handleResponse<{ reactions: Record<string, number> }>(response)
+  return handleResponse<{ reacted: boolean; reactions: Record<string, number> }>(response)
+}
+
+export async function getUserReactions(projectId: string): Promise<{ reactions: Record<string, number>; userReactions: string[] }> {
+  const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`)
+  return handleResponse<{ reactions: Record<string, number>; userReactions: string[] }>(response)
+}
+
+// Keep addReaction for backward compatibility
+export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Record<string, number> }> {
+  const result = await toggleReaction(projectId, emoji)
+  return { reactions: result.reactions }
 }
 
 // ============ Comments API ============
