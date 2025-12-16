@@ -90,7 +90,7 @@ export default function SignupPage() {
                 <div className="inline-flex bg-white/20 p-4 rounded-2xl mb-4">
                   <ChefHat className="w-10 h-10" />
                 </div>
-                <h1 className="text-3xl font-bold mb-2">셰프가 되어보세요!</h1>
+                <h1 className="text-3xl font-bold mb-2">셰프 데뷔하기</h1>
                 <p className="text-white/80">나만의 사이드 프로젝트를 세상에 공개하세요</p>
               </div>
             </div>

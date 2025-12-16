@@ -371,7 +371,7 @@ function MyPageContent() {
                 <EmptyState
                   icon={<Utensils className="w-12 h-12" />}
                   title="아직 등록한 메뉴가 없어요"
-                  description="첫 번째 요리를 등록하고 셰프가 되어보세요!"
+                  description="첫 요리 등록하고 셰프 데뷔!"
                   action={
                     <Link href="/menu/register">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
@@ -483,7 +483,7 @@ function MyPageContent() {
                 <EmptyState
                   icon={<Mail className="w-12 h-12" />}
                   title="아직 받은 피드백이 없어요"
-                  description="메뉴를 등록하면 다른 사용자들의 피드백을 받을 수 있어요!"
+                  description="메뉴 올리면 피드백이 와요"
                   action={
                     <Link href="/menu/register">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">

@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart, ArrowUpRight, User, Smartphone, Globe, Gamepad2, Palette, Box } from 'lucide-react'
+import { Heart, ArrowUpRight, Smartphone, Globe, Gamepad2, Palette, Box } from 'lucide-react'
 import Image from 'next/image'
 import { ProjectPlatform } from '@/lib/types'
 import { ProjectResponse } from '@/lib/db-types'
@@ -23,86 +23,71 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   }
 
   return (
-    <div
+    <article
       onClick={onClick}
-      className="group relative bg-white rounded-[2rem] overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-300 border border-slate-100 flex flex-col h-full hover:-translate-y-1.5 cursor-pointer"
+      className="group bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300 cursor-pointer"
     >
-      {/* Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+      {/* Image */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-orange-50">
         <Image
           src={getProjectThumbnail(project)}
           alt={project.title}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
-        {/* Platform Badge (Floating) */}
-        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-slate-700 shadow-sm flex items-center gap-1.5 z-10 text-xs font-bold border border-white/50">
+        {/* Platform badge */}
+        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
           {getPlatformIcon(project.platform || 'WEB')}
-          <span className="tracking-tight">{project.platform || 'WEB'}</span>
+          <span>{project.platform || 'WEB'}</span>
         </div>
 
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-        {/* External Link Button - Appear on hover */}
-        <div className="absolute top-4 right-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10">
-          <a
-            href={project.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white/95 backdrop-blur-md p-2.5 rounded-full text-slate-900 shadow-lg hover:bg-orange-500 hover:text-white transition-colors block"
-            title="바로 맛보기"
-          >
-            <ArrowUpRight className="w-5 h-5" />
-          </a>
-        </div>
+        {/* Link button on hover */}
+        <a
+          href={project.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-50 hover:scale-110"
+          title="바로가기"
+        >
+          <ArrowUpRight className="w-4 h-4 text-slate-600" />
+        </a>
       </div>
 
-      {/* Content Section */}
-      <div className="p-6 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-3 gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-slate-900 mb-1 leading-tight group-hover:text-orange-600 transition-colors truncate">
-              {project.title}
-            </h3>
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-              <span className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md">
-                <User className="w-3 h-3" />
-                {project.authorName}
-              </span>
-              <span>•</span>
-              <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-            </div>
+      {/* Content */}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="text-base font-semibold text-slate-900 leading-snug group-hover:text-orange-500 transition-colors line-clamp-1">
+            {project.title}
+          </h3>
+          <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0 group-hover:text-orange-400 transition-colors">
+            <Heart className="w-3.5 h-3.5" />
+            <span>{project.likes}</span>
           </div>
         </div>
 
-        <p className="text-slate-600 text-sm leading-relaxed mb-6 line-clamp-2">
+        <p className="text-sm text-slate-500 leading-relaxed mb-4 line-clamp-2">
           {project.shortDescription}
         </p>
 
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-2 overflow-hidden mask-linear-fade">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             {project.tags.slice(0, 2).map((tag, idx) => (
               <span
                 key={idx}
-                className="inline-flex px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-[11px] font-bold rounded-lg whitespace-nowrap"
+                className="px-2.5 py-1 bg-orange-50 text-orange-600 text-xs font-medium rounded-full"
               >
-                #{tag}
+                {tag}
               </span>
             ))}
           </div>
-
-          <div className="flex items-center gap-3 pl-2 bg-white flex-shrink-0">
-            <div className="flex items-center gap-1 text-xs font-bold text-slate-400 group-hover:text-pink-500 transition-colors">
-              <Heart className="w-4 h-4 fill-slate-100 group-hover:fill-pink-500 transition-colors" />
-              {project.likes}
-            </div>
-          </div>
+          <span className="text-xs text-slate-400">
+            {project.authorName}
+          </span>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

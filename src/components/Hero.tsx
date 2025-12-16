@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, ChefHat } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import Button from './Button'
 
 interface HeroProps {
@@ -10,46 +10,37 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
   return (
-    <section className="relative overflow-hidden pt-12 pb-24 lg:pt-28 lg:pb-32">
-      {/* Modern Gradient Background */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl -z-10 pointer-events-none">
-        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-orange-200/40 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute top-[10%] right-[10%] w-[400px] h-[400px] bg-yellow-200/40 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] left-[30%] w-[600px] h-[600px] bg-red-100/50 rounded-full blur-[100px]"></div>
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10 text-center max-w-4xl">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-orange-100 shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 hover:shadow-md transition-all cursor-default select-none">
-          <ChefHat className="w-5 h-5 text-orange-500" />
-          <span className="text-sm font-bold text-slate-700 tracking-tight">Today&apos;s Special Menu</span>
+    <section className="relative pt-6 pb-12 lg:pt-10 lg:pb-16 bg-gradient-to-b from-orange-50/50 to-white">
+      <div className="container mx-auto px-6 relative z-10 text-center max-w-2xl">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white rounded-full text-sm text-slate-600 mb-6 border border-slate-100 shadow-sm">
+          <Sparkles className="w-4 h-4 text-orange-500" />
+          <span>오늘의 메뉴가 도착했어요</span>
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.1] animate-in fade-in slide-in-from-bottom-5 duration-700">
-          오늘은 어떤 <br className="md:hidden" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-500 to-orange-600 animate-gradient-x bg-[length:200%_auto]">맛있는 프로젝트</span>를<br />
-          찾으시나요?
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight mb-4 leading-[1.2]">
+          셰프들의{' '}
+          <span className="text-orange-500">시그니처 메뉴</span>
         </h1>
 
-        <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-600 mb-12 leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-          셰프(메이커)들의 정성이 담긴 사이드 프로젝트를 맛보고,<br className="hidden md:block" />
-          당신의 솔직한 미식평을 남겨주세요.
+        <p className="max-w-md mx-auto text-base text-slate-500 mb-8 leading-relaxed">
+          갓 나온 프로젝트들, 구경하고 마음에 들면 하트 눌러주세요.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-200">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
-            variant="primary"
-            className="w-full sm:w-auto px-10 py-4 text-lg h-16 rounded-full shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/40 hover:-translate-y-1 transition-all duration-300 bg-gradient-to-r from-orange-600 to-red-500 border-none"
+            className="w-full sm:w-auto h-11 px-5 text-sm font-semibold rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20"
             onClick={onExploreClick}
           >
-            메뉴판(프로젝트) 둘러보기
+            메뉴판 보기
           </Button>
           <Link href="/menu/register">
             <Button
-              variant="ghost"
-              className="w-full sm:w-auto px-10 py-4 text-lg h-16 rounded-full bg-white text-slate-600 shadow-lg hover:shadow-xl hover:text-orange-600 transition-all duration-300 border border-slate-100 hover:border-orange-100"
-              icon={<ArrowRight className="w-5 h-5" />}
+              variant="outline"
+              className="w-full sm:w-auto h-11 px-5 text-sm font-semibold rounded-full border-slate-200 hover:border-slate-300 hover:bg-white transition-colors"
             >
-              내 요리 등록하기
+              내 요리 등록
+              <ArrowRight className="w-4 h-4 ml-1.5" />
             </Button>
           </Link>
         </div>
