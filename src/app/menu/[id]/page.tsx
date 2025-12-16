@@ -7,10 +7,11 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import Button from '@/components/Button'
+import UserMenu from '@/components/UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   getProject,
@@ -19,10 +20,12 @@ import {
   deleteComment,
   toggleLike,
   checkLiked,
-  addReaction,
+  toggleReaction,
+  getUserReactions,
   createWhisper,
+  getUser,
 } from '@/lib/api-client'
-import { ProjectResponse, CommentResponse } from '@/lib/db-types'
+import { ProjectResponse, CommentResponse, UserResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
@@ -43,6 +46,8 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [likeCount, setLikeCount] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(null)
+  const [userReactions, setUserReactions] = useState<string[]>([])
 
   useEffect(() => {
     const loadProject = async () => {
@@ -58,11 +63,23 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         setComments(commentsData)
         setLikeCount(projectData.likes)
 
-        // Check if user has liked this project
+        // Fetch author profile
+        try {
+          const author = await getUser(projectData.authorId)
+          setAuthorProfile(author)
+        } catch {
+          // Author profile fetch failed, use fallback
+        }
+
+        // Check if user has liked this project and get user reactions
         if (isAuthenticated) {
           try {
-            const likeStatus = await checkLiked(id)
+            const [likeStatus, reactionsData] = await Promise.all([
+              checkLiked(id),
+              getUserReactions(id),
+            ])
             setLiked(likeStatus.liked)
+            setUserReactions(reactionsData.userReactions)
           } catch {
             // User might not be authenticated, ignore error
           }
@@ -90,22 +107,48 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       return
     }
 
-    // Optimistic update
-    setReactions(prev => ({
-      ...prev,
-      [reactionKey]: (prev[reactionKey] || 0) + 1
-    }))
+    const hasReacted = userReactions.includes(reactionKey)
 
-    try {
-      const result = await addReaction(id, reactionKey)
-      setReactions(result.reactions)
-    } catch (error) {
-      console.error('Failed to add reaction:', error)
-      // Revert on error
+    // Optimistic update
+    if (hasReacted) {
+      setUserReactions(prev => prev.filter(r => r !== reactionKey))
       setReactions(prev => ({
         ...prev,
         [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
       }))
+    } else {
+      setUserReactions(prev => [...prev, reactionKey])
+      setReactions(prev => ({
+        ...prev,
+        [reactionKey]: (prev[reactionKey] || 0) + 1
+      }))
+    }
+
+    try {
+      const result = await toggleReaction(id, reactionKey)
+      setReactions(result.reactions)
+      // Update userReactions based on server response
+      if (result.reacted) {
+        setUserReactions(prev => prev.includes(reactionKey) ? prev : [...prev, reactionKey])
+      } else {
+        setUserReactions(prev => prev.filter(r => r !== reactionKey))
+      }
+    } catch (error) {
+      console.error('Failed to toggle reaction:', error)
+      // Revert on error
+      if (hasReacted) {
+        setUserReactions(prev => [...prev, reactionKey])
+        setReactions(prev => ({
+          ...prev,
+          [reactionKey]: (prev[reactionKey] || 0) + 1
+        }))
+      } else {
+        setUserReactions(prev => prev.filter(r => r !== reactionKey))
+        setReactions(prev => ({
+          ...prev,
+          [reactionKey]: Math.max((prev[reactionKey] || 1) - 1, 0)
+        }))
+      }
     }
   }
 
@@ -270,7 +313,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               />
               <span className="font-bold text-slate-900">SideDish</span>
             </Link>
-            <div className="w-24" />
+            <UserMenu onLoginClick={() => setShowLoginModal(true)} />
           </div>
         </div>
       </div>
@@ -353,23 +396,34 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <p className="text-sm text-slate-400 mb-3">자신의 게시물에는 리액션을 남길 수 없습니다.</p>
               )}
               <div className="flex flex-wrap gap-3">
-                {REACTION_KEYS.map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => handleReaction(key)}
-                    disabled={isOwnProject}
-                    className={`group flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all ${
-                      isOwnProject
-                        ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-50'
-                        : 'bg-slate-50 hover:bg-orange-50 border-slate-200 hover:border-orange-200 active:scale-95'
-                    }`}
-                  >
-                    <span className={`text-2xl transition-transform block ${!isOwnProject && 'group-hover:scale-110'}`}>{REACTION_EMOJI_MAP[key]}</span>
-                    <span className={`text-sm font-bold min-w-[1.2rem] ${isOwnProject ? 'text-slate-400' : 'text-slate-600 group-hover:text-orange-600'}`}>
-                      {reactions[key] || 0}
-                    </span>
-                  </button>
-                ))}
+                {REACTION_KEYS.map((key) => {
+                  const hasReacted = userReactions.includes(key)
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleReaction(key)}
+                      disabled={isOwnProject}
+                      className={`group flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all ${
+                        isOwnProject
+                          ? 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-50'
+                          : hasReacted
+                            ? 'bg-orange-100 border-orange-400 ring-2 ring-orange-400 ring-offset-1'
+                            : 'bg-slate-50 hover:bg-orange-50 border-slate-200 hover:border-orange-200 active:scale-95'
+                      }`}
+                    >
+                      <span className={`text-2xl transition-transform block ${!isOwnProject && 'group-hover:scale-110'}`}>{REACTION_EMOJI_MAP[key]}</span>
+                      <span className={`text-sm font-bold min-w-[1.2rem] ${
+                        isOwnProject
+                          ? 'text-slate-400'
+                          : hasReacted
+                            ? 'text-orange-600'
+                            : 'text-slate-600 group-hover:text-orange-600'
+                      }`}>
+                        {reactions[key] || 0}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -438,6 +492,26 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           {/* Right Column: Sticky Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-28 space-y-6">
+              {/* Edit Button for Owner */}
+              {isOwnProject && (
+                <Link href={`/menu/edit/${project.id}`} className="block">
+                  <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all hover:-translate-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-xl">
+                          <Pencil className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold">메뉴 수정하기</p>
+                          <p className="text-xs text-white/80">내용을 수정하거나 업데이트하세요</p>
+                        </div>
+                      </div>
+                      <ArrowLeft className="w-5 h-5 rotate-180" />
+                    </div>
+                  </div>
+                </Link>
+              )}
+
               {/* Action Card */}
               <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
                 <h3 className="text-lg font-bold text-slate-900 mb-2">메뉴 시식하기</h3>
@@ -530,9 +604,19 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
               {/* Author Card */}
               <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
-                  {project.authorName.charAt(0).toUpperCase()}
-                </div>
+                {authorProfile?.avatarUrl ? (
+                  <Image
+                    src={authorProfile.avatarUrl}
+                    alt={project.authorName}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
+                    {project.authorName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="font-bold text-slate-900 text-sm">{project.authorName}</div>
                   <div className="text-xs text-slate-500 mt-0.5">Head Chef</div>

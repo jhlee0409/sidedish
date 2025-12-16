@@ -1,16 +1,30 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2 } from 'lucide-react'
+import {
+  ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
+  Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2,
+  ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle
+} from 'lucide-react'
 import Button from '@/components/Button'
-import { ProjectPlatform } from '@/lib/types'
-import { generateProjectContent } from '@/services/geminiService'
+import AiCandidateSelector from '@/components/AiCandidateSelector'
+import { ProjectPlatform, DraftData } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { createProject, uploadImage } from '@/lib/api-client'
+import { createProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
+import {
+  getOrCreateDraft,
+  saveDraft,
+  deleteDraft,
+  addAiCandidate,
+  selectCandidate,
+  clearCurrentDraftId,
+  formatLastSaved,
+  hasUnsavedChanges,
+} from '@/lib/draftService'
 
 const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
   { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
@@ -55,30 +69,29 @@ const getLinkConfig = (platform: ProjectPlatform) => {
   }
 }
 
-interface FormData {
-  title: string
-  shortDescription: string
-  description: string
-  tags: string[]
-  imageUrl: string
-  link: string
-  githubUrl: string
-  platform: ProjectPlatform
-}
+const MIN_DESCRIPTION_LENGTH = 30
+const DEFAULT_MAX_PER_DRAFT = 3
+const DEFAULT_MAX_PER_DAY = 10
 
 export default function MenuRegisterPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
-  const [formData, setFormData] = useState<FormData>({
+  // Draft state
+  const [draft, setDraft] = useState<DraftData | null>(null)
+  const [lastSaved, setLastSaved] = useState<string>('')
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Form state (synced with draft)
+  const [formData, setFormData] = useState({
     title: '',
     shortDescription: '',
     description: '',
-    tags: [],
+    tags: [] as string[],
     imageUrl: '',
     link: '',
     githubUrl: '',
-    platform: 'WEB'
+    platform: 'WEB' as ProjectPlatform
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -87,7 +100,71 @@ export default function MenuRegisterPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
+  // AI limit state (fetched from server)
+  const [aiLimitInfo, setAiLimitInfo] = useState({
+    remainingForDraft: DEFAULT_MAX_PER_DRAFT,
+    remainingForDay: DEFAULT_MAX_PER_DAY,
+    maxPerDraft: DEFAULT_MAX_PER_DRAFT,
+    maxPerDay: DEFAULT_MAX_PER_DAY,
+    cooldownRemaining: 0,
+  })
+  const [aiError, setAiError] = useState<string | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Initialize draft on mount
+  useEffect(() => {
+    if (!authLoading && user?.id) {
+      const existingDraft = getOrCreateDraft(user.id)
+      setDraft(existingDraft)
+
+      // Load form data from draft
+      setFormData({
+        title: existingDraft.title,
+        shortDescription: existingDraft.shortDescription,
+        description: existingDraft.description,
+        tags: existingDraft.tags,
+        imageUrl: existingDraft.imageUrl,
+        link: existingDraft.link,
+        githubUrl: existingDraft.githubUrl,
+        platform: existingDraft.platform,
+      })
+
+      // If there's a selected candidate, apply its content
+      if (existingDraft.selectedCandidateId) {
+        const selectedCandidate = existingDraft.aiCandidates.find(
+          c => c.id === existingDraft.selectedCandidateId
+        )
+        if (selectedCandidate) {
+          setFormData(prev => ({
+            ...prev,
+            shortDescription: selectedCandidate.content.shortDescription,
+            description: selectedCandidate.content.description,
+            tags: selectedCandidate.content.tags,
+          }))
+        }
+      }
+
+      setLastSaved(formatLastSaved(existingDraft.lastSavedAt))
+
+      // Fetch AI usage info from server
+      getAiUsageInfo(existingDraft.id)
+        .then(usage => {
+          setAiLimitInfo(prev => ({
+            ...prev,
+            remainingForDraft: usage.remainingForDraft,
+            remainingForDay: usage.remainingForDay,
+            maxPerDraft: usage.maxPerDraft,
+            maxPerDay: usage.maxPerDay,
+          }))
+        })
+        .catch(err => {
+          console.error('Failed to fetch AI usage info:', err)
+          // Keep default values on error
+        })
+    }
+  }, [authLoading, user?.id])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -95,6 +172,78 @@ export default function MenuRegisterPage() {
       setShowLoginModal(true)
     }
   }, [authLoading, isAuthenticated])
+
+  // Auto-save draft
+  const autoSaveDraft = useCallback(() => {
+    if (!draft || !user?.id) return
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    setIsSaving(true)
+    autoSaveTimerRef.current = setTimeout(() => {
+      const updatedDraft: DraftData = {
+        ...draft,
+        title: formData.title,
+        shortDescription: formData.shortDescription,
+        description: formData.description,
+        tags: formData.tags,
+        imageUrl: formData.imageUrl,
+        link: formData.link,
+        githubUrl: formData.githubUrl,
+        platform: formData.platform,
+      }
+
+      saveDraft(updatedDraft)
+      setDraft(updatedDraft)
+      setLastSaved(formatLastSaved(Date.now()))
+      setIsSaving(false)
+    }, 1000)
+  }, [draft, formData, user?.id])
+
+  // Trigger auto-save on form data change
+  useEffect(() => {
+    if (draft) {
+      autoSaveDraft()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData])
+
+  // Cooldown timer
+  useEffect(() => {
+    if (aiLimitInfo.cooldownRemaining > 0) {
+      const timer = setInterval(() => {
+        setAiLimitInfo(prev => ({
+          ...prev,
+          cooldownRemaining: Math.max(0, prev.cooldownRemaining - 1),
+        }))
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [aiLimitInfo.cooldownRemaining])
+
+  // Before unload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (draft && hasUnsavedChanges(draft)) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [draft])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -123,6 +272,10 @@ export default function MenuRegisterPage() {
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
+      if (formData.tags.length >= 5) {
+        alert('태그는 최대 5개까지 추가할 수 있습니다.')
+        return
+      }
       if (!formData.tags.includes(tagInput.trim())) {
         setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
       }
@@ -135,26 +288,115 @@ export default function MenuRegisterPage() {
   }
 
   const handleAiGenerate = async () => {
-    if (!formData.description) {
-      alert("상세 설명 칸에 프로젝트에 대한 간단한 내용을 적어주세요!")
+    if (!draft || !user?.id) return
+
+    setAiError(null)
+
+    // Validate minimum description length (client-side pre-check)
+    if (formData.description.length < MIN_DESCRIPTION_LENGTH) {
+      setAiError(`최소 ${MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
+      return
+    }
+
+    // Pre-check limits (client-side, for UX - server will validate again)
+    if (aiLimitInfo.remainingForDraft <= 0) {
+      setAiError(`이 프로젝트는 이미 ${aiLimitInfo.maxPerDraft}번 AI 생성을 사용했습니다.`)
+      return
+    }
+
+    if (aiLimitInfo.remainingForDay <= 0) {
+      setAiError(`오늘의 AI 생성 한도(${aiLimitInfo.maxPerDay}회)를 모두 사용했습니다.`)
       return
     }
 
     setIsAiLoading(true)
     try {
-      const result = await generateProjectContent(formData.description)
+      // Call server API (validates limits server-side)
+      const result = await generateAiContent(draft.id, formData.description)
 
+      // Add as candidate to local draft storage
+      const candidate = addAiCandidate(draft.id, {
+        shortDescription: result.shortDescription,
+        description: result.description,
+        tags: result.tags,
+        generatedAt: result.generatedAt,
+      })
+
+      // Update draft state with new candidate
+      const updatedDraft = {
+        ...draft,
+        aiCandidates: [...draft.aiCandidates, candidate],
+        selectedCandidateId: candidate.id,
+        generationCount: draft.generationCount + 1,
+      }
+      setDraft(updatedDraft)
+
+      // Apply generated content to form
       setFormData(prev => ({
         ...prev,
         shortDescription: result.shortDescription,
         description: result.description,
         tags: result.tags
       }))
+
+      // Update limit info from server response
+      setAiLimitInfo(prev => ({
+        ...prev,
+        remainingForDraft: result.usage.remainingForDraft,
+        remainingForDay: result.usage.remainingForDay,
+        maxPerDraft: result.usage.maxPerDraft,
+        maxPerDay: result.usage.maxPerDay,
+        cooldownRemaining: 5, // Set cooldown for UI
+      }))
     } catch (error) {
       console.error(error)
-      alert('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      if (error instanceof ApiError) {
+        setAiError(error.message)
+        // Update limit info if available in error response
+        if (error.status === 429) {
+          // Rate limit error - refresh usage info
+          getAiUsageInfo(draft.id)
+            .then(usage => {
+              setAiLimitInfo(prev => ({
+                ...prev,
+                remainingForDraft: usage.remainingForDraft,
+                remainingForDay: usage.remainingForDay,
+              }))
+            })
+            .catch(() => {})
+        }
+      } else {
+        setAiError('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      }
     } finally {
       setIsAiLoading(false)
+    }
+  }
+
+  const handleCandidateSelect = (candidateId: string) => {
+    if (!draft || !user?.id) return
+
+    selectCandidate(draft.id, candidateId)
+
+    const selectedCandidate = draft.aiCandidates.find(c => c.id === candidateId)
+    if (selectedCandidate) {
+      setFormData(prev => ({
+        ...prev,
+        shortDescription: selectedCandidate.content.shortDescription,
+        description: selectedCandidate.content.description,
+        tags: selectedCandidate.content.tags,
+      }))
+
+      // Update draft state
+      const updatedDraft: DraftData = {
+        ...draft,
+        selectedCandidateId: candidateId,
+        aiCandidates: draft.aiCandidates.map(c => ({
+          ...c,
+          isSelected: c.id === candidateId,
+        })),
+      }
+      setDraft(updatedDraft)
     }
   }
 
@@ -200,6 +442,12 @@ export default function MenuRegisterPage() {
         platform: formData.platform,
       })
 
+      // Clear the draft after successful submission
+      if (draft) {
+        deleteDraft(draft.id)
+        clearCurrentDraftId()
+      }
+
       // Navigate to the new project's detail page
       router.push(`/menu/${project.id}`)
     } catch (error) {
@@ -218,18 +466,31 @@ export default function MenuRegisterPage() {
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="flex items-center justify-between h-16">
-            <Link
-              href="/"
+            <button
+              onClick={() => router.back()}
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-medium">돌아가기</span>
-            </Link>
+            </button>
             <div className="flex items-center gap-2">
               <Utensils className="w-5 h-5 text-orange-500" />
               <span className="font-bold text-slate-900">새로운 메뉴 등록</span>
             </div>
-            <div className="w-24" /> {/* Spacer for centering */}
+            {/* Auto-save indicator */}
+            <div className="w-24 flex items-center justify-end gap-1.5 text-xs text-slate-500">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>저장 중...</span>
+                </>
+              ) : lastSaved ? (
+                <>
+                  <Save className="w-3 h-3" />
+                  <span>{lastSaved}</span>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -350,20 +611,64 @@ export default function MenuRegisterPage() {
               </div>
             </div>
 
+            {/* AI Candidate Selector - Always show 3 buttons below thumbnail */}
+            {draft && (
+              <AiCandidateSelector
+                candidates={draft.aiCandidates}
+                selectedCandidateId={draft.selectedCandidateId}
+                onSelect={handleCandidateSelect}
+                maxGenerations={aiLimitInfo.maxPerDraft}
+              />
+            )}
+
             {/* AI Generation Section integrated with Description */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex justify-between items-end mb-1">
-                <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
-                <button
-                  type="button"
-                  onClick={handleAiGenerate}
-                  disabled={!formData.description || isAiLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  AI 셰프가 대신 작성하기
-                </button>
+                <div>
+                  <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    최소 {MIN_DESCRIPTION_LENGTH}자 이상 작성 후 AI 생성이 가능합니다
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* AI usage info */}
+                  <div className="text-xs text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>오늘 {aiLimitInfo.remainingForDay}회 남음</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAiGenerate}
+                    disabled={
+                      formData.description.length < MIN_DESCRIPTION_LENGTH ||
+                      isAiLoading ||
+                      aiLimitInfo.remainingForDraft === 0 ||
+                      aiLimitInfo.cooldownRemaining > 0
+                    }
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
+                  >
+                    {aiLimitInfo.cooldownRemaining > 0 ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        {aiLimitInfo.cooldownRemaining}초
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-3.5 h-3.5" />
+                        AI 셰프가 대신 작성하기 ({aiLimitInfo.remainingForDraft}/{aiLimitInfo.maxPerDraft})
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* AI Error Message */}
+              {aiError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{aiError}</span>
+                </div>
+              )}
 
               <div className="relative group">
                 <textarea
@@ -374,6 +679,14 @@ export default function MenuRegisterPage() {
                   className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
                   placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요. (예: 리액트로 버무린 모바일 친화적인 투두리스트. 귀여운 고양이 테마가 별미입니다.)"
                 />
+
+                {/* Character count */}
+                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= MIN_DESCRIPTION_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
+                  {formData.description.length}자
+                  {formData.description.length < MIN_DESCRIPTION_LENGTH && (
+                    <span className="text-slate-400"> / 최소 {MIN_DESCRIPTION_LENGTH}자</span>
+                  )}
+                </div>
 
                 <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
                   간단한 재료만 적고 AI 버튼을 눌러보세요!
@@ -426,6 +739,7 @@ export default function MenuRegisterPage() {
                   onKeyDown={handleAddTag}
                   className="flex-1 outline-none min-w-[120px] bg-transparent text-sm py-1 placeholder:text-slate-400"
                   placeholder={formData.tags.length === 0 ? "AI 버튼으로 자동 생성하거나 직접 입력" : "재료 추가..."}
+                  disabled={formData.tags.length >= 5}
                 />
               </div>
             </div>
@@ -462,9 +776,7 @@ export default function MenuRegisterPage() {
             </div>
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-              <Link href="/">
-                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting}>취소</Button>
-              </Link>
+              <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
               <Button
                 type="submit"
                 variant="primary"

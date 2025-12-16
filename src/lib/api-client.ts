@@ -141,12 +141,23 @@ export async function getUserLikes(userId: string): Promise<{ likedProjectIds: s
 
 // ============ Reactions API ============
 
-export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Record<string, number> }> {
+export async function toggleReaction(projectId: string, emoji: string): Promise<{ reacted: boolean; reactions: Record<string, number> }> {
   const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`, {
     method: 'POST',
     body: JSON.stringify({ emoji }),
   })
-  return handleResponse<{ reactions: Record<string, number> }>(response)
+  return handleResponse<{ reacted: boolean; reactions: Record<string, number> }>(response)
+}
+
+export async function getUserReactions(projectId: string): Promise<{ reactions: Record<string, number>; userReactions: string[] }> {
+  const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`)
+  return handleResponse<{ reactions: Record<string, number>; userReactions: string[] }>(response)
+}
+
+// Keep addReaction for backward compatibility
+export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Record<string, number> }> {
+  const result = await toggleReaction(projectId, emoji)
+  return { reactions: result.reactions }
 }
 
 // ============ Comments API ============
@@ -250,4 +261,54 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
     body: formData,
   })
   return handleResponse<{ url: string }>(response)
+}
+
+// ============ AI Generation API ============
+
+export interface AiGenerationResult {
+  shortDescription: string
+  description: string
+  tags: string[]
+  generatedAt: number
+  usage: {
+    remainingForDraft: number
+    remainingForDay: number
+    maxPerDraft: number
+    maxPerDay: number
+  }
+}
+
+export interface AiUsageInfo {
+  remainingForDraft: number
+  remainingForDay: number
+  maxPerDraft: number
+  maxPerDay: number
+  cooldownMs: number
+}
+
+export interface AiGenerationError {
+  error: string
+  code?: string
+  remainingForDraft?: number
+  remainingForDay?: number
+  cooldownRemaining?: number
+}
+
+export async function generateAiContent(draftId: string, description: string): Promise<AiGenerationResult> {
+  const response = await fetchWithAuth('/api/ai/generate', {
+    method: 'POST',
+    body: JSON.stringify({ draftId, description }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new ApiError(response.status, error.error || 'AI 생성에 실패했습니다.', error.code)
+  }
+
+  return response.json()
+}
+
+export async function getAiUsageInfo(draftId: string): Promise<AiUsageInfo> {
+  const response = await fetchWithAuth(`/api/ai/generate?draftId=${encodeURIComponent(draftId)}`)
+  return handleResponse<AiUsageInfo>(response)
 }

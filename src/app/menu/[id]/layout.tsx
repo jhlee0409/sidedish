@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sidedish.kr'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sidedish.me'
 
   // Build OG image URL with project data
   const ogImageParams = new URLSearchParams({
