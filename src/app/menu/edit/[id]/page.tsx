@@ -6,11 +6,40 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle } from 'lucide-react'
 import Button from '@/components/Button'
-import { ProjectPlatform } from '@/lib/types'
+import AiCandidateSelector from '@/components/AiCandidateSelector'
+import { ProjectPlatform, AiGenerationCandidate, AiGeneratedContent } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
+
+// Helper functions for managing AI candidates in localStorage (per project)
+const AI_CANDIDATES_KEY = 'sidedish_edit_ai_candidates'
+
+interface ProjectAiCandidates {
+  projectId: string
+  candidates: AiGenerationCandidate[]
+  selectedCandidateId: string | null
+}
+
+const getProjectAiCandidates = (projectId: string): ProjectAiCandidates | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const data = localStorage.getItem(`${AI_CANDIDATES_KEY}_${projectId}`)
+    return data ? JSON.parse(data) : null
+  } catch {
+    return null
+  }
+}
+
+const saveProjectAiCandidates = (data: ProjectAiCandidates): void => {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(`${AI_CANDIDATES_KEY}_${data.projectId}`, JSON.stringify(data))
+}
+
+const generateCandidateId = (): string => {
+  return `candidate_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+}
 
 const MIN_DESCRIPTION_LENGTH = 30
 const DEFAULT_MAX_PER_DRAFT = 3
@@ -104,6 +133,10 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   })
   const [aiError, setAiError] = useState<string | null>(null)
 
+  // AI candidates state
+  const [aiCandidates, setAiCandidates] = useState<AiGenerationCandidate[]>([])
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load project data
@@ -123,6 +156,13 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             githubUrl: found.githubUrl || '',
             platform: found.platform
           })
+
+          // Load saved AI candidates for this project
+          const savedCandidates = getProjectAiCandidates(found.id)
+          if (savedCandidates) {
+            setAiCandidates(savedCandidates.candidates)
+            setSelectedCandidateId(savedCandidates.selectedCandidateId)
+          }
         }
       } catch (error) {
         console.error('Failed to load project:', error)
@@ -246,6 +286,32 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       // Use project ID as draft ID for edit page
       const result = await generateAiContent(project.id, formData.description)
 
+      // Create new candidate
+      const newCandidate: AiGenerationCandidate = {
+        id: generateCandidateId(),
+        content: {
+          shortDescription: result.shortDescription,
+          description: result.description,
+          tags: result.tags,
+          generatedAt: result.generatedAt,
+        },
+        isSelected: true,
+      }
+
+      // Update candidates: deselect all previous, add new one
+      const updatedCandidates = aiCandidates.map(c => ({ ...c, isSelected: false }))
+      updatedCandidates.push(newCandidate)
+
+      setAiCandidates(updatedCandidates)
+      setSelectedCandidateId(newCandidate.id)
+
+      // Save to localStorage
+      saveProjectAiCandidates({
+        projectId: project.id,
+        candidates: updatedCandidates,
+        selectedCandidateId: newCandidate.id,
+      })
+
       setFormData(prev => ({
         ...prev,
         shortDescription: result.shortDescription,
@@ -283,6 +349,37 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     } finally {
       setIsAiLoading(false)
     }
+  }
+
+  const handleCandidateSelect = (candidateId: string) => {
+    if (!project) return
+
+    const candidate = aiCandidates.find(c => c.id === candidateId)
+    if (!candidate) return
+
+    // Update candidates selection state
+    const updatedCandidates = aiCandidates.map(c => ({
+      ...c,
+      isSelected: c.id === candidateId,
+    }))
+
+    setAiCandidates(updatedCandidates)
+    setSelectedCandidateId(candidateId)
+
+    // Save to localStorage
+    saveProjectAiCandidates({
+      projectId: project.id,
+      candidates: updatedCandidates,
+      selectedCandidateId: candidateId,
+    })
+
+    // Apply selected candidate's content to form
+    setFormData(prev => ({
+      ...prev,
+      shortDescription: candidate.content.shortDescription,
+      description: candidate.content.description,
+      tags: candidate.content.tags,
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -608,6 +705,17 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   </div>
                 )}
               </div>
+
+              {/* AI Candidate Selector */}
+              {aiCandidates.length > 0 && (
+                <AiCandidateSelector
+                  candidates={aiCandidates}
+                  selectedCandidateId={selectedCandidateId}
+                  onSelect={handleCandidateSelect}
+                  remainingGenerations={aiLimitInfo.remainingForDraft}
+                  maxGenerations={aiLimitInfo.maxPerDraft}
+                />
+              )}
             </div>
 
             <div className="space-y-2">
