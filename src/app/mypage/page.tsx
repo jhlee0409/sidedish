@@ -135,7 +135,7 @@ function MyPageContent() {
       setDeleteConfirmId(null)
     } catch (error) {
       console.error('Failed to delete project:', error)
-      alert('프로젝트 삭제에 실패했습니다.')
+      alert('메뉴 삭제에 실패했습니다.')
     }
   }
 
