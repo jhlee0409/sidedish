@@ -75,8 +75,8 @@ const LandingPage: React.FC = () => {
                 </h1>
 
                 <p className="text-lg text-slate-600 leading-relaxed mb-8 max-w-md">
-                  &ldquo;언젠간 보여줘야지&rdquo; 미뤄둔 프로젝트, 여기가 바로 그 무대예요.
-                  AI 에디터가 맛있는 소개글까지 곁들여 드릴게요.
+                  &ldquo;언젠간 보여줘야지&rdquo; 하던 그 프로젝트, 이제 꺼내볼 때예요.
+                  소개글? AI가 대신 써드릴게요.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-10">
@@ -201,8 +201,8 @@ const LandingPage: React.FC = () => {
                   글은 영...&rdquo;
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  걱정 마세요. 대충 적은 메모도 AI 에디터가 군침 도는 레시피로 바꿔드려요.
-                  개발하느라 바쁜데, 마케팅까지 하실 필요 없잖아요.
+                  대충 적은 메모 던져주세요. AI가 읽고 싶은 글로 바꿔놓을게요.
+                  개발하느라 바쁜데, 글까지 잘 쓸 필요 있나요.
                 </p>
               </div>
               <div className="bg-slate-900 rounded-2xl p-6 text-white">
@@ -213,9 +213,9 @@ const LandingPage: React.FC = () => {
                 <div className="space-y-3 font-mono text-sm">
                   <p className="text-slate-500">// 재료: &quot;할일 관리, React로 만듦, 드래그됨&quot;</p>
                   <p className="text-orange-400">↓ 조리 중...</p>
-                  <p className="text-emerald-400">&quot;오늘 할 일, 드래그 한 번이면 끝.
-                  우선순위는 손가락이 정하고,
-                  완료 체크의 짜릿함은 당신의 것.&quot;</p>
+                  <p className="text-emerald-400">&quot;할 일 쌓여서 머리 아프죠?
+                  드래그로 순서 바꾸고, 끝나면 체크.
+                  그게 다예요. 진짜로.&quot;</p>
                 </div>
               </div>
             </div>
@@ -265,16 +265,16 @@ const LandingPage: React.FC = () => {
                   누군가의 최애 메뉴가 돼요
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
-                  &ldquo;이런 게 있었어?&rdquo; 당신의 프로젝트를 발견하고
-                  단골이 될 사람들이 기다리고 있어요.
+                  &ldquo;이런 게 있었어?&rdquo; 하고 눈이 번쩍 뜨이는 사람,
+                  분명 어딘가에 있어요.
                 </p>
               </div>
               <div className="relative">
                 <div className="flex flex-col gap-3">
                   {[
-                    { name: '배고픈 개발자', comment: '딱 이런 거 찾고 있었어요!', likes: 24 },
-                    { name: '미식가 디자이너', comment: 'UI 맛집이네요 👏', likes: 18 },
-                    { name: '호기심 많은 PM', comment: '레시피 공유해주세요!', likes: 12 },
+                    { name: 'jiwon_dev', comment: '와 이거 딱 필요했는데', likes: 24 },
+                    { name: '성민', comment: 'UI 진짜 깔끔하다 👏', likes: 18 },
+                    { name: 'hyejin.k', comment: '어떻게 만드신 거예요?', likes: 12 },
                   ].map((item, idx) => (
                     <div
                       key={idx}
@@ -315,8 +315,8 @@ const LandingPage: React.FC = () => {
             첫 요리, 오늘 내볼까요?
           </h2>
           <p className="text-lg text-orange-100 mb-10 max-w-xl mx-auto">
-            서랍 속에서 식어가는 프로젝트가 있다면,
-            지금이 따끈따끈하게 서빙할 타이밍이에요.
+            서랍 속에서 식어가는 프로젝트, 있잖아요.
+            따끈할 때 꺼내세요.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/menu/register">

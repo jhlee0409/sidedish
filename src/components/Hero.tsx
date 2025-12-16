@@ -24,7 +24,7 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
         </h1>
 
         <p className="max-w-md mx-auto text-base text-slate-500 mb-8 leading-relaxed">
-          갓 나온 따끈한 프로젝트를 맛보고, 마음에 드는 요리에 응원을 보내주세요.
+          갓 나온 프로젝트들, 구경하고 마음에 들면 하트 눌러주세요.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
