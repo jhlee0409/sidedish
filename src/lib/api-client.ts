@@ -7,6 +7,7 @@ import {
   UserResponse,
   PaginatedResponse,
   ProjectPlatform,
+  Reactions,
 } from './db-types'
 
 type GetIdToken = () => Promise<string | null>
@@ -216,21 +217,21 @@ export async function getUserLikes(userId: string): Promise<{ likedProjectIds: s
 
 // ============ Reactions API ============
 
-export async function toggleReaction(projectId: string, emoji: string): Promise<{ reacted: boolean; reactions: Record<string, number> }> {
+export async function toggleReaction(projectId: string, emoji: string): Promise<{ reacted: boolean; reactions: Reactions }> {
   const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`, {
     method: 'POST',
     body: JSON.stringify({ emoji }),
   })
-  return handleResponse<{ reacted: boolean; reactions: Record<string, number> }>(response)
+  return handleResponse<{ reacted: boolean; reactions: Reactions }>(response)
 }
 
-export async function getUserReactions(projectId: string): Promise<{ reactions: Record<string, number>; userReactions: string[] }> {
+export async function getUserReactions(projectId: string): Promise<{ reactions: Reactions; userReactions: string[] }> {
   const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`)
-  return handleResponse<{ reactions: Record<string, number>; userReactions: string[] }>(response)
+  return handleResponse<{ reactions: Reactions; userReactions: string[] }>(response)
 }
 
 // Keep addReaction for backward compatibility
-export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Record<string, number> }> {
+export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Reactions }> {
   const result = await toggleReaction(projectId, emoji)
   return { reactions: result.reactions }
 }
@@ -240,7 +241,7 @@ export async function addReaction(projectId: string, emoji: string): Promise<{ r
 export interface UserInteractions {
   liked: boolean
   userReactions: string[]
-  reactions: Record<string, number>
+  reactions: Reactions
 }
 
 export async function getUserInteractions(projectId: string): Promise<UserInteractions> {

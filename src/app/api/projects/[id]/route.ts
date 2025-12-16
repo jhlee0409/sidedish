@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateProjectInput, ProjectResponse } from '@/lib/db-types'
-import { Timestamp } from 'firebase-admin/firestore'
+import { UpdateProjectInput, ProjectResponse, ProjectPlatform } from '@/lib/db-types'
+import { Timestamp, UpdateData } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { del } from '@vercel/blob'
+
+// Typed update data for project patches
+interface ProjectUpdateFields {
+  updatedAt: Timestamp
+  title?: string
+  description?: string
+  shortDescription?: string
+  tags?: string[]
+  imageUrl?: string
+  link?: string
+  githubUrl?: string
+  platform?: ProjectPlatform
+}
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -89,7 +102,7 @@ export async function PATCH(
     }
 
     // Build update object with only provided fields
-    const updateData: Record<string, unknown> = {
+    const updateData: ProjectUpdateFields = {
       updatedAt: Timestamp.now(),
     }
 
@@ -114,7 +127,7 @@ export async function PATCH(
       }
     }
 
-    await docRef.update(updateData)
+    await docRef.update(updateData as UpdateData<ProjectUpdateFields>)
 
     // Fetch updated document
     const updatedDoc = await docRef.get()

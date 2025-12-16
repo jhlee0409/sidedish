@@ -24,8 +24,8 @@ import {
   createWhisper,
   getUser,
 } from '@/lib/api-client'
-import { ProjectResponse, CommentResponse, UserResponse } from '@/lib/db-types'
-import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions } from '@/lib/constants'
+import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey } from '@/lib/db-types'
+import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions, isReactionKey } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
 
@@ -36,7 +36,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
   const [project, setProject] = useState<ProjectResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [reactions, setReactions] = useState<{ [key: string]: number }>({})
+  const [reactions, setReactions] = useState<Reactions>({})
   const [comments, setComments] = useState<CommentResponse[]>([])
   const [newComment, setNewComment] = useState('')
   const [whisperMessage, setWhisperMessage] = useState('')
@@ -46,7 +46,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(null)
-  const [userReactions, setUserReactions] = useState<string[]>([])
+  const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
 
   useEffect(() => {
     const loadProject = async () => {
@@ -65,7 +65,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
         setLikeCount(projectData.likes)
 
         // Load author profile and user interactions in parallel (non-blocking)
-        const parallelPromises: Promise<unknown>[] = [
+        const parallelPromises: Promise<void>[] = [
           // Author profile (cached, won't block if already fetched)
           getUser(projectData.authorId)
             .then(author => setAuthorProfile(author))
@@ -78,7 +78,9 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
             getUserInteractions(id)
               .then(interactions => {
                 setLiked(interactions.liked)
-                setUserReactions(interactions.userReactions)
+                // Filter to only valid ReactionKeys
+                const validReactions = interactions.userReactions.filter(isReactionKey)
+                setUserReactions(validReactions)
               })
               .catch(() => {/* User might not be authenticated, ignore error */})
           )
@@ -99,7 +101,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   // Check if this is the user's own project
   const isOwnProject = user?.id === project?.authorId
 
-  const handleReaction = async (reactionKey: string) => {
+  const handleReaction = async (reactionKey: ReactionKey) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
@@ -128,8 +130,9 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
     try {
       const result = await toggleReaction(id, reactionKey)
-      setReactions(result.reactions)
-      // Update userReactions based on server response
+      // Normalize reactions from server response
+      setReactions(normalizeReactions(result.reactions))
+      // Update userReactions based on server response, filtering to valid keys
       if (result.reacted) {
         setUserReactions(prev => prev.includes(reactionKey) ? prev : [...prev, reactionKey])
       } else {

@@ -6,6 +6,13 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 
 const MODEL = 'gemini-2.5-flash-lite'
 
+// Type for AI-generated project content
+interface GeneratedProjectContent {
+  shortDescription: string
+  description: string
+  tags: string[]
+}
+
 export const refineDescription = async (rawDescription: string): Promise<string> => {
   if (!rawDescription.trim()) return ''
 
@@ -127,7 +134,7 @@ ${draft}
       throw new Error("AI returned empty response")
     }
 
-    const result = JSON.parse(response.text)
+    const result: GeneratedProjectContent = JSON.parse(response.text)
     return result
 
   } catch (error) {

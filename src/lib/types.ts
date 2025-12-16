@@ -8,6 +8,12 @@ export interface Comment {
 
 export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
 
+// Reaction types - strongly typed reaction keys
+export type ReactionKey = 'fire' | 'clap' | 'party' | 'idea' | 'love'
+
+// Reactions can be partial since not all reactions may have counts
+export type Reactions = Partial<Record<ReactionKey, number>>
+
 export interface Project {
   id: string
   title: string
@@ -17,7 +23,7 @@ export interface Project {
   imageUrl: string
   author: string
   likes: number
-  reactions: { [key: string]: number }
+  reactions: Reactions
   comments: Comment[]
   link: string
   githubUrl?: string

@@ -7,6 +7,13 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 const MODEL = 'gemini-2.5-flash-lite'
 
+// Type for AI-generated project content
+interface GeneratedProjectContent {
+  shortDescription: string
+  description: string
+  tags: string[]
+}
+
 // Limits configuration
 const LIMITS = {
   MAX_PER_DRAFT: 3,
@@ -199,7 +206,7 @@ ${description}
       throw new Error("AI returned empty response")
     }
 
-    const result = JSON.parse(response.text)
+    const result: GeneratedProjectContent = JSON.parse(response.text)
 
     // 5. Update usage in Firestore (atomic update)
     const newDraftCount = (draftUsage?.count || 0) + 1
