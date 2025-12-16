@@ -497,13 +497,13 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="flex items-center justify-between h-16">
-            <Link
-              href="/mypage"
+            <button
+              onClick={() => router.back()}
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">마이페이지</span>
-            </Link>
+              <span className="font-medium">돌아가기</span>
+            </button>
             <div className="flex items-center gap-2">
               <Utensils className="w-5 h-5 text-orange-500" />
               <span className="font-bold text-slate-900">메뉴 수정</span>
@@ -786,9 +786,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             </div>
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-              <Link href="/mypage">
-                <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting}>취소</Button>
-              </Link>
+              <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
               <Button
                 type="submit"
                 variant="primary"
