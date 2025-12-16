@@ -25,19 +25,19 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   return (
     <article
       onClick={onClick}
-      className="group bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-slate-200 transition-colors cursor-pointer"
+      className="group bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300 cursor-pointer"
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+      <div className="relative aspect-[16/10] overflow-hidden bg-orange-50">
         <Image
           src={getProjectThumbnail(project)}
           alt={project.title}
           fill
-          className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
         {/* Platform badge */}
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-slate-600 text-xs font-medium flex items-center gap-1.5">
+        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
           {getPlatformIcon(project.platform || 'WEB')}
           <span>{project.platform || 'WEB'}</span>
         </div>
@@ -48,7 +48,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="absolute top-3 right-3 bg-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-50"
+          className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-50 hover:scale-110"
           title="바로가기"
         >
           <ArrowUpRight className="w-4 h-4 text-slate-600" />
@@ -61,7 +61,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           <h3 className="text-base font-semibold text-slate-900 leading-snug group-hover:text-orange-500 transition-colors line-clamp-1">
             {project.title}
           </h3>
-          <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0">
+          <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0 group-hover:text-orange-400 transition-colors">
             <Heart className="w-3.5 h-3.5" />
             <span>{project.likes}</span>
           </div>
@@ -76,7 +76,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             {project.tags.slice(0, 2).map((tag, idx) => (
               <span
                 key={idx}
-                className="px-2 py-0.5 bg-slate-50 text-slate-500 text-xs rounded-md"
+                className="px-2.5 py-1 bg-orange-50 text-orange-600 text-xs font-medium rounded-full"
               >
                 {tag}
               </span>

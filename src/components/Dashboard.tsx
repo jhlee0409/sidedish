@@ -106,30 +106,30 @@ const Dashboard: React.FC = () => {
 
       <div ref={galleryRef} className="container mx-auto px-6 pb-20 max-w-6xl">
         {/* Search & Filter */}
-        <div className="sticky top-20 z-20 py-4 bg-white/95 backdrop-blur-sm border-b border-slate-100 -mx-6 px-6 mb-8">
+        <div className="sticky top-20 z-20 py-4 bg-white/95 backdrop-blur-sm -mx-6 px-6 mb-8">
           <div className="flex flex-col sm:flex-row gap-4 items-center max-w-4xl mx-auto">
             {/* Search */}
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:border-slate-300 focus:bg-white transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm placeholder-slate-400 focus:outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="프로젝트 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            {/* Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+            {/* Filter Chips */}
+            <div className="flex items-center gap-2">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-4 py-2 text-sm font-medium rounded-full border transition-all ${
                     activeTab === tab.id
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
                   }`}
                 >
                   {tab.label}
