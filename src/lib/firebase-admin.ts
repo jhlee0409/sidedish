@@ -71,6 +71,7 @@ export const COLLECTIONS = {
   COMMENTS: 'comments',
   LIKES: 'likes',
   WHISPERS: 'whispers',
+  AI_USAGE: 'aiUsage',
 } as const
 
 export { adminApp, adminDb }

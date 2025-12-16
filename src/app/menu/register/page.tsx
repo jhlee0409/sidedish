@@ -11,17 +11,10 @@ import {
 } from 'lucide-react'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
-import { ProjectPlatform, DraftData, AiGenerationCandidate } from '@/lib/types'
-import { generateProjectContent } from '@/services/geminiService'
+import { ProjectPlatform, DraftData } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { createProject, uploadImage } from '@/lib/api-client'
+import { createProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
-import {
-  checkCanGenerate,
-  recordGeneration,
-  getRemainingGenerations,
-  AI_LIMITS,
-} from '@/lib/aiLimitService'
 import {
   getOrCreateDraft,
   saveDraft,
@@ -31,7 +24,6 @@ import {
   clearCurrentDraftId,
   formatLastSaved,
   hasUnsavedChanges,
-  generateCandidateId,
 } from '@/lib/draftService'
 
 const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
@@ -78,6 +70,8 @@ const getLinkConfig = (platform: ProjectPlatform) => {
 }
 
 const MIN_DESCRIPTION_LENGTH = 30
+const DEFAULT_MAX_PER_DRAFT = 3
+const DEFAULT_MAX_PER_DAY = 10
 
 export default function MenuRegisterPage() {
   const router = useRouter()
@@ -106,10 +100,12 @@ export default function MenuRegisterPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
-  // AI limit state
+  // AI limit state (fetched from server)
   const [aiLimitInfo, setAiLimitInfo] = useState({
-    remainingForDraft: AI_LIMITS.MAX_PER_DRAFT,
-    remainingForDay: AI_LIMITS.MAX_PER_DAY,
+    remainingForDraft: DEFAULT_MAX_PER_DRAFT,
+    remainingForDay: DEFAULT_MAX_PER_DAY,
+    maxPerDraft: DEFAULT_MAX_PER_DRAFT,
+    maxPerDay: DEFAULT_MAX_PER_DAY,
     cooldownRemaining: 0,
   })
   const [aiError, setAiError] = useState<string | null>(null)
@@ -152,13 +148,21 @@ export default function MenuRegisterPage() {
 
       setLastSaved(formatLastSaved(existingDraft.lastSavedAt))
 
-      // Update AI limit info
-      const remaining = getRemainingGenerations(existingDraft.id, user.id)
-      setAiLimitInfo(prev => ({
-        ...prev,
-        remainingForDraft: remaining.draft,
-        remainingForDay: remaining.daily,
-      }))
+      // Fetch AI usage info from server
+      getAiUsageInfo(existingDraft.id)
+        .then(usage => {
+          setAiLimitInfo(prev => ({
+            ...prev,
+            remainingForDraft: usage.remainingForDraft,
+            remainingForDay: usage.remainingForDay,
+            maxPerDraft: usage.maxPerDraft,
+            maxPerDay: usage.maxPerDay,
+          }))
+        })
+        .catch(err => {
+          console.error('Failed to fetch AI usage info:', err)
+          // Keep default values on error
+        })
     }
   }, [authLoading, user?.id])
 
@@ -288,35 +292,34 @@ export default function MenuRegisterPage() {
 
     setAiError(null)
 
-    // Validate minimum description length
+    // Validate minimum description length (client-side pre-check)
     if (formData.description.length < MIN_DESCRIPTION_LENGTH) {
       setAiError(`최소 ${MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
       return
     }
 
-    // Check generation limits
-    const check = checkCanGenerate(draft.id, user.id)
-    if (!check.canGenerate) {
-      setAiError(check.reason || 'AI 생성을 사용할 수 없습니다.')
-      setAiLimitInfo({
-        remainingForDraft: check.remainingForDraft,
-        remainingForDay: check.remainingForDay,
-        cooldownRemaining: check.cooldownRemaining,
-      })
+    // Pre-check limits (client-side, for UX - server will validate again)
+    if (aiLimitInfo.remainingForDraft <= 0) {
+      setAiError(`이 프로젝트는 이미 ${aiLimitInfo.maxPerDraft}번 AI 생성을 사용했습니다.`)
+      return
+    }
+
+    if (aiLimitInfo.remainingForDay <= 0) {
+      setAiError(`오늘의 AI 생성 한도(${aiLimitInfo.maxPerDay}회)를 모두 사용했습니다.`)
       return
     }
 
     setIsAiLoading(true)
     try {
-      const result = await generateProjectContent(formData.description)
+      // Call server API (validates limits server-side)
+      const result = await generateAiContent(draft.id, formData.description)
 
-      // Record the generation
-      recordGeneration(draft.id, user.id)
-
-      // Add as candidate
+      // Add as candidate to local draft storage
       const candidate = addAiCandidate(draft.id, {
-        ...result,
-        generatedAt: Date.now(),
+        shortDescription: result.shortDescription,
+        description: result.description,
+        tags: result.tags,
+        generatedAt: result.generatedAt,
       })
 
       // Update draft state with new candidate
@@ -336,16 +339,35 @@ export default function MenuRegisterPage() {
         tags: result.tags
       }))
 
-      // Update limit info
-      const remaining = getRemainingGenerations(draft.id, user.id)
-      setAiLimitInfo({
-        remainingForDraft: remaining.draft,
-        remainingForDay: remaining.daily,
-        cooldownRemaining: 5, // Set cooldown
-      })
+      // Update limit info from server response
+      setAiLimitInfo(prev => ({
+        ...prev,
+        remainingForDraft: result.usage.remainingForDraft,
+        remainingForDay: result.usage.remainingForDay,
+        maxPerDraft: result.usage.maxPerDraft,
+        maxPerDay: result.usage.maxPerDay,
+        cooldownRemaining: 5, // Set cooldown for UI
+      }))
     } catch (error) {
       console.error(error)
-      setAiError('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      if (error instanceof ApiError) {
+        setAiError(error.message)
+        // Update limit info if available in error response
+        if (error.status === 429) {
+          // Rate limit error - refresh usage info
+          getAiUsageInfo(draft.id)
+            .then(usage => {
+              setAiLimitInfo(prev => ({
+                ...prev,
+                remainingForDraft: usage.remainingForDraft,
+                remainingForDay: usage.remainingForDay,
+              }))
+            })
+            .catch(() => {})
+        }
+      } else {
+        setAiError('AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+      }
     } finally {
       setIsAiLoading(false)
     }
@@ -623,7 +645,7 @@ export default function MenuRegisterPage() {
                     ) : (
                       <>
                         <Wand2 className="w-3.5 h-3.5" />
-                        AI 셰프가 대신 작성하기 ({aiLimitInfo.remainingForDraft}/{AI_LIMITS.MAX_PER_DRAFT})
+                        AI 셰프가 대신 작성하기 ({aiLimitInfo.remainingForDraft}/{aiLimitInfo.maxPerDraft})
                       </>
                     )}
                   </button>
@@ -678,7 +700,7 @@ export default function MenuRegisterPage() {
                   selectedCandidateId={draft.selectedCandidateId}
                   onSelect={handleCandidateSelect}
                   remainingGenerations={aiLimitInfo.remainingForDraft}
-                  maxGenerations={AI_LIMITS.MAX_PER_DRAFT}
+                  maxGenerations={aiLimitInfo.maxPerDraft}
                 />
               )}
             </div>
