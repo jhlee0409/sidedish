@@ -270,6 +270,14 @@ function MyPageContent() {
                 </div>
               </div>
             </div>
+
+            {/* 회원탈퇴 - 우측 하단에 작게 배치 */}
+            <button
+              onClick={() => setShowWithdrawalModal(true)}
+              className="absolute bottom-3 right-4 z-10 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+            >
+              회원탈퇴
+            </button>
           </div>
 
           {/* Stats */}
@@ -306,16 +314,6 @@ function MyPageContent() {
                 </div>
               </button>
             ))}
-          </div>
-
-          {/* 계정 관리 - 아주 작게 배치 */}
-          <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100">
-            <button
-              onClick={() => setShowWithdrawalModal(true)}
-              className="text-[11px] text-slate-400 hover:text-slate-500 transition-colors"
-            >
-              회원탈퇴
-            </button>
           </div>
         </div>
 
