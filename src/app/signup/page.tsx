@@ -10,6 +10,7 @@ import SignupProfileForm from '@/components/SignupProfileForm'
 export default function SignupPage() {
   const router = useRouter()
   const {
+    user,
     signInWithGoogle,
     signInWithGithub,
     isAuthenticated,
@@ -97,6 +98,8 @@ export default function SignupPage() {
         onSubmit={handleProfileSubmit}
         onCancel={handleCancel}
         isLoading={isSubmitting}
+        provider={user?.provider}
+        email={user?.email}
       />
     )
   }
