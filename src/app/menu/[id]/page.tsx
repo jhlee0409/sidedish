@@ -621,7 +621,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 </h3>
                 <p className="text-slate-500 text-xs mb-4 leading-relaxed">
                   작성자에게만 보이는 귓속말이에요.<br />
-                  &quot;이 부분은 조금 짠 것 같아요(버그)&quot; 같은 귓속말을 남겨주세요.
+                  버그 제보나 개선 아이디어를 편하게 남겨주세요.
                 </p>
 
                 {!isWhisperSent ? (

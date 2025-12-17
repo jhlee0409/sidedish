@@ -127,7 +127,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
         return {
           label: '서비스 주소 (URL)',
           placeholder: 'https://myservice.com',
-          desc: '유저들이 맛볼 수 있는 웹사이트 주소를 입력해주세요.'
+          desc: '프로젝트를 확인할 수 있는 URL을 입력해주세요.'
         }
       case 'APP':
         return {
@@ -272,7 +272,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
                   />
                 </div>
                 <div className="text-xs text-slate-500 space-y-1 pl-1">
-                  <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 보기 좋은 떡이 먹기도 좋습니다 (16:9 권장)</p>
+                  <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 16:9 비율의 썸네일을 권장합니다</p>
                   <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 5MB 이하의 JPG, PNG 파일을 업로드해주세요.</p>
                 </div>
               </div>
@@ -305,15 +305,15 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
               />
 
               <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
-                간단한 재료만 적고 AI 버튼을 눌러보세요!
+                간단히 적고 AI 버튼을 눌러보세요!
               </div>
 
               {isAiLoading && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
                   <div className="bg-white p-4 rounded-2xl shadow-xl border border-orange-50 flex flex-col items-center animate-in zoom-in duration-300">
                     <Sparkles className="w-8 h-8 text-orange-500 animate-pulse mb-2" />
-                    <span className="text-sm font-bold text-slate-800">AI 셰프가 요리 중...</span>
-                    <span className="text-xs text-slate-500 mt-1">맛깔난 소개글과 재료를 준비하고 있습니다.</span>
+                    <span className="text-sm font-bold text-slate-800">AI가 작성 중...</span>
+                    <span className="text-xs text-slate-500 mt-1">소개글과 태그를 생성하고 있어요.</span>
                   </div>
                 </div>
               )}
@@ -354,7 +354,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onClose, on
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleAddTag}
                 className="flex-1 outline-none min-w-[120px] bg-transparent text-sm py-1 placeholder:text-slate-400"
-                placeholder={formData.tags.length === 0 ? "AI 버튼으로 자동 생성하거나 직접 입력" : "재료 추가..."}
+                placeholder={formData.tags.length === 0 ? "AI 버튼으로 자동 생성하거나 직접 입력" : "태그 추가..."}
               />
             </div>
           </div>

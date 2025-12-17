@@ -487,7 +487,7 @@ export interface CreateProjectData {
  * const newProject = await createProject({
  *   title: '나의 사이드 프로젝트',
  *   description: '## 프로젝트 소개\n...',
- *   shortDescription: '개발자를 위한 생산성 도구',
+ *   shortDescription: '메이커를 위한 생산성 도구',
  *   tags: ['React', 'TypeScript', '생산성'],
  *   imageUrl: 'https://example.com/thumbnail.png',
  *   link: 'https://myproject.com',
