@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateUserInput, UserResponse } from '@/lib/db-types'
+import { UpdateUserInput, UserResponse, UserAgreementsResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { del } from '@vercel/blob'
 
@@ -32,10 +32,24 @@ export async function GET(
     }
 
     const data = doc.data()!
+
+    // 약관 동의 정보 변환
+    let agreements: UserAgreementsResponse | undefined
+    if (data.agreements) {
+      agreements = {
+        termsOfService: data.agreements.termsOfService || false,
+        privacyPolicy: data.agreements.privacyPolicy || false,
+        marketing: data.agreements.marketing || false,
+        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      }
+    }
+
     const response: UserResponse = {
       id: doc.id,
       name: data.name,
       avatarUrl: data.avatarUrl || '',
+      agreements,
+      isProfileComplete: data.isProfileComplete || false,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
 
@@ -61,33 +75,59 @@ export async function PATCH(
 
     const docRef = db.collection(COLLECTIONS.USERS).doc(id)
     const doc = await docRef.get()
+    const now = Timestamp.now()
 
     if (!doc.exists) {
       // Create user if not exists (for seamless user experience)
-      const now = Timestamp.now()
-      const newUserData = {
+      const newUserData: Record<string, unknown> = {
         id,
         name: body.name || 'Anonymous Chef',
         avatarUrl: body.avatarUrl || '',
+        isProfileComplete: body.isProfileComplete || false,
         createdAt: now,
         updatedAt: now,
       }
+
+      // 약관 동의 정보 추가
+      if (body.agreements) {
+        newUserData.agreements = {
+          termsOfService: body.agreements.termsOfService,
+          privacyPolicy: body.agreements.privacyPolicy,
+          marketing: body.agreements.marketing,
+          agreedAt: now,
+        }
+      }
+
       await docRef.set(newUserData)
+
+      // 약관 동의 응답 변환
+      let agreementsResponse: UserAgreementsResponse | undefined
+      if (body.agreements) {
+        agreementsResponse = {
+          termsOfService: body.agreements.termsOfService,
+          privacyPolicy: body.agreements.privacyPolicy,
+          marketing: body.agreements.marketing,
+          agreedAt: now.toDate().toISOString(),
+        }
+      }
 
       return NextResponse.json({
         id,
         name: newUserData.name,
         avatarUrl: newUserData.avatarUrl,
+        agreements: agreementsResponse,
+        isProfileComplete: newUserData.isProfileComplete,
         createdAt: now.toDate().toISOString(),
       })
     }
 
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {
-      updatedAt: Timestamp.now(),
+      updatedAt: now,
     }
 
     if (body.name !== undefined) updateData.name = body.name
+    if (body.isProfileComplete !== undefined) updateData.isProfileComplete = body.isProfileComplete
     if (body.avatarUrl !== undefined) {
       updateData.avatarUrl = body.avatarUrl
 
@@ -107,16 +147,39 @@ export async function PATCH(
       }
     }
 
+    // 약관 동의 정보 업데이트
+    if (body.agreements) {
+      updateData.agreements = {
+        termsOfService: body.agreements.termsOfService,
+        privacyPolicy: body.agreements.privacyPolicy,
+        marketing: body.agreements.marketing,
+        agreedAt: now,
+      }
+    }
+
     await docRef.update(updateData)
 
     // Fetch updated document
     const updatedDoc = await docRef.get()
     const data = updatedDoc.data()!
 
+    // 약관 동의 응답 변환
+    let agreementsResponse: UserAgreementsResponse | undefined
+    if (data.agreements) {
+      agreementsResponse = {
+        termsOfService: data.agreements.termsOfService || false,
+        privacyPolicy: data.agreements.privacyPolicy || false,
+        marketing: data.agreements.marketing || false,
+        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || now.toDate().toISOString(),
+      }
+    }
+
     const response: UserResponse = {
       id: updatedDoc.id,
       name: data.name,
       avatarUrl: data.avatarUrl || '',
+      agreements: agreementsResponse,
+      isProfileComplete: data.isProfileComplete || false,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
 

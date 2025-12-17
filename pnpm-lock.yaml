@@ -11,6 +11,9 @@ importers:
       '@google/genai':
         specifier: ^1.0.0
         version: 1.33.0
+      '@hookform/resolvers':
+        specifier: ^5.2.2
+        version: 5.2.2(react-hook-form@7.68.0(react@19.2.3))
       '@vercel/blob':
         specifier: ^2.0.0
         version: 2.0.0
@@ -35,6 +38,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.3(react@19.2.3)
+      react-hook-form:
+        specifier: ^7.68.0
+        version: 7.68.0(react@19.2.3)
       react-markdown:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.7)(react@19.2.3)
@@ -44,6 +50,9 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      zod:
+        specifier: ^4.2.1
+        version: 4.2.1
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.0.0
@@ -337,6 +346,11 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  '@hookform/resolvers@5.2.2':
+    resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
+    peerDependencies:
+      react-hook-form: ^7.55.0
+
   '@img/colour@1.0.0':
     resolution: {integrity: sha512-A5P/LfWGFSl6nsckYtjw9da+19jB8hkJ6ACTGcDfEJ0aE+l2n2El7dsVM7UVHZQ9s2lmYMWlrS21YLy2IR1LUw==}
     engines: {node: '>=18'}
@@ -594,6 +608,9 @@ packages:
     resolution: {integrity: sha512-3NgmNyH3l/Hv6EvsWJbsvpcpUba6R8IREQ83nH83cyakCw7uM1arZKNfHwv1Wz6jgqrF/j4x5ELvR6PnK9nTcA==}
     engines: {node: '>= 8.0.0'}
     hasBin: true
+
+  '@standard-schema/utils@0.3.0':
+    resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -1586,6 +1603,12 @@ packages:
     peerDependencies:
       react: ^19.2.3
 
+  react-hook-form@7.68.0:
+    resolution: {integrity: sha512-oNN3fjrZ/Xo40SWlHf1yCjlMK417JxoSJVUXQjGdvdRCU07NTFei1i1f8ApUAts+IVh14e4EdakeLEA+BEAs/Q==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+
   react-markdown@10.1.0:
     resolution: {integrity: sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ==}
     peerDependencies:
@@ -1876,6 +1899,9 @@ packages:
 
   yoga-layout@3.2.1:
     resolution: {integrity: sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ==}
+
+  zod@4.2.1:
+    resolution: {integrity: sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -2292,6 +2318,11 @@ snapshots:
       yargs: 17.7.2
     optional: true
 
+  '@hookform/resolvers@5.2.2(react-hook-form@7.68.0(react@19.2.3))':
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.68.0(react@19.2.3)
+
   '@img/colour@1.0.0': {}
 
   '@img/sharp-darwin-arm64@0.34.5':
@@ -2480,6 +2511,8 @@ snapshots:
     dependencies:
       fflate: 0.7.4
       string.prototype.codepointat: 0.2.1
+
+  '@standard-schema/utils@0.3.0': {}
 
   '@swc/helpers@0.5.15':
     dependencies:
@@ -3722,6 +3755,10 @@ snapshots:
       react: 19.2.3
       scheduler: 0.27.0
 
+  react-hook-form@7.68.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
   react-markdown@10.1.0(@types/react@19.2.7)(react@19.2.3):
     dependencies:
       '@types/hast': 3.0.4
@@ -4065,5 +4102,7 @@ snapshots:
     optional: true
 
   yoga-layout@3.2.1: {}
+
+  zod@4.2.1: {}
 
   zwitch@2.0.4: {}

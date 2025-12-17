@@ -962,7 +962,19 @@ export async function getUser(userId: string): Promise<UserResponse> {
  * invalidateCache(`user:${user.id}`)
  * ```
  */
-export async function updateUser(userId: string, data: { name?: string; avatarUrl?: string }): Promise<UserResponse> {
+export async function updateUser(
+  userId: string,
+  data: {
+    name?: string
+    avatarUrl?: string
+    agreements?: {
+      termsOfService: boolean
+      privacyPolicy: boolean
+      marketing: boolean
+    }
+    isProfileComplete?: boolean
+  }
+): Promise<UserResponse> {
   const response = await fetchWithAuth(`/api/users/${userId}`, {
     method: 'PATCH',
     body: JSON.stringify(data),

@@ -5,26 +5,35 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChefHat, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import SignupProfileForm from '@/components/SignupProfileForm'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signInWithGoogle, signInWithGithub, isAuthenticated, isLoading: authLoading } = useAuth()
+  const {
+    signInWithGoogle,
+    signInWithGithub,
+    isAuthenticated,
+    isLoading: authLoading,
+    needsProfileSetup,
+    completeSignup,
+    cancelSignup,
+  } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated && !needsProfileSetup) {
       router.push('/dashboard')
     }
-  }, [authLoading, isAuthenticated, router])
+  }, [authLoading, isAuthenticated, needsProfileSetup, router])
 
   const handleGoogleSignIn = async () => {
     try {
       setError(null)
       setIsLoading(true)
       await signInWithGoogle()
-      router.push('/dashboard')
     } catch (err) {
       setError('Google 로그인에 실패했습니다. 다시 시도해주세요.')
       console.error(err)
@@ -38,7 +47,6 @@ export default function LoginPage() {
       setError(null)
       setIsLoading(true)
       await signInWithGithub()
-      router.push('/dashboard')
     } catch (err) {
       setError('GitHub 로그인에 실패했습니다. 다시 시도해주세요.')
       console.error(err)
@@ -47,11 +55,47 @@ export default function LoginPage() {
     }
   }
 
+  const handleProfileSubmit = async (data: {
+    name: string
+    avatarUrl: string
+    agreements: {
+      termsOfService: boolean
+      privacyPolicy: boolean
+      marketing: boolean
+    }
+  }) => {
+    try {
+      setIsSubmitting(true)
+      await completeSignup(data)
+      router.push('/dashboard')
+    } catch (err) {
+      setError('프로필 설정에 실패했습니다. 다시 시도해주세요.')
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCancel = async () => {
+    await cancelSignup()
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
       </div>
+    )
+  }
+
+  // 프로필 설정이 필요한 경우 (이전에 가입 중단 등)
+  if (needsProfileSetup) {
+    return (
+      <SignupProfileForm
+        onSubmit={handleProfileSubmit}
+        onCancel={handleCancel}
+        isLoading={isSubmitting}
+      />
     )
   }
 
@@ -180,8 +224,8 @@ export default function LoginPage() {
 
               <p className="text-xs text-slate-400 text-center mt-6">
                 로그인하면 SideDish의{' '}
-                <Link href="#" className="underline hover:text-slate-600">이용약관</Link>과{' '}
-                <Link href="#" className="underline hover:text-slate-600">개인정보처리방침</Link>에 동의하는 것으로 간주됩니다.
+                <Link href="/terms" className="underline hover:text-slate-600">이용약관</Link>과{' '}
+                <Link href="/privacy" className="underline hover:text-slate-600">개인정보처리방침</Link>에 동의하는 것으로 간주됩니다.
               </p>
             </div>
           </div>
