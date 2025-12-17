@@ -24,7 +24,11 @@ The standout feature is **Gemini AI integration** that transforms basic project 
 | AI | Google Generative AI (Gemini 2.5 Flash Lite) | 1.0.0 |
 | Storage | Vercel Blob | 2.0.0 |
 | Markdown | React Markdown | 10.1.0 |
+| XSS Protection | DOMPurify | 3.3.1 |
+| Form Validation | React Hook Form + Zod | 7.68.0 / 4.2.1 |
 | Icons | Lucide React | 0.468.0 |
+| Notifications | Sonner | 2.0.7 |
+| Testing | Vitest + Testing Library | 4.0.16 |
 | Package Manager | pnpm | 10.25.0 |
 | Dev Server | Turbopack | (built-in) |
 
@@ -42,25 +46,31 @@ src/
 │   │   ├── [id]/page.tsx          # Project detail view
 │   │   └── edit/[id]/page.tsx     # Project edit form
 │   ├── login/page.tsx             # Firebase login
-│   ├── signup/page.tsx            # Firebase signup
+│   ├── profile/[userId]/page.tsx  # Public profile page
 │   ├── mypage/page.tsx            # User profile & liked projects
-│   └── api/                       # REST API endpoints (15 routes)
+│   └── api/                       # REST API endpoints
 │       ├── projects/              # CRUD operations
 │       ├── comments/              # Comment management
 │       ├── whispers/              # Private feedback
-│       ├── users/                 # User profiles
+│       ├── users/                 # User profiles & withdrawal
 │       ├── ai/generate/           # AI content generation
 │       ├── upload/                # Image uploads (Vercel Blob)
-│       └── stats/                 # Platform statistics
+│       ├── stats/                 # Platform statistics
+│       └── og/                    # Open Graph image generation
 │
 ├── components/                    # React components
 │   ├── Layout.tsx                 # App wrapper with sticky header
 │   ├── Dashboard.tsx              # Gallery with search, filter, pagination
 │   ├── LandingPage.tsx            # Marketing landing page
 │   ├── ProjectCard.tsx            # Grid card component
-│   ├── ProjectFormModal.tsx       # Form with AI generation
 │   ├── AiCandidateSelector.tsx    # AI output comparison UI
+│   ├── SafeMarkdown.tsx           # XSS-protected markdown renderer
 │   ├── LoginModal.tsx             # Auth modal
+│   ├── SocialLoginForm.tsx        # Social OAuth login form
+│   ├── SignupProfileForm.tsx      # New user profile setup
+│   ├── ProfileEditModal.tsx       # Profile editing modal
+│   ├── WithdrawalModal.tsx        # Account withdrawal modal
+│   ├── ConfirmModal.tsx           # Reusable confirmation dialog
 │   ├── UserMenu.tsx               # User dropdown menu
 │   ├── Hero.tsx                   # Dashboard hero section
 │   └── Button.tsx                 # Reusable button component
@@ -74,17 +84,31 @@ src/
 ├── services/
 │   └── geminiService.ts           # Server-side Gemini AI integration
 │
-└── lib/                           # Utilities & types
-    ├── types.ts                   # Frontend TypeScript interfaces
-    ├── db-types.ts                # Firestore document & API response types
-    ├── firebase.ts                # Firebase client SDK initialization
-    ├── firebase-admin.ts          # Firebase Admin SDK setup
-    ├── api-client.ts              # Authenticated API client with caching
-    ├── auth-utils.ts              # Token verification utilities
-    ├── draftService.ts            # LocalStorage draft management
-    ├── aiLimitService.ts          # AI rate limiting (3/draft, 10/day)
-    ├── constants.ts               # Reaction emoji mappings
-    └── og-utils.ts                # OG image generation utilities
+├── lib/                           # Utilities & types
+│   ├── types.ts                   # Frontend TypeScript interfaces
+│   ├── db-types.ts                # Firestore document & API response types
+│   ├── firebase.ts                # Firebase client SDK initialization
+│   ├── firebase-admin.ts          # Firebase Admin SDK setup
+│   ├── api-client.ts              # Authenticated API client with caching
+│   ├── auth-utils.ts              # Token verification utilities
+│   ├── security-utils.ts          # Input validation & sanitization
+│   ├── sanitize-utils.ts          # XSS prevention (DOMPurify)
+│   ├── rate-limiter.ts            # Sliding window rate limiting
+│   ├── file-validation.ts         # Magic number file validation
+│   ├── draftService.ts            # LocalStorage draft management
+│   ├── aiLimitService.ts          # AI rate limiting (3/draft, 10/day)
+│   ├── constants.ts               # Reaction emoji mappings
+│   └── og-utils.ts                # OG image generation utilities
+│
+└── __tests__/                     # Test files
+    ├── setup.ts                   # Vitest setup
+    ├── helpers/mock-firebase.ts   # Firebase mocking utilities
+    ├── security-utils.test.ts     # Security utilities tests
+    ├── sanitize-utils.test.ts     # XSS prevention tests
+    ├── rate-limiter.test.ts       # Rate limiter tests
+    ├── file-validation.test.ts    # File validation tests
+    ├── auth-utils.test.ts         # Auth utilities tests
+    └── api/projects.test.ts       # API endpoint tests
 ```
 
 ## Key Entry Points
@@ -98,15 +122,19 @@ src/
 | `src/contexts/AuthContext.tsx` | Firebase auth state & API client initialization |
 | `src/lib/api-client.ts` | Centralized API client with cache & deduplication |
 | `src/services/geminiService.ts` | Server-side AI content generation |
+| `src/lib/security-utils.ts` | Input validation & sanitization utilities |
 
 ## Development Commands
 
 ```bash
-pnpm install     # Install dependencies
-pnpm dev         # Start dev server with Turbopack (port 3000)
-pnpm build       # Production build
-pnpm start       # Run production server
-pnpm lint        # Run ESLint
+pnpm install        # Install dependencies
+pnpm dev            # Start dev server with Turbopack (port 3000)
+pnpm build          # Production build
+pnpm start          # Run production server
+pnpm lint           # Run ESLint
+pnpm test           # Run tests with Vitest (watch mode)
+pnpm test:run       # Run tests once
+pnpm test:coverage  # Run tests with coverage report
 ```
 
 ## Environment Setup
@@ -152,9 +180,11 @@ BLOB_READ_WRITE_TOKEN=...
 | `/api/users` | POST | Optional | Create/update user |
 | `/api/users/[id]` | GET/PATCH | PATCH only | User profile |
 | `/api/users/[id]/likes` | GET | Yes | User's liked projects |
+| `/api/users/[id]/withdraw` | POST | Yes | Account withdrawal (soft delete) |
 | `/api/ai/generate` | GET/POST | Yes | AI content generation |
 | `/api/upload` | POST | Yes | Image upload to Vercel Blob |
 | `/api/stats` | GET | No | Platform statistics |
+| `/api/og` | GET | No | Open Graph image generation |
 
 ## Code Conventions
 
@@ -192,6 +222,28 @@ BLOB_READ_WRITE_TOKEN=...
    import Button from '@/components/Button'
    ```
 
+### Form Validation Pattern
+
+Use React Hook Form with Zod for type-safe form validation:
+
+```tsx
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const schema = z.object({
+  name: z.string().min(2).max(20),
+  email: z.string().email(),
+})
+
+type FormData = z.infer<typeof schema>
+
+const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  resolver: zodResolver(schema),
+  mode: 'onChange',
+})
+```
+
 ### Styling Conventions
 
 1. **Tailwind CSS 4**: Uses new `@import "tailwindcss"` syntax
@@ -207,6 +259,114 @@ BLOB_READ_WRITE_TOKEN=...
    - `animate-in`, `fade-in`, `slide-in-from-bottom-*`, `zoom-in-*`
    - Duration classes: `duration-200` to `duration-1000`
    - Delay classes: `delay-100` to `delay-300`
+
+## Security Features
+
+### Input Validation (`src/lib/security-utils.ts`)
+
+Enterprise-grade validation following OWASP guidelines:
+
+```tsx
+import {
+  validateString,
+  validateUrl,
+  validateTags,
+  isValidReactionKey,
+  isValidPlatform,
+  isValidDocumentId,
+  CONTENT_LIMITS,
+} from '@/lib/security-utils'
+
+// Content length limits
+CONTENT_LIMITS.USER_NAME_MAX       // 20
+CONTENT_LIMITS.PROJECT_TITLE_MAX   // 100
+CONTENT_LIMITS.PROJECT_DESC_MAX    // 10000
+CONTENT_LIMITS.COMMENT_MAX         // 1000
+CONTENT_LIMITS.WHISPER_MAX         // 2000
+
+// Validation example
+const result = validateString(input, 'fieldName', {
+  required: true,
+  minLength: 2,
+  maxLength: 100,
+})
+if (!result.valid) return badRequestResponse(result.error)
+```
+
+### XSS Prevention (`src/lib/sanitize-utils.ts`)
+
+Client-side sanitization using DOMPurify:
+
+```tsx
+import { sanitizeHtml, sanitizePlainText, containsDangerousPatterns } from '@/lib/sanitize-utils'
+
+// For markdown content (allows safe HTML)
+const safeHtml = sanitizeHtml(userContent)
+
+// For plain text (strips all HTML)
+const safeText = sanitizePlainText(comment)
+
+// Check for suspicious content
+if (containsDangerousPatterns(content)) {
+  console.warn('Dangerous patterns detected')
+}
+```
+
+Use `SafeMarkdown` component for rendering user content:
+
+```tsx
+import SafeMarkdown from '@/components/SafeMarkdown'
+
+<SafeMarkdown className="prose">{description}</SafeMarkdown>
+```
+
+### Rate Limiting (`src/lib/rate-limiter.ts`)
+
+Sliding window rate limiter for API protection:
+
+```tsx
+import {
+  checkRateLimit,
+  RATE_LIMIT_CONFIGS,
+  getClientIdentifier,
+  createRateLimitKey,
+} from '@/lib/rate-limiter'
+
+// In API route
+const clientIp = getClientIdentifier(request)
+const rateLimitKey = createRateLimitKey(userId, clientIp)
+const { allowed, remaining, resetMs } = checkRateLimit(
+  rateLimitKey,
+  RATE_LIMIT_CONFIGS.AUTHENTICATED_WRITE
+)
+
+if (!allowed) {
+  return rateLimitResponse(remaining, resetMs)
+}
+```
+
+Preset configurations:
+- `PUBLIC_READ`: 60 req/min
+- `AUTHENTICATED_READ`: 120 req/min
+- `AUTHENTICATED_WRITE`: 30 req/min
+- `SENSITIVE`: 5 req/hour
+- `UPLOAD`: 10 req/min
+- `AI_GENERATE`: 5 req/min
+
+### File Validation (`src/lib/file-validation.ts`)
+
+Magic number validation to prevent malicious file uploads:
+
+```tsx
+import { validateMagicNumber } from '@/lib/file-validation'
+
+const buffer = Buffer.from(await file.arrayBuffer())
+if (!validateMagicNumber(buffer, file.type)) {
+  return badRequestResponse('Invalid file type')
+}
+```
+
+Supported types: JPEG, PNG, GIF, WebP
 
 ## TypeScript Types
 
@@ -274,6 +434,22 @@ interface ProjectDoc {
   updatedAt: Timestamp
 }
 
+interface UserDoc {
+  name: string
+  avatarUrl: string
+  agreements: {
+    termsOfService: boolean
+    privacyPolicy: boolean
+    marketing: boolean
+  }
+  isProfileComplete: boolean
+  isWithdrawn: boolean        // Soft delete flag
+  withdrawnAt?: Timestamp
+  withdrawalReason?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
 // API responses use ISO strings for dates
 interface ProjectResponse {
   // ... same fields with createdAt: string, updatedAt: string
@@ -306,7 +482,7 @@ Two server-side functions:
 - **3 generations per draft** - tracked by draft ID
 - **10 generations per day per user**
 - **5-second cooldown** between generations
-- Tracked in localStorage (client-side) + server validation
+- Tracked in localStorage (client-side) + Firestore (server validation)
 
 ### AI Prompting Style
 - Role: "SideDish Platform Editor"
@@ -327,15 +503,26 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   isConfigured: boolean
+  needsProfileSetup: boolean    // New user needs to complete profile
   signInWithGoogle: () => Promise<void>
   signInWithGithub: () => Promise<void>
   signOut: () => Promise<void>
   getIdToken: () => Promise<string | null>
+  refreshUser: () => Promise<void>
 }
 
 // Usage in components:
-const { user, isAuthenticated, signInWithGoogle } = useAuth()
+const { user, isAuthenticated, signInWithGoogle, needsProfileSetup } = useAuth()
 ```
+
+### New User Registration Flow
+
+1. User signs in with Google/GitHub
+2. `AuthContext` checks if profile exists in Firestore
+3. If new user: `needsProfileSetup = true` → Show `SignupProfileForm`
+4. User fills: nickname, avatar (optional), terms acceptance
+5. Profile saved via `updateUser` API
+6. `isProfileComplete = true` → Full access granted
 
 ### Protected Routes
 
@@ -349,6 +536,27 @@ function ProtectedPage() {
   // user is guaranteed to exist here
 }
 ```
+
+## User Management
+
+### Account Withdrawal (Soft Delete)
+
+Users can withdraw their account via `WithdrawalModal`:
+
+1. 4-step confirmation flow with reasons/feedback
+2. Requires typing "탈퇴합니다" to confirm
+3. **Soft delete**: Data retained for legal compliance (1 year)
+4. User content anonymized ("탈퇴한 셰프", "탈퇴한 사용자")
+5. 30-day re-registration restriction
+
+API: `POST /api/users/[id]/withdraw`
+
+### Profile Editing
+
+Users can edit their profile via `ProfileEditModal`:
+- Change nickname (2-20 chars, no special characters)
+- Upload/change avatar image
+- Updates reflected immediately across the platform
 
 ## API Client
 
@@ -369,6 +577,7 @@ const project = await createProject({
 
 - **30s cache TTL** for general requests
 - **5min cache TTL** for user profiles
+- **1min cache TTL** for AI usage info
 - **Request deduplication** prevents duplicate in-flight requests
 - **Pattern-based invalidation**: `invalidateCache('projects')`
 
@@ -402,6 +611,11 @@ Configured remote patterns in `next.config.ts`:
 
 Upload images via `/api/upload` endpoint → Vercel Blob storage.
 
+**Validation requirements:**
+- Max size: 5MB
+- Allowed types: JPEG, PNG, WebP
+- Magic number validation prevents disguised files
+
 ## State Management
 
 - **No external state library** - Uses React hooks only
@@ -409,6 +623,47 @@ Upload images via `/api/upload` endpoint → Vercel Blob storage.
 - **Client-side caching** - In-memory Map with TTL
 - **Draft persistence** - LocalStorage with auto-save (1s debounce)
 - **AI usage tracking** - LocalStorage for rate limiting
+
+## Testing
+
+### Running Tests
+
+```bash
+pnpm test           # Watch mode
+pnpm test:run       # Single run
+pnpm test:coverage  # With coverage report
+```
+
+### Test Structure
+
+Tests are located in `src/__tests__/`:
+
+```tsx
+// Example test file structure
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+
+describe('security-utils', () => {
+  describe('validateString', () => {
+    it('should validate required fields', () => {
+      const result = validateString('', 'name', { required: true })
+      expect(result.valid).toBe(false)
+    })
+  })
+})
+```
+
+### Mocking Firebase
+
+Use `src/__tests__/helpers/mock-firebase.ts` for Firebase mocking:
+
+```tsx
+import { mockFirebaseAdmin, resetMocks } from './helpers/mock-firebase'
+
+beforeEach(() => {
+  resetMocks()
+  mockFirebaseAdmin()
+})
+```
 
 ## Common Tasks
 
@@ -428,21 +683,30 @@ Upload images via `/api/upload` endpoint → Vercel Blob storage.
 ### Adding a New API Endpoint
 1. Create `src/app/api/endpoint-name/route.ts`
 2. Use `verifyAuth` from `@/lib/auth-utils` for protected routes
-3. Access Firestore via `@/lib/firebase-admin`
-4. Return proper status codes and error messages
+3. Use validation from `@/lib/security-utils`
+4. Apply rate limiting from `@/lib/rate-limiter`
+5. Access Firestore via `@/lib/firebase-admin`
+6. Return proper status codes and error messages
 
 ### Adding New Project Fields
 1. Update `Project` interface in `src/lib/types.ts`
 2. Update `ProjectDoc` and `ProjectResponse` in `src/lib/db-types.ts`
 3. Update API routes to handle new fields
-4. Modify `ProjectFormModal.tsx` for form input
-5. Update `ProjectCard.tsx` and detail views for display
+4. Add validation in `security-utils.ts` if needed
+5. Update form components for input
+6. Update display components for output
 
 ### Modifying AI Generation
 1. Edit prompts in `src/services/geminiService.ts`
 2. Adjust JSON schema if changing output structure
 3. Update types if needed
 4. Consider rate limit implications
+
+### Adding Tests
+1. Create test file in `src/__tests__/` with `.test.ts` extension
+2. Import from `vitest` for test utilities
+3. Use `describe/it/expect` pattern
+4. Mock external dependencies (Firebase, fetch, etc.)
 
 ## Performance Optimizations
 
@@ -452,19 +716,26 @@ Upload images via `/api/upload` endpoint → Vercel Blob storage.
 4. **AbortController** - Cancel previous searches on new input
 5. **Cursor pagination** - Scalable for large datasets
 6. **Lazy loading** - More projects loaded on scroll
+7. **Image optimization** - Next.js Image component + Vercel CDN
 
 ## Important Notes
 
 1. **Language**: UI text is in Korean - maintain consistency
 2. **Mobile-First**: Responsive design with breakpoints (sm, md, lg, xl)
 3. **Accessibility**: Maintain focus states, ARIA labels where needed
-4. **Security**: All write operations require authentication
+4. **Security**: All write operations require authentication + validation
 5. **Performance**: Use Next.js Image component for optimized images
 6. **Error Handling**: API client throws `ApiError` with status codes
+7. **XSS Prevention**: Always use `SafeMarkdown` for user-generated content
+8. **Rate Limiting**: Apply appropriate limits to all API endpoints
+9. **Soft Delete**: User deletion is soft (data retained for compliance)
 
-## Testing
+## Database Collections (Firestore)
 
-No test framework currently configured. When adding tests:
-- Recommend: Jest + React Testing Library
-- Add to `package.json` scripts
-- Create `__tests__` folders or `.test.tsx` files
+| Collection | Purpose | Key Fields |
+|------------|---------|------------|
+| `projects` | User projects | authorId, title, description, tags, likes, reactions |
+| `users` | User profiles | name, avatarUrl, agreements, isWithdrawn |
+| `comments` | Project comments | projectId, authorId, content |
+| `whispers` | Private feedback | projectId, projectAuthorId, senderId, isRead |
+| `ai_usage` | AI rate limiting | usageByDraft, dailyUsage |
