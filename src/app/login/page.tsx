@@ -36,7 +36,8 @@ export default function LoginPage() {
       setIsLoading(true)
       await signInWithGoogle()
     } catch (err) {
-      setError('Google 로그인에 실패했습니다. 다시 시도해주세요.')
+      const message = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다. 다시 시도해주세요.'
+      setError(message)
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -49,7 +50,8 @@ export default function LoginPage() {
       setIsLoading(true)
       await signInWithGithub()
     } catch (err) {
-      setError('GitHub 로그인에 실패했습니다. 다시 시도해주세요.')
+      const message = err instanceof Error ? err.message : 'GitHub 로그인에 실패했습니다. 다시 시도해주세요.'
+      setError(message)
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -137,8 +139,8 @@ export default function LoginPage() {
                 <div className="inline-flex bg-white/20 p-4 rounded-2xl mb-4">
                   <ChefHat className="w-10 h-10" />
                 </div>
-                <h1 className="text-3xl font-bold mb-2">다시 오셨군요!</h1>
-                <p className="text-white/80">SideDish에서 맛있는 프로젝트를 만나보세요</p>
+                <h1 className="text-3xl font-bold mb-2">SideDish 시작하기</h1>
+                <p className="text-white/80">나만의 사이드 프로젝트를 세상에 공개하세요</p>
               </div>
             </div>
 
@@ -151,7 +153,7 @@ export default function LoginPage() {
               )}
 
               <p className="text-slate-600 text-center mb-6">
-                소셜 계정으로 간편하게 로그인하세요
+                소셜 계정으로 간편하게 시작하세요
               </p>
 
               {/* Google Login Button */}
@@ -182,7 +184,7 @@ export default function LoginPage() {
                     />
                   </svg>
                 )}
-                Google로 로그인
+                Google로 계속하기
               </button>
 
               {/* GitHub Login Button */}
@@ -202,31 +204,11 @@ export default function LoginPage() {
                     />
                   </svg>
                 )}
-                GitHub로 로그인
+                GitHub로 계속하기
               </button>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-slate-400">또는</span>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="text-slate-600 mb-2">아직 계정이 없으신가요?</p>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center gap-2 text-orange-600 font-semibold hover:text-orange-700 transition-colors"
-                >
-                  회원가입하기
-                  <span>→</span>
-                </Link>
-              </div>
-
               <p className="text-xs text-slate-400 text-center mt-6">
-                로그인하면 SideDish의{' '}
+                계속하면 SideDish의{' '}
                 <Link href="/terms" className="underline hover:text-slate-600">이용약관</Link>과{' '}
                 <Link href="/privacy" className="underline hover:text-slate-600">개인정보처리방침</Link>에 동의하는 것으로 간주됩니다.
               </p>
