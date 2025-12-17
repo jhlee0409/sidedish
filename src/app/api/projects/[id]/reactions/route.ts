@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { isValidReactionKey, badRequestResponse } from '@/lib/security-utils'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -24,11 +25,10 @@ export async function POST(
     const body = await request.json()
 
     const { emoji } = body
-    if (!emoji) {
-      return NextResponse.json(
-        { error: '이모지가 필요합니다.' },
-        { status: 400 }
-      )
+
+    // SECURITY: Validate emoji against whitelist to prevent data pollution
+    if (!isValidReactionKey(emoji)) {
+      return badRequestResponse('유효하지 않은 리액션입니다. (허용: fire, clap, party, idea, love)')
     }
 
     const projectRef = db.collection(COLLECTIONS.PROJECTS).doc(id)
