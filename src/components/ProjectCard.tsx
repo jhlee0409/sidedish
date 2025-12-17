@@ -71,20 +71,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           {project.shortDescription}
         </p>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            {project.tags.slice(0, 2).map((tag, idx) => (
-              <span
-                key={idx}
-                className="px-2.5 py-1 bg-orange-50 text-orange-600 text-xs font-medium rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-          <span className="text-xs text-slate-400">
-            {project.authorName}
-          </span>
+        <div className="flex items-center gap-1.5">
+          {project.tags.slice(0, 2).map((tag, idx) => (
+            <span
+              key={idx}
+              className="px-2.5 py-1 bg-orange-50 text-orange-600 text-xs font-medium rounded-full"
+            >
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
     </article>
