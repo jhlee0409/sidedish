@@ -77,10 +77,32 @@ function getProviderDisplayName(providerId: string): string {
   return providerId
 }
 
-// Handle account-exists-with-different-credential error
+// User-friendly error messages for common Firebase auth errors
+function getAuthErrorMessage(error: AuthError): string {
+  switch (error.code) {
+    case 'auth/account-exists-with-different-credential':
+      return '이미 다른 소셜 계정으로 가입된 이메일입니다.'
+    case 'auth/popup-closed-by-user':
+      return '로그인 창이 닫혔습니다. 다시 시도해주세요.'
+    case 'auth/cancelled-popup-request':
+      return '로그인이 취소되었습니다.'
+    case 'auth/popup-blocked':
+      return '팝업이 차단되었습니다. 팝업 차단을 해제해주세요.'
+    case 'auth/network-request-failed':
+      return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.'
+    case 'auth/too-many-requests':
+      return '너무 많은 요청이 있었습니다. 잠시 후 다시 시도해주세요.'
+    case 'auth/user-disabled':
+      return '비활성화된 계정입니다. 관리자에게 문의해주세요.'
+    default:
+      return '로그인에 실패했습니다. 다시 시도해주세요.'
+  }
+}
+
+// Handle auth errors with user-friendly messages
 async function handleAuthError(auth: Auth, error: AuthError): Promise<never> {
+  // Handle account-exists-with-different-credential specially
   if (error.code === 'auth/account-exists-with-different-credential') {
-    // Get the email from the error
     const email = (error.customData?.email as string) || ''
     if (email) {
       try {
@@ -90,15 +112,17 @@ async function handleAuthError(auth: Auth, error: AuthError): Promise<never> {
           throw new Error(`이미 ${existingProvider} 계정으로 가입된 이메일입니다. ${existingProvider}로 로그인해주세요.`)
         }
       } catch (fetchError) {
-        // If fetching methods fails, throw a generic message
+        // If it's our custom error, re-throw it
         if (fetchError instanceof Error && fetchError.message.includes('이미')) {
           throw fetchError
         }
+        // Otherwise fall through to generic message
       }
     }
-    throw new Error('이미 다른 소셜 계정으로 가입된 이메일입니다.')
   }
-  throw error
+
+  // Throw user-friendly error message
+  throw new Error(getAuthErrorMessage(error))
 }
 
 // Sign in with Google
