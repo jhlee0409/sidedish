@@ -9,7 +9,8 @@ import {
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil
 } from 'lucide-react'
-import Markdown from 'react-markdown'
+import SafeMarkdown from '@/components/SafeMarkdown'
+import { sanitizePlainText } from '@/lib/sanitize-utils'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import UserMenu from '@/components/UserMenu'
@@ -390,9 +391,9 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 메뉴 소개
               </h3>
               <div className="leading-relaxed text-slate-600 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:mb-4 [&_strong]:text-slate-900 [&_strong]:font-semibold [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mt-6 [&>h1]:mb-3 [&>h2]:text-lg [&>h2]:font-bold [&>h2]:mt-5 [&>h2]:mb-2 [&>h3]:text-base [&>h3]:font-semibold [&>h3]:mt-4 [&>h3]:mb-2">
-                <Markdown>
+                <SafeMarkdown>
                   {project.description || project.shortDescription}
-                </Markdown>
+                </SafeMarkdown>
               </div>
             </div>
 
@@ -503,7 +504,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                             </button>
                           )}
                         </div>
-                        <p className="text-slate-600 text-sm leading-relaxed">{comment.content}</p>
+                        <p className="text-slate-600 text-sm leading-relaxed">{sanitizePlainText(comment.content)}</p>
                       </div>
                     </div>
                   ))

@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import { GoogleGenAI, Type } from "@google/genai"
-import { Timestamp, FieldValue } from 'firebase-admin/firestore'
+import { Timestamp } from 'firebase-admin/firestore'
+import {
+  checkRateLimit,
+  rateLimitResponse,
+  RATE_LIMIT_CONFIGS,
+  getClientIdentifier,
+  createRateLimitKey,
+} from '@/lib/rate-limiter'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 const MODEL = 'gemini-2.5-flash-lite'
@@ -51,6 +58,19 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse()
     }
 
+    // 1.5. Rate limiting (additional layer on top of Firestore-based limits)
+    const clientIp = getClientIdentifier(request)
+    const rateLimitKey = createRateLimitKey(user.uid, clientIp)
+    const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIGS.AI_GENERATE)
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(
+        rateLimit.remaining,
+        rateLimit.resetMs,
+        'AI 생성 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
+      )
+    }
+
     const db = getAdminDb()
     const body = await request.json()
     const { draftId, description } = body
@@ -77,62 +97,114 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 3. Check usage limits from Firestore
+    // 3. Check and reserve usage atomically using Firestore transaction
+    // This prevents race conditions where multiple requests could bypass limits
     const usageRef = db.collection(COLLECTIONS.AI_USAGE).doc(user.uid)
-    const usageDoc = await usageRef.get()
-    const usageData = usageDoc.data() as AiUsageDoc | undefined
-
     const today = getTodayString()
     const now = Timestamp.now()
     const nowMs = now.toMillis()
 
-    // Check draft limit
-    const draftUsage = usageData?.usageByDraft?.[draftId]
-    if (draftUsage && draftUsage.count >= LIMITS.MAX_PER_DRAFT) {
-      return NextResponse.json(
-        {
+    interface TransactionResult {
+      success: boolean
+      error?: string
+      code?: string
+      newDraftCount?: number
+      newDailyCount?: number
+      cooldownRemaining?: number
+      remainingForDraft?: number
+      remainingForDay?: number
+    }
+
+    const transactionResult = await db.runTransaction<TransactionResult>(async (transaction) => {
+      const usageDoc = await transaction.get(usageRef)
+      const usageData = usageDoc.data() as AiUsageDoc | undefined
+
+      const draftUsage = usageData?.usageByDraft?.[draftId]
+      const dailyUsage = usageData?.dailyUsage?.[today]
+
+      // Check draft limit
+      if (draftUsage && draftUsage.count >= LIMITS.MAX_PER_DRAFT) {
+        return {
+          success: false,
           error: `이 프로젝트는 이미 ${LIMITS.MAX_PER_DRAFT}번 AI 생성을 사용했습니다.`,
           code: 'DRAFT_LIMIT_EXCEEDED',
           remainingForDraft: 0,
-          remainingForDay: LIMITS.MAX_PER_DAY - (usageData?.dailyUsage?.[today]?.count || 0),
-        },
-        { status: 429 }
-      )
-    }
+          remainingForDay: LIMITS.MAX_PER_DAY - (dailyUsage?.count || 0),
+        }
+      }
 
-    // Check daily limit
-    const dailyUsage = usageData?.dailyUsage?.[today]
-    if (dailyUsage && dailyUsage.count >= LIMITS.MAX_PER_DAY) {
-      return NextResponse.json(
-        {
+      // Check daily limit
+      if (dailyUsage && dailyUsage.count >= LIMITS.MAX_PER_DAY) {
+        return {
+          success: false,
           error: `오늘의 AI 생성 한도(${LIMITS.MAX_PER_DAY}회)를 모두 사용했습니다.`,
           code: 'DAILY_LIMIT_EXCEEDED',
           remainingForDraft: LIMITS.MAX_PER_DRAFT - (draftUsage?.count || 0),
           remainingForDay: 0,
-        },
-        { status: 429 }
+        }
+      }
+
+      // Check cooldown
+      const lastGeneratedAt = Math.max(
+        draftUsage?.lastGeneratedAt?.toMillis() || 0,
+        dailyUsage?.lastGeneratedAt?.toMillis() || 0
       )
-    }
+      const cooldownRemaining = Math.max(0, Math.ceil((LIMITS.COOLDOWN_MS - (nowMs - lastGeneratedAt)) / 1000))
 
-    // Check cooldown
-    const lastGeneratedAt = Math.max(
-      draftUsage?.lastGeneratedAt?.toMillis() || 0,
-      dailyUsage?.lastGeneratedAt?.toMillis() || 0
-    )
-    const cooldownRemaining = Math.max(0, Math.ceil((LIMITS.COOLDOWN_MS - (nowMs - lastGeneratedAt)) / 1000))
-
-    if (cooldownRemaining > 0) {
-      return NextResponse.json(
-        {
+      if (cooldownRemaining > 0) {
+        return {
+          success: false,
           error: `잠시만 기다려주세요. ${cooldownRemaining}초 후에 다시 시도할 수 있습니다.`,
           code: 'COOLDOWN_ACTIVE',
           cooldownRemaining,
           remainingForDraft: LIMITS.MAX_PER_DRAFT - (draftUsage?.count || 0),
           remainingForDay: LIMITS.MAX_PER_DAY - (dailyUsage?.count || 0),
+        }
+      }
+
+      // Reserve the slot by incrementing counts atomically
+      const newDraftCount = (draftUsage?.count || 0) + 1
+      const newDailyCount = (dailyUsage?.count || 0) + 1
+
+      transaction.set(usageRef, {
+        usageByDraft: {
+          ...usageData?.usageByDraft,
+          [draftId]: {
+            count: newDraftCount,
+            lastGeneratedAt: now,
+          }
+        },
+        dailyUsage: {
+          [today]: {
+            count: newDailyCount,
+            lastGeneratedAt: now,
+          }
+        },
+        updatedAt: now,
+      }, { merge: true })
+
+      return {
+        success: true,
+        newDraftCount,
+        newDailyCount,
+      }
+    })
+
+    // Handle rate limit errors
+    if (!transactionResult.success) {
+      return NextResponse.json(
+        {
+          error: transactionResult.error,
+          code: transactionResult.code,
+          cooldownRemaining: transactionResult.cooldownRemaining,
+          remainingForDraft: transactionResult.remainingForDraft,
+          remainingForDay: transactionResult.remainingForDay,
         },
         { status: 429 }
       )
     }
+
+    const { newDraftCount, newDailyCount } = transactionResult
 
     // 4. Generate content with Gemini
     const prompt = `
@@ -208,35 +280,13 @@ ${description}
 
     const result: GeneratedProjectContent = JSON.parse(response.text)
 
-    // 5. Update usage in Firestore (atomic update)
-    const newDraftCount = (draftUsage?.count || 0) + 1
-    const newDailyCount = (dailyUsage?.count || 0) + 1
-
-    await usageRef.set({
-      usageByDraft: {
-        ...usageData?.usageByDraft,
-        [draftId]: {
-          count: newDraftCount,
-          lastGeneratedAt: now,
-        }
-      },
-      dailyUsage: {
-        // Clean up old dates, keep only today
-        [today]: {
-          count: newDailyCount,
-          lastGeneratedAt: now,
-        }
-      },
-      updatedAt: now,
-    }, { merge: true })
-
-    // 6. Return result with updated usage info
+    // 5. Return result with usage info (already updated atomically in transaction)
     return NextResponse.json({
       ...result,
       generatedAt: nowMs,
       usage: {
-        remainingForDraft: LIMITS.MAX_PER_DRAFT - newDraftCount,
-        remainingForDay: LIMITS.MAX_PER_DAY - newDailyCount,
+        remainingForDraft: LIMITS.MAX_PER_DRAFT - newDraftCount!,
+        remainingForDay: LIMITS.MAX_PER_DAY - newDailyCount!,
         maxPerDraft: LIMITS.MAX_PER_DRAFT,
         maxPerDay: LIMITS.MAX_PER_DAY,
       }
