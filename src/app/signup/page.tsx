@@ -117,7 +117,7 @@ export default function SignupPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-orange-400 rounded-full" />
-                    다른 셰프들과 리뷰 & 피드백 교환
+                    다른 셰프들과 리뷰 & 귓속말 교환
                   </li>
                 </ul>
               </div>

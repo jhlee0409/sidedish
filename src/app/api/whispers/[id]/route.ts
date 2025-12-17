@@ -26,7 +26,7 @@ export async function GET(
 
     if (!doc.exists) {
       return NextResponse.json(
-        { error: '피드백을 찾을 수 없습니다.' },
+        { error: '귓속말을 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
@@ -35,7 +35,7 @@ export async function GET(
 
     // Only the project author can view whispers
     if (data.projectAuthorId !== user.uid) {
-      return forbiddenResponse('이 피드백을 볼 권한이 없습니다.')
+      return forbiddenResponse('이 귓속말을 볼 권한이 없습니다.')
     }
 
     const response: WhisperResponse = {
@@ -52,7 +52,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching whisper:', error)
     return NextResponse.json(
-      { error: '피드백을 불러오는데 실패했습니다.' },
+      { error: '귓속말을 불러오는데 실패했습니다.' },
       { status: 500 }
     )
   }
@@ -79,7 +79,7 @@ export async function PATCH(
 
     if (!doc.exists) {
       return NextResponse.json(
-        { error: '피드백을 찾을 수 없습니다.' },
+        { error: '귓속말을 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
@@ -88,7 +88,7 @@ export async function PATCH(
 
     // Only the project author can update whispers
     if (whisperData.projectAuthorId !== user.uid) {
-      return forbiddenResponse('이 피드백을 수정할 권한이 없습니다.')
+      return forbiddenResponse('이 귓속말을 수정할 권한이 없습니다.')
     }
 
     // Update read status
@@ -114,7 +114,7 @@ export async function PATCH(
   } catch (error) {
     console.error('Error updating whisper:', error)
     return NextResponse.json(
-      { error: '피드백 업데이트에 실패했습니다.' },
+      { error: '귓속말 업데이트에 실패했습니다.' },
       { status: 500 }
     )
   }
@@ -140,7 +140,7 @@ export async function DELETE(
 
     if (!doc.exists) {
       return NextResponse.json(
-        { error: '피드백을 찾을 수 없습니다.' },
+        { error: '귓속말을 찾을 수 없습니다.' },
         { status: 404 }
       )
     }
@@ -149,7 +149,7 @@ export async function DELETE(
 
     // Only the project author can delete whispers
     if (whisperData.projectAuthorId !== user.uid) {
-      return forbiddenResponse('이 피드백을 삭제할 권한이 없습니다.')
+      return forbiddenResponse('이 귓속말을 삭제할 권한이 없습니다.')
     }
 
     await docRef.delete()
@@ -158,7 +158,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting whisper:', error)
     return NextResponse.json(
-      { error: '피드백 삭제에 실패했습니다.' },
+      { error: '귓속말 삭제에 실패했습니다.' },
       { status: 500 }
     )
   }
