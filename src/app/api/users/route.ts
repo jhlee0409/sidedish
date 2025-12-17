@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { CreateUserInput, UserResponse } from '@/lib/db-types'
+import { CreateUserInput, UserResponse, UserAgreementsResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 
 // GET /api/users - List all users (limited use case)
@@ -18,10 +18,24 @@ export async function GET(request: NextRequest) {
 
     const users: UserResponse[] = snapshot.docs.map(doc => {
       const data = doc.data()
+
+      // 약관 동의 정보 변환
+      let agreements: UserAgreementsResponse | undefined
+      if (data.agreements) {
+        agreements = {
+          termsOfService: data.agreements.termsOfService || false,
+          privacyPolicy: data.agreements.privacyPolicy || false,
+          marketing: data.agreements.marketing || false,
+          agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        }
+      }
+
       return {
         id: doc.id,
         name: data.name,
         avatarUrl: data.avatarUrl || '',
+        agreements,
+        isProfileComplete: data.isProfileComplete || false,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       }
     })
@@ -41,39 +55,77 @@ export async function POST(request: NextRequest) {
   try {
     const db = getAdminDb()
     const body: CreateUserInput & { deviceId?: string } = await request.json()
+    const now = Timestamp.now()
 
     // If deviceId is provided, check if user already exists
     if (body.deviceId) {
       const existingDoc = await db.collection(COLLECTIONS.USERS).doc(body.deviceId).get()
       if (existingDoc.exists) {
         const data = existingDoc.data()!
+
+        // 약관 동의 정보 변환
+        let agreements: UserAgreementsResponse | undefined
+        if (data.agreements) {
+          agreements = {
+            termsOfService: data.agreements.termsOfService || false,
+            privacyPolicy: data.agreements.privacyPolicy || false,
+            marketing: data.agreements.marketing || false,
+            agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          }
+        }
+
         return NextResponse.json({
           id: existingDoc.id,
           name: data.name,
           avatarUrl: data.avatarUrl || '',
+          agreements,
+          isProfileComplete: data.isProfileComplete || false,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         })
       }
     }
 
-    const now = Timestamp.now()
     const userId = body.deviceId || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     const userRef = db.collection(COLLECTIONS.USERS).doc(userId)
 
-    const userData = {
+    const userData: Record<string, unknown> = {
       id: userId,
       name: body.name || 'Anonymous Chef',
       avatarUrl: body.avatarUrl || '',
+      isProfileComplete: body.isProfileComplete || false,
       createdAt: now,
       updatedAt: now,
     }
 
+    // 약관 동의 정보 추가
+    if (body.agreements) {
+      userData.agreements = {
+        termsOfService: body.agreements.termsOfService,
+        privacyPolicy: body.agreements.privacyPolicy,
+        marketing: body.agreements.marketing,
+        agreedAt: now,
+      }
+    }
+
     await userRef.set(userData)
+
+    // 약관 동의 응답 변환
+    let agreementsResponse: UserAgreementsResponse | undefined
+    if (body.agreements) {
+      agreementsResponse = {
+        termsOfService: body.agreements.termsOfService,
+        privacyPolicy: body.agreements.privacyPolicy,
+        marketing: body.agreements.marketing,
+        agreedAt: now.toDate().toISOString(),
+      }
+    }
 
     const response: UserResponse = {
       id: userId,
-      name: userData.name,
-      avatarUrl: userData.avatarUrl,
+      name: userData.name as string,
+      avatarUrl: userData.avatarUrl as string,
+      agreements: agreementsResponse,
+      isProfileComplete: userData.isProfileComplete as boolean,
       createdAt: now.toDate().toISOString(),
     }
 

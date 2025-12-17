@@ -3,6 +3,7 @@ import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { CommentResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { validateString, validateLimit, CONTENT_LIMITS, badRequestResponse } from '@/lib/security-utils'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -18,7 +19,8 @@ export async function GET(
     const db = getAdminDb()
     const searchParams = request.nextUrl.searchParams
 
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    // SECURITY: Validate pagination parameters
+    const limit = validateLimit(searchParams.get('limit'), 20, 50)
     const cursor = searchParams.get('cursor')
 
     // Check if project exists
@@ -93,12 +95,14 @@ export async function POST(
     const db = getAdminDb()
     const body: { content: string } = await request.json()
 
-    // Validate required fields
-    if (!body.content) {
-      return NextResponse.json(
-        { error: '댓글 내용을 입력해주세요.' },
-        { status: 400 }
-      )
+    // SECURITY: Validate comment content with length limits
+    const contentValidation = validateString(body.content, '댓글 내용', {
+      required: true,
+      minLength: 1,
+      maxLength: CONTENT_LIMITS.COMMENT_MAX,
+    })
+    if (!contentValidation.valid) {
+      return badRequestResponse(contentValidation.error)
     }
 
     // Check if project exists
@@ -119,7 +123,7 @@ export async function POST(
       authorId: user.uid,
       authorName: user.name || 'Anonymous',
       avatarUrl: user.picture || '',
-      content: body.content,
+      content: contentValidation.value, // Use validated content
       createdAt: now,
     }
 

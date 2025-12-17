@@ -3,6 +3,16 @@ import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { CreateProjectInput, ProjectResponse, PaginatedResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import {
+  validateString,
+  validateUrl,
+  validateTags,
+  validateLimit,
+  validateSearchQuery,
+  isValidPlatform,
+  CONTENT_LIMITS,
+  badRequestResponse,
+} from '@/lib/security-utils'
 
 // GET /api/projects - List all projects with pagination (public)
 export async function GET(request: NextRequest) {
@@ -10,10 +20,11 @@ export async function GET(request: NextRequest) {
     const db = getAdminDb()
     const searchParams = request.nextUrl.searchParams
 
-    const requestedLimit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+    // SECURITY: Validate and sanitize query parameters
+    const requestedLimit = validateLimit(searchParams.get('limit'), 20, 50)
     const cursor = searchParams.get('cursor')
     const platform = searchParams.get('platform')
-    const search = searchParams.get('search')?.toLowerCase()
+    const search = validateSearchQuery(searchParams.get('search'))
     const authorId = searchParams.get('authorId')
 
     // For search queries, fetch more data to filter from (Firestore doesn't support full-text search)
@@ -122,31 +133,62 @@ export async function POST(request: NextRequest) {
     const db = getAdminDb()
     const body: Omit<CreateProjectInput, 'authorId' | 'authorName'> = await request.json()
 
-    // Validate required fields
-    if (!body.title || !body.shortDescription) {
-      return NextResponse.json(
-        { error: '필수 항목이 누락되었습니다.' },
-        { status: 400 }
-      )
-    }
+    // SECURITY: Validate all input fields with proper content length limits
+
+    // Title validation
+    const titleValidation = validateString(body.title, '제목', {
+      required: true,
+      minLength: 1,
+      maxLength: CONTENT_LIMITS.PROJECT_TITLE_MAX,
+    })
+    if (!titleValidation.valid) return badRequestResponse(titleValidation.error)
+
+    // Short description validation
+    const shortDescValidation = validateString(body.shortDescription, '간단 소개', {
+      required: true,
+      minLength: 1,
+      maxLength: CONTENT_LIMITS.PROJECT_SHORT_DESC_MAX,
+    })
+    if (!shortDescValidation.valid) return badRequestResponse(shortDescValidation.error)
+
+    // Description validation
+    const descValidation = validateString(body.description, '상세 설명', {
+      required: false,
+      maxLength: CONTENT_LIMITS.PROJECT_DESC_MAX,
+    })
+    if (!descValidation.valid) return badRequestResponse(descValidation.error)
+
+    // Tags validation
+    const tagsValidation = validateTags(body.tags)
+    if (!tagsValidation.valid) return badRequestResponse(tagsValidation.error)
+
+    // URL validations
+    const linkValidation = validateUrl(body.link, '프로젝트 링크')
+    if (!linkValidation.valid) return badRequestResponse(linkValidation.error)
+
+    const githubValidation = validateUrl(body.githubUrl, 'GitHub 링크')
+    if (!githubValidation.valid) return badRequestResponse(githubValidation.error)
+
+    // Platform validation
+    const platform = isValidPlatform(body.platform) ? body.platform : 'OTHER'
 
     const now = Timestamp.now()
     const projectRef = db.collection(COLLECTIONS.PROJECTS).doc()
 
     const projectData = {
       id: projectRef.id,
-      title: body.title,
-      description: body.description || '',
-      shortDescription: body.shortDescription,
-      tags: body.tags || [],
+      title: titleValidation.value,
+      description: descValidation.value,
+      shortDescription: shortDescValidation.value,
+      tags: tagsValidation.value,
       imageUrl: body.imageUrl || '',
       authorId: user.uid, // Use authenticated user's ID
       authorName: user.name || 'Anonymous Chef',
       likes: 0,
       reactions: {},
-      link: body.link || '',
-      githubUrl: body.githubUrl || '',
-      platform: body.platform || 'OTHER',
+      link: linkValidation.value,
+      githubUrl: githubValidation.value,
+      platform,
       createdAt: now,
       updatedAt: now,
     }

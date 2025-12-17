@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import sharp from 'sharp'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import {
+  checkRateLimit,
+  rateLimitResponse,
+  RATE_LIMIT_CONFIGS,
+  getClientIdentifier,
+  createRateLimitKey,
+} from '@/lib/rate-limiter'
+import { validateMagicNumber } from '@/lib/file-validation'
 
 // Max file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -52,6 +60,19 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse()
     }
 
+    // Rate limiting
+    const clientIp = getClientIdentifier(request)
+    const rateLimitKey = createRateLimitKey(user.uid, clientIp)
+    const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIGS.UPLOAD)
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(
+        rateLimit.remaining,
+        rateLimit.resetMs,
+        '업로드 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -81,6 +102,20 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+
+    // SECURITY: Validate magic number to prevent malicious file uploads
+    // This ensures the file content matches the claimed MIME type
+    if (!validateMagicNumber(buffer, file.type)) {
+      console.warn('[Security] Magic number mismatch detected', {
+        claimedType: file.type,
+        fileSize: file.size,
+        timestamp: new Date().toISOString(),
+      })
+      return NextResponse.json(
+        { error: '파일 형식이 올바르지 않습니다. 실제 이미지 파일을 업로드해주세요.' },
+        { status: 400 }
+      )
+    }
 
     // Optimize image
     const optimizedBuffer = await optimizeImage(buffer, file.type)

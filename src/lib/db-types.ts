@@ -30,11 +30,25 @@ export interface ProjectDoc {
   updatedAt: Timestamp
 }
 
+// User agreements for terms and marketing consent
+export interface UserAgreements {
+  termsOfService: boolean // 서비스 이용약관 동의 (필수)
+  privacyPolicy: boolean // 개인정보 처리방침 동의 (필수)
+  marketing: boolean // 마케팅 수신 동의 (선택)
+  agreedAt: Timestamp // 동의 시점
+}
+
 // Firestore document structure for Users
 export interface UserDoc {
   id: string
   name: string
   avatarUrl: string
+  agreements?: UserAgreements // 회원가입 시 동의 정보
+  isProfileComplete: boolean // 프로필 설정 완료 여부
+  isWithdrawn?: boolean // 탈퇴 여부 (soft delete)
+  withdrawnAt?: Timestamp // 탈퇴 시점
+  withdrawalReason?: string // 탈퇴 사유
+  withdrawalFeedback?: string // 불편 사항 피드백
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -105,14 +119,25 @@ export interface CreateWhisperInput {
   content: string
 }
 
+// API Request types for user agreements (without Timestamp)
+export interface CreateUserAgreementsInput {
+  termsOfService: boolean
+  privacyPolicy: boolean
+  marketing: boolean
+}
+
 export interface CreateUserInput {
   name: string
   avatarUrl?: string
+  agreements?: CreateUserAgreementsInput
+  isProfileComplete?: boolean
 }
 
 export interface UpdateUserInput {
   name?: string
   avatarUrl?: string
+  agreements?: CreateUserAgreementsInput
+  isProfileComplete?: boolean
 }
 
 // API Response types (serialized for JSON)
@@ -134,10 +159,20 @@ export interface ProjectResponse {
   updatedAt: string
 }
 
+// API Response type for user agreements
+export interface UserAgreementsResponse {
+  termsOfService: boolean
+  privacyPolicy: boolean
+  marketing: boolean
+  agreedAt: string
+}
+
 export interface UserResponse {
   id: string
   name: string
   avatarUrl: string
+  agreements?: UserAgreementsResponse
+  isProfileComplete: boolean
   createdAt: string
 }
 

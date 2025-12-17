@@ -19,10 +19,12 @@ import {
   getWhispers as getWhispersApi,
   markWhisperAsRead as markWhisperAsReadApi,
   getProject,
+  withdrawUser,
 } from '@/lib/api-client'
 import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
+import WithdrawalModal from '@/components/WithdrawalModal'
 
 type TabType = 'menus' | 'likes' | 'whispers'
 
@@ -54,7 +56,7 @@ const validTabs: TabType[] = ['menus', 'likes', 'whispers']
 function MyPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth()
 
   // URL 쿼리스트링에서 탭 상태 읽기 (state로 관리)
   const [activeTab, setActiveTabState] = useState<TabType>('menus')
@@ -83,6 +85,7 @@ function MyPageContent() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showProfileEditModal, setShowProfileEditModal] = useState(false)
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -151,6 +154,21 @@ function MyPageContent() {
       ))
     } catch (error) {
       console.error('Failed to mark whisper as read:', error)
+    }
+  }
+
+  const handleWithdrawal = async (reason: string, feedback: string) => {
+    if (!user) return
+
+    try {
+      await withdrawUser(user.id, reason, feedback)
+      toast.success('회원 탈퇴가 완료되었습니다.')
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Failed to withdraw:', error)
+      toast.error('회원 탈퇴에 실패했습니다. 다시 시도해주세요.')
+      throw error
     }
   }
 
@@ -252,6 +270,14 @@ function MyPageContent() {
                 </div>
               </div>
             </div>
+
+            {/* 회원탈퇴 - 우측 하단에 작게 배치 */}
+            <button
+              onClick={() => setShowWithdrawalModal(true)}
+              className="absolute bottom-3 right-4 z-10 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+            >
+              회원탈퇴
+            </button>
           </div>
 
           {/* Stats */}
@@ -508,10 +534,19 @@ function MyPageContent() {
         </div>
       </div>
 
+
       {/* Profile Edit Modal */}
       <ProfileEditModal
         isOpen={showProfileEditModal}
         onClose={() => setShowProfileEditModal(false)}
+      />
+
+      {/* Withdrawal Modal */}
+      <WithdrawalModal
+        isOpen={showWithdrawalModal}
+        onClose={() => setShowWithdrawalModal(false)}
+        onConfirm={handleWithdrawal}
+        userName={user?.name || ''}
       />
     </div>
   )

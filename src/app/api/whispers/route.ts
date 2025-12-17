@@ -3,6 +3,7 @@ import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { WhisperResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { validateString, forbiddenResponse, CONTENT_LIMITS } from '@/lib/security-utils'
 
 // GET /api/whispers - Get all whispers for the authenticated user (project author)
 export async function GET(request: NextRequest) {
@@ -63,11 +64,21 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     // Validate required fields
-    if (!body.projectId || !body.content) {
+    if (!body.projectId) {
       return NextResponse.json(
-        { error: '필수 항목이 누락되었습니다.' },
+        { error: '프로젝트 ID가 필요합니다.' },
         { status: 400 }
       )
+    }
+
+    // SECURITY: Validate content length
+    const contentValidation = validateString(body.content, '귓속말 내용', {
+      required: true,
+      minLength: 1,
+      maxLength: CONTENT_LIMITS.WHISPER_MAX,
+    })
+    if (!contentValidation.valid) {
+      return NextResponse.json({ error: contentValidation.error }, { status: 400 })
     }
 
     // Check if project exists
@@ -81,6 +92,11 @@ export async function POST(request: NextRequest) {
 
     const projectData = projectDoc.data()!
 
+    // SECURITY: Prevent users from whispering to their own project
+    if (projectData.authorId === user.uid) {
+      return forbiddenResponse('자신의 프로젝트에는 귓속말을 보낼 수 없습니다.')
+    }
+
     const now = Timestamp.now()
     const whisperRef = db.collection(COLLECTIONS.WHISPERS).doc()
 
@@ -91,7 +107,7 @@ export async function POST(request: NextRequest) {
       projectAuthorId: projectData.authorId,
       senderName: user.name || 'Anonymous',
       senderId: user.uid,
-      content: body.content,
+      content: contentValidation.value, // Use validated content
       isRead: false,
       createdAt: now,
     }

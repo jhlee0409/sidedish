@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateUserInput, UserResponse } from '@/lib/db-types'
+import { UpdateUserInput, UserResponse, UserAgreementsResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { del } from '@vercel/blob'
+import { verifyAuth } from '@/lib/auth-utils'
 
 // Vercel Blob URL 패턴 확인 (커스텀 업로드 이미지인지)
 function isVercelBlobUrl(url: string): boolean {
@@ -32,10 +33,24 @@ export async function GET(
     }
 
     const data = doc.data()!
+
+    // 약관 동의 정보 변환
+    let agreements: UserAgreementsResponse | undefined
+    if (data.agreements) {
+      agreements = {
+        termsOfService: data.agreements.termsOfService || false,
+        privacyPolicy: data.agreements.privacyPolicy || false,
+        marketing: data.agreements.marketing || false,
+        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      }
+    }
+
     const response: UserResponse = {
       id: doc.id,
       name: data.name,
       avatarUrl: data.avatarUrl || '',
+      agreements,
+      isProfileComplete: data.isProfileComplete || false,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
 
@@ -49,6 +64,40 @@ export async function GET(
   }
 }
 
+// 닉네임 검증 함수
+function validateName(name: string): { valid: boolean; error?: string } {
+  if (!name || typeof name !== 'string') {
+    return { valid: false, error: '닉네임은 필수입니다.' }
+  }
+  const trimmed = name.trim()
+  if (trimmed.length < 2) {
+    return { valid: false, error: '닉네임은 2자 이상이어야 합니다.' }
+  }
+  if (trimmed.length > 20) {
+    return { valid: false, error: '닉네임은 20자 이하여야 합니다.' }
+  }
+  // 한글, 영문, 숫자, 밑줄, 공백만 허용
+  const validPattern = /^[가-힣a-zA-Z0-9_\s]+$/
+  if (!validPattern.test(trimmed)) {
+    return { valid: false, error: '닉네임에 특수문자는 사용할 수 없습니다.' }
+  }
+  return { valid: true }
+}
+
+// 약관 동의 검증 함수
+function validateAgreements(agreements: UpdateUserInput['agreements']): { valid: boolean; error?: string } {
+  if (!agreements) {
+    return { valid: true } // agreements는 선택적
+  }
+  if (agreements.termsOfService !== true) {
+    return { valid: false, error: '서비스 이용약관에 동의해야 합니다.' }
+  }
+  if (agreements.privacyPolicy !== true) {
+    return { valid: false, error: '개인정보 처리방침에 동의해야 합니다.' }
+  }
+  return { valid: true }
+}
+
 // PATCH /api/users/[id] - Update a user
 export async function PATCH(
   request: NextRequest,
@@ -56,38 +105,105 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params
+
+    // 인증 확인
+    const authUser = await verifyAuth(request)
+    if (!authUser) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다.' },
+        { status: 401 }
+      )
+    }
+
+    // 본인만 수정 가능
+    if (authUser.uid !== id) {
+      return NextResponse.json(
+        { error: '본인의 프로필만 수정할 수 있습니다.' },
+        { status: 403 }
+      )
+    }
+
     const db = getAdminDb()
     const body: UpdateUserInput = await request.json()
 
+    // 서버 측 데이터 검증
+    if (body.name !== undefined) {
+      const nameValidation = validateName(body.name)
+      if (!nameValidation.valid) {
+        return NextResponse.json(
+          { error: nameValidation.error },
+          { status: 400 }
+        )
+      }
+      body.name = body.name.trim()
+    }
+
+    // 약관 동의 검증 (isProfileComplete가 true로 설정될 때 필수)
+    if (body.isProfileComplete === true && body.agreements) {
+      const agreementsValidation = validateAgreements(body.agreements)
+      if (!agreementsValidation.valid) {
+        return NextResponse.json(
+          { error: agreementsValidation.error },
+          { status: 400 }
+        )
+      }
+    }
+
     const docRef = db.collection(COLLECTIONS.USERS).doc(id)
     const doc = await docRef.get()
+    const now = Timestamp.now()
 
     if (!doc.exists) {
       // Create user if not exists (for seamless user experience)
-      const now = Timestamp.now()
-      const newUserData = {
+      const newUserData: Record<string, unknown> = {
         id,
         name: body.name || 'Anonymous Chef',
         avatarUrl: body.avatarUrl || '',
+        isProfileComplete: body.isProfileComplete || false,
         createdAt: now,
         updatedAt: now,
       }
+
+      // 약관 동의 정보 추가
+      if (body.agreements) {
+        newUserData.agreements = {
+          termsOfService: body.agreements.termsOfService,
+          privacyPolicy: body.agreements.privacyPolicy,
+          marketing: body.agreements.marketing,
+          agreedAt: now,
+        }
+      }
+
       await docRef.set(newUserData)
+
+      // 약관 동의 응답 변환
+      let agreementsResponse: UserAgreementsResponse | undefined
+      if (body.agreements) {
+        agreementsResponse = {
+          termsOfService: body.agreements.termsOfService,
+          privacyPolicy: body.agreements.privacyPolicy,
+          marketing: body.agreements.marketing,
+          agreedAt: now.toDate().toISOString(),
+        }
+      }
 
       return NextResponse.json({
         id,
         name: newUserData.name,
         avatarUrl: newUserData.avatarUrl,
+        agreements: agreementsResponse,
+        isProfileComplete: newUserData.isProfileComplete,
         createdAt: now.toDate().toISOString(),
       })
     }
 
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {
-      updatedAt: Timestamp.now(),
+      updatedAt: now,
     }
 
     if (body.name !== undefined) updateData.name = body.name
+    if (body.isProfileComplete !== undefined) updateData.isProfileComplete = body.isProfileComplete
     if (body.avatarUrl !== undefined) {
       updateData.avatarUrl = body.avatarUrl
 
@@ -107,16 +223,39 @@ export async function PATCH(
       }
     }
 
+    // 약관 동의 정보 업데이트
+    if (body.agreements) {
+      updateData.agreements = {
+        termsOfService: body.agreements.termsOfService,
+        privacyPolicy: body.agreements.privacyPolicy,
+        marketing: body.agreements.marketing,
+        agreedAt: now,
+      }
+    }
+
     await docRef.update(updateData)
 
     // Fetch updated document
     const updatedDoc = await docRef.get()
     const data = updatedDoc.data()!
 
+    // 약관 동의 응답 변환
+    let agreementsResponse: UserAgreementsResponse | undefined
+    if (data.agreements) {
+      agreementsResponse = {
+        termsOfService: data.agreements.termsOfService || false,
+        privacyPolicy: data.agreements.privacyPolicy || false,
+        marketing: data.agreements.marketing || false,
+        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || now.toDate().toISOString(),
+      }
+    }
+
     const response: UserResponse = {
       id: updatedDoc.id,
       name: data.name,
       avatarUrl: data.avatarUrl || '',
+      agreements: agreementsResponse,
+      isProfileComplete: data.isProfileComplete || false,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
 
@@ -137,6 +276,24 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params
+
+    // 인증 확인
+    const authUser = await verifyAuth(request)
+    if (!authUser) {
+      return NextResponse.json(
+        { error: '인증이 필요합니다.' },
+        { status: 401 }
+      )
+    }
+
+    // 본인만 삭제 가능
+    if (authUser.uid !== id) {
+      return NextResponse.json(
+        { error: '본인의 계정만 삭제할 수 있습니다.' },
+        { status: 403 }
+      )
+    }
+
     const db = getAdminDb()
 
     const docRef = db.collection(COLLECTIONS.USERS).doc(id)

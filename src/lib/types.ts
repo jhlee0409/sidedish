@@ -33,10 +33,19 @@ export interface Project {
 
 export type CreateProjectInput = Omit<Project, 'id' | 'likes' | 'createdAt' | 'reactions' | 'comments'>
 
+export interface UserAgreements {
+  termsOfService: boolean
+  privacyPolicy: boolean
+  marketing: boolean
+  agreedAt: Date
+}
+
 export interface User {
   id: string
   name: string
   avatarUrl: string
+  agreements?: UserAgreements
+  isProfileComplete: boolean
   createdAt: Date
 }
 
