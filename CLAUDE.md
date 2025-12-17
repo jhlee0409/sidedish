@@ -124,6 +124,36 @@ src/
 | `src/services/geminiService.ts` | Server-side AI content generation |
 | `src/lib/security-utils.ts` | Input validation & sanitization utilities |
 
+## Claude Code Resources
+
+프로젝트별 Skills와 Agents가 구성되어 있어 복잡한 작업 시 자동으로 참조됨.
+
+### Skills (`.claude/skills/`)
+| Skill | 용도 |
+|-------|------|
+| `create-component.md` | React 컴포넌트 생성 |
+| `styling.md` | Tailwind CSS 스타일링 |
+| `korean-ux.md` | 한국어 UX 텍스트 |
+| `gemini-ai.md` | AI 콘텐츠 생성 |
+| `project-feature.md` | 프로젝트 필드 추가 |
+| `security.md` | 보안 기능 구현 |
+| `testing.md` | Vitest 테스트 작성 |
+| `api-endpoint.md` | API 라우트 생성 |
+| `firebase-operations.md` | Firestore 작업 |
+| `form-validation.md` | 폼 검증 (Zod) |
+| `debugging.md` | 디버깅 및 에러 해결 |
+
+### Agents (`.claude/agents/`)
+| Agent | 용도 |
+|-------|------|
+| `code-reviewer` | 코드 리뷰 및 품질 검사 |
+| `security-scanner` | 보안 취약점 스캔 |
+| `test-writer` | 테스트 코드 작성 |
+| `korean-copywriter` | 한국어 카피 작성 |
+| `firebase-helper` | Firebase 쿼리 지원 |
+| `api-designer` | API 설계 및 구현 |
+| `performance-analyzer` | 성능 분석 및 최적화 |
+
 ## Development Commands
 
 ```bash
