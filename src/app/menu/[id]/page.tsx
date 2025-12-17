@@ -652,25 +652,31 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Author Card */}
-              <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4">
+              <Link
+                href={`/profile/${project.authorId}`}
+                className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4 hover:bg-slate-100/50 hover:border-orange-200 transition-colors group"
+              >
                 {authorProfile?.avatarUrl ? (
                   <Image
                     src={authorProfile.avatarUrl}
                     alt={project.authorName}
                     width={48}
                     height={48}
-                    className="w-12 h-12 rounded-full object-cover shrink-0"
+                    className="w-12 h-12 rounded-full object-cover shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all">
                     {project.authorName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div>
-                  <div className="font-bold text-slate-900 text-sm">{project.authorName}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-slate-900 text-sm group-hover:text-orange-600 transition-colors">{project.authorName}</div>
                   <div className="text-xs text-slate-500 mt-0.5">Head Chef</div>
                 </div>
-              </div>
+                <div className="text-slate-400 group-hover:text-orange-500 transition-colors">
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </div>
+              </Link>
             </div>
           </div>
         </div>
