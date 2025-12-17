@@ -55,13 +55,6 @@ export interface Whisper {
   isRead: boolean
 }
 
-export interface UserData {
-  user: User
-  likedProjectIds: string[]
-  comments: UserComment[]
-  whispers: Whisper[]
-}
-
 // AI Generation Types
 export interface AiGeneratedContent {
   shortDescription: string
@@ -91,18 +84,4 @@ export interface DraftData {
   generationCount: number
   lastSavedAt: number
   createdAt: number
-}
-
-export interface AiUsageRecord {
-  draftId: string
-  userId: string
-  generationCount: number
-  lastGeneratedAt: number
-}
-
-export interface DailyAiUsage {
-  userId: string
-  date: string // YYYY-MM-DD
-  count: number
-  lastGeneratedAt: number
 }

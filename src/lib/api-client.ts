@@ -487,7 +487,7 @@ export interface CreateProjectData {
  * const newProject = await createProject({
  *   title: '나의 사이드 프로젝트',
  *   description: '## 프로젝트 소개\n...',
- *   shortDescription: '개발자를 위한 생산성 도구',
+ *   shortDescription: '메이커를 위한 생산성 도구',
  *   tags: ['React', 'TypeScript', '생산성'],
  *   imageUrl: 'https://example.com/thumbnail.png',
  *   link: 'https://myproject.com',
@@ -684,21 +684,6 @@ export async function toggleReaction(projectId: string, emoji: string): Promise<
 export async function getUserReactions(projectId: string): Promise<{ reactions: Reactions; userReactions: string[] }> {
   const response = await fetchWithAuth(`/api/projects/${projectId}/reactions`)
   return handleResponse<{ reactions: Reactions; userReactions: string[] }>(response)
-}
-
-/**
- * Adds a reaction to a project.
- *
- * @deprecated Use {@link toggleReaction} instead for toggle behavior.
- * This function is kept for backward compatibility and wraps toggleReaction.
- *
- * @param projectId - Project ID
- * @param emoji - Reaction emoji key
- * @returns Updated reaction counts
- */
-export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Reactions }> {
-  const result = await toggleReaction(projectId, emoji)
-  return { reactions: result.reactions }
 }
 
 // ============ Combined User Interactions API ============
@@ -952,36 +937,6 @@ export async function getUser(userId: string): Promise<UserResponse> {
     setCache(cacheKey, data)
     return data
   })
-}
-
-/**
- * Creates or updates the authenticated user's profile.
- *
- * If the user doesn't exist, creates a new profile.
- * If exists, updates the provided fields.
- * Typically called after Firebase authentication to sync profile data.
- *
- * @param data - User profile data
- * @param data.name - Display name
- * @param data.avatarUrl - Optional URL to avatar image
- * @returns The created or updated user profile
- * @throws {ApiError} 401 if not authenticated
- *
- * @example
- * ```tsx
- * // After Firebase login
- * const user = await createOrUpdateUser({
- *   name: firebaseUser.displayName || '익명 셰프',
- *   avatarUrl: firebaseUser.photoURL || undefined
- * })
- * ```
- */
-export async function createOrUpdateUser(data: { name: string; avatarUrl?: string }): Promise<UserResponse> {
-  const response = await fetchWithAuth('/api/users', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-  return handleResponse<UserResponse>(response)
 }
 
 /**

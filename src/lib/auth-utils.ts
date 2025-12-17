@@ -67,11 +67,6 @@ export async function requireAuth(
   return handler(user, request)
 }
 
-// Check if the authenticated user owns a resource
-export function isOwner(userId: string, resourceOwnerId: string): boolean {
-  return userId === resourceOwnerId
-}
-
 // Unauthorized response helper
 export function unauthorizedResponse(message = '인증이 필요합니다.'): NextResponse {
   return NextResponse.json({ error: message, code: 'UNAUTHORIZED' }, { status: 401 })

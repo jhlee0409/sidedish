@@ -239,7 +239,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       }, 3000)
     } catch (error) {
       console.error('Failed to send whisper:', error)
-      toast.error('비밀 메시지 전송에 실패했습니다.')
+      toast.error('귓속말 전송에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
@@ -617,11 +617,11 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
                 <h3 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
                   <span className="bg-purple-100 p-1.5 rounded-lg text-purple-600"><Lock className="w-4 h-4" /></span>
-                  셰프에게 보내는 비밀 쪽지
+                  셰프에게 보내는 귓속말
                 </h3>
                 <p className="text-slate-500 text-xs mb-4 leading-relaxed">
-                  작성자에게만 보이는 비밀 메시지입니다.<br />
-                  &quot;이 부분은 조금 짠 것 같아요(버그)&quot; 같은 피드백을 남겨주세요.
+                  작성자에게만 보이는 귓속말이에요.<br />
+                  버그 제보나 개선 아이디어를 편하게 남겨주세요.
                 </p>
 
                 {!isWhisperSent ? (
@@ -637,7 +637,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                       disabled={!whisperMessage.trim()}
                       className="w-full py-3 rounded-xl text-sm bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      비밀 메시지 보내기
+                      귓속말 보내기
                     </Button>
                   </form>
                 ) : (

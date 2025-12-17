@@ -131,7 +131,7 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
               className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <MessageCircle className="w-5 h-5 text-slate-400" />
-              받은 피드백
+              받은 귓속말
             </Link>
           </div>
 

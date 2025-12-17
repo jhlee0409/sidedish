@@ -13,50 +13,6 @@ interface GeneratedProjectContent {
   tags: string[]
 }
 
-export const refineDescription = async (rawDescription: string): Promise<string> => {
-  if (!rawDescription.trim()) return ''
-
-  try {
-    const prompt = `
-<role>
-당신은 SideDish 플랫폼의 수석 카피라이터입니다.
-SideDish는 메이커들이 사이드 프로젝트를 맛있는 요리처럼 선보이는 플랫폼입니다.
-</role>
-
-<task>
-주어진 프로젝트 설명을 매력적이고 읽기 쉬운 마케팅 카피로 다듬어주세요.
-</task>
-
-<input>
-${rawDescription}
-</input>
-
-<constraints>
-- 언어: 한국어 (자연스럽고 트렌디한 톤)
-- 분량: 2-3개의 짧은 문단
-- 첫 문장은 후킹 문구로 시작
-- 요리/음식 메타포를 자연스럽게 1-2개 사용 (예: "신선한", "비밀 레시피", "한 입 크기")
-- 마크다운 볼드(**텍스트**)로 핵심 가치 강조
-- 과장하지 말고 실제 기능에 집중
-</constraints>
-
-<output_format>
-마크다운 형식의 정제된 설명문만 출력하세요. 다른 설명이나 메타 코멘트 없이 결과물만 반환하세요.
-</output_format>
-`
-
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: prompt,
-    })
-
-    return response.text?.trim() || ''
-  } catch (error) {
-    console.error("Gemini API Error:", error)
-    throw new Error("AI 요약 생성에 실패했습니다. 잠시 후 다시 시도해주세요.")
-  }
-}
-
 export const generateProjectContent = async (draft: string): Promise<{ shortDescription: string, description: string, tags: string[] }> => {
   if (!draft.trim()) {
     throw new Error("설명 내용을 입력해주세요.")

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching whispers:', error)
     return NextResponse.json(
-      { error: '피드백 목록을 불러오는데 실패했습니다.' },
+      { error: '귓속말 목록을 불러오는데 실패했습니다.' },
       { status: 500 }
     )
   }
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating whisper:', error)
     return NextResponse.json(
-      { error: '피드백 전송에 실패했습니다.' },
+      { error: '귓속말 전송에 실패했습니다.' },
       { status: 500 }
     )
   }

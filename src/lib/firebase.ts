@@ -1,6 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 import { getFirestore, Firestore } from 'firebase/firestore'
-import { getAnalytics, Analytics, isSupported } from 'firebase/analytics'
 import {
   getAuth,
   Auth,
@@ -35,7 +34,6 @@ export function isFirebaseConfigured(): boolean {
 let app: FirebaseApp | null = null
 let db: Firestore | null = null
 let auth: Auth | null = null
-let analytics: Analytics | null = null
 
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured()) {
@@ -64,21 +62,6 @@ export function getFirebaseAuth(): Auth | null {
     auth = getAuth(firebaseApp)
   }
   return auth
-}
-
-export async function getFirebaseAnalytics(): Promise<Analytics | null> {
-  if (typeof window === 'undefined') return null
-
-  const firebaseApp = getFirebaseApp()
-  if (!firebaseApp) return null
-
-  if (!analytics) {
-    const supported = await isSupported()
-    if (supported) {
-      analytics = getAnalytics(firebaseApp)
-    }
-  }
-  return analytics
 }
 
 // Auth providers
@@ -127,6 +110,3 @@ export function onAuthChange(callback: (user: FirebaseUser | null) => void): () 
 
 // Export types
 export type { FirebaseUser }
-
-// Export for direct usage
-export { app, db, auth, analytics }

@@ -155,7 +155,7 @@ function MyPageContent() {
   const tabs = [
     { id: 'menus' as TabType, label: '내 메뉴', icon: <Utensils className="w-4 h-4" />, count: myProjects.length },
     { id: 'likes' as TabType, label: '찜한 메뉴', icon: <Heart className="w-4 h-4" />, count: likedProjects.length },
-    { id: 'whispers' as TabType, label: '받은 피드백', icon: <Mail className="w-4 h-4" />, count: whispers.filter(w => !w.isRead).length },
+    { id: 'whispers' as TabType, label: '받은 귓속말', icon: <Mail className="w-4 h-4" />, count: whispers.filter(w => !w.isRead).length },
   ]
 
   const unreadWhispers = whispers.filter(w => !w.isRead).length
@@ -442,7 +442,7 @@ function MyPageContent() {
           {/* Whispers Tab */}
           {activeTab === 'whispers' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-slate-900 mb-6">받은 비밀 피드백</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-6">받은 비밀 귓속말</h2>
 
               {whispers.length > 0 ? (
                 <div className="space-y-4">
@@ -481,8 +481,8 @@ function MyPageContent() {
               ) : (
                 <EmptyState
                   icon={<Mail className="w-12 h-12" />}
-                  title="아직 받은 피드백이 없어요"
-                  description="메뉴 올리면 피드백이 와요"
+                  title="아직 받은 귓속말이 없어요"
+                  description="메뉴 올리면 귓속말이 와요"
                   action={
                     <Link href="/menu/register">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
