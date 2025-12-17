@@ -1,7 +1,16 @@
+---
+name: writing-korean-ux-text
+description: Writes Korean UI text for SideDish. Use when adding buttons, labels, error messages, placeholders, or any user-facing Korean text. Includes culinary metaphors (메이커=셰프, 프로젝트=메뉴) and tone guidelines.
+---
+
 # Korean UX Writing Skill
 
 ## When to Use
-Use this skill when writing user-facing text in Korean.
+- Writing button labels (등록하기, 저장, 취소)
+- Creating form labels and placeholders
+- Writing error and success messages
+- Adding empty state messages
+- Using culinary metaphors consistently
 
 ## Tone & Voice
 - **친근하고 전문적인** (Friendly yet professional)
@@ -76,7 +85,7 @@ AI 생성에 실패했습니다.
 | Concept | Metaphor |
 |---------|----------|
 | Projects | 메뉴, 요리, 디시 |
-| Developers | 셰프, 요리사 |
+| Makers | 셰프, 요리사 |
 | Users | 미식가, 다이너 |
 | Features | 재료, 레시피 |
 | Tech Stack | 비밀 재료, 소스 |
@@ -85,7 +94,7 @@ AI 생성에 실패했습니다.
 
 ### Example Phrases
 ```
-"개발자가 요리한 맛있는 사이드 프로젝트"
+"메이커가 요리한 맛있는 사이드 프로젝트"
 "미식가들의 입맛을 사로잡은 프로젝트들"
 "직접 셰프가 되어 첫 번째 요리를 등록해보세요"
 "지금 핫한 메뉴"
