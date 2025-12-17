@@ -686,21 +686,6 @@ export async function getUserReactions(projectId: string): Promise<{ reactions: 
   return handleResponse<{ reactions: Reactions; userReactions: string[] }>(response)
 }
 
-/**
- * Adds a reaction to a project.
- *
- * @deprecated Use {@link toggleReaction} instead for toggle behavior.
- * This function is kept for backward compatibility and wraps toggleReaction.
- *
- * @param projectId - Project ID
- * @param emoji - Reaction emoji key
- * @returns Updated reaction counts
- */
-export async function addReaction(projectId: string, emoji: string): Promise<{ reactions: Reactions }> {
-  const result = await toggleReaction(projectId, emoji)
-  return { reactions: result.reactions }
-}
-
 // ============ Combined User Interactions API ============
 // Fetch both liked status and user reactions in parallel to reduce API calls.
 
@@ -952,36 +937,6 @@ export async function getUser(userId: string): Promise<UserResponse> {
     setCache(cacheKey, data)
     return data
   })
-}
-
-/**
- * Creates or updates the authenticated user's profile.
- *
- * If the user doesn't exist, creates a new profile.
- * If exists, updates the provided fields.
- * Typically called after Firebase authentication to sync profile data.
- *
- * @param data - User profile data
- * @param data.name - Display name
- * @param data.avatarUrl - Optional URL to avatar image
- * @returns The created or updated user profile
- * @throws {ApiError} 401 if not authenticated
- *
- * @example
- * ```tsx
- * // After Firebase login
- * const user = await createOrUpdateUser({
- *   name: firebaseUser.displayName || '익명 셰프',
- *   avatarUrl: firebaseUser.photoURL || undefined
- * })
- * ```
- */
-export async function createOrUpdateUser(data: { name: string; avatarUrl?: string }): Promise<UserResponse> {
-  const response = await fetchWithAuth('/api/users', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-  return handleResponse<UserResponse>(response)
 }
 
 /**

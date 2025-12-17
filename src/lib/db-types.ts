@@ -50,14 +50,6 @@ export interface CommentDoc {
   createdAt: Timestamp
 }
 
-// Firestore document structure for Likes (subcollection or separate collection)
-export interface LikeDoc {
-  id: string
-  projectId: string
-  userId: string
-  createdAt: Timestamp
-}
-
 // Firestore document structure for Whispers (private feedback)
 export interface WhisperDoc {
   id: string
