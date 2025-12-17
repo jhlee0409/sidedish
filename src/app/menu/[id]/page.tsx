@@ -620,7 +620,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                   셰프에게 보내는 귓속말
                 </h3>
                 <p className="text-slate-500 text-xs mb-4 leading-relaxed">
-                  작성자에게만 보이는 비밀 메시지입니다.<br />
+                  작성자에게만 보이는 귓속말이에요.<br />
                   &quot;이 부분은 조금 짠 것 같아요(버그)&quot; 같은 귓속말을 남겨주세요.
                 </p>
 
