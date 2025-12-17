@@ -45,6 +45,10 @@ export interface UserDoc {
   avatarUrl: string
   agreements?: UserAgreements // 회원가입 시 동의 정보
   isProfileComplete: boolean // 프로필 설정 완료 여부
+  isWithdrawn?: boolean // 탈퇴 여부 (soft delete)
+  withdrawnAt?: Timestamp // 탈퇴 시점
+  withdrawalReason?: string // 탈퇴 사유
+  withdrawalFeedback?: string // 불편 사항 피드백
   createdAt: Timestamp
   updatedAt: Timestamp
 }

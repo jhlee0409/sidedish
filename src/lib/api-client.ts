@@ -987,6 +987,38 @@ export async function updateUser(
   return result
 }
 
+/**
+ * Withdraws (soft deletes) a user account.
+ *
+ * Marks the user as withdrawn without permanently deleting data.
+ * Data is retained for legal compliance (1 year for identity info,
+ * 3 months for access logs).
+ *
+ * @param userId - User ID to withdraw
+ * @param reason - Reason for withdrawal (required)
+ * @param feedback - Optional feedback about inconveniences
+ * @returns Success status
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the account owner
+ * @throws {ApiError} 400 if already withdrawn or invalid reason
+ */
+export async function withdrawUser(
+  userId: string,
+  reason: string,
+  feedback?: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth(`/api/users/${userId}/withdraw`, {
+    method: 'POST',
+    body: JSON.stringify({ reason, feedback }),
+  })
+  const result = await handleResponse<{ success: boolean; message: string }>(response)
+
+  // 캐시 무효화
+  invalidateCache(`user:${userId}`)
+
+  return result
+}
+
 // ============ Image Upload API ============
 // Upload images to Vercel Blob storage with automatic optimization.
 
