@@ -9,13 +9,14 @@ import {
   isFirebaseConfigured,
   FirebaseUser,
 } from '@/lib/firebase'
-import { initApiClient, updateUser } from '@/lib/api-client'
+import { initApiClient, updateUser, getUser } from '@/lib/api-client'
 
 export interface User {
   id: string
   email: string | null
   name: string
   avatarUrl: string
+  originalAvatarUrl: string // 소셜 로그인 기본 프로필 사진
   provider: 'google' | 'github' | null
 }
 
@@ -29,11 +30,12 @@ interface AuthContextType {
   signInWithGithub: () => Promise<void>
   signOut: () => Promise<void>
   getIdToken: () => Promise<string | null>
+  updateProfile: (data: { name?: string; avatarUrl?: string }) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-function firebaseUserToUser(firebaseUser: FirebaseUser): User {
+function firebaseUserToUser(firebaseUser: FirebaseUser, customAvatarUrl?: string): User {
   // Determine provider
   let provider: 'google' | 'github' | null = null
   if (firebaseUser.providerData.length > 0) {
@@ -42,11 +44,14 @@ function firebaseUserToUser(firebaseUser: FirebaseUser): User {
     else if (providerId === 'github.com') provider = 'github'
   }
 
+  const originalAvatarUrl = firebaseUser.photoURL || ''
+
   return {
     id: firebaseUser.uid,
     email: firebaseUser.email,
     name: firebaseUser.displayName || 'Anonymous Chef',
-    avatarUrl: firebaseUser.photoURL || '',
+    avatarUrl: customAvatarUrl || originalAvatarUrl,
+    originalAvatarUrl,
     provider,
   }
 }
@@ -66,16 +71,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthChange(async (fbUser) => {
       if (fbUser) {
         setFirebaseUser(fbUser)
-        setUser(firebaseUserToUser(fbUser))
 
-        // Sync user profile to Firestore (updateUser creates if not exists)
+        // Firestore에서 기존 사용자 정보 확인
         try {
-          await updateUser(fbUser.uid, {
-            name: fbUser.displayName || 'Anonymous Chef',
-            avatarUrl: fbUser.photoURL || '',
-          })
-        } catch (error) {
-          console.error('Failed to sync user profile:', error)
+          const existingUser = await getUser(fbUser.uid)
+          // 기존 사용자가 있으면 Firestore 정보 사용 (커스텀 닉네임/아바타 유지)
+          setUser(firebaseUserToUser(fbUser, existingUser.avatarUrl))
+          // 이름도 Firestore 값으로 업데이트
+          setUser((prev) =>
+            prev ? { ...prev, name: existingUser.name } : prev
+          )
+        } catch {
+          // 신규 사용자 - Firebase 정보로 생성
+          setUser(firebaseUserToUser(fbUser))
+          try {
+            await updateUser(fbUser.uid, {
+              name: fbUser.displayName || 'Anonymous Chef',
+              avatarUrl: fbUser.photoURL || '',
+            })
+          } catch (error) {
+            console.error('Failed to create user profile:', error)
+          }
         }
       } else {
         setFirebaseUser(null)
@@ -137,6 +153,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initApiClient(getIdToken)
   }, [getIdToken])
 
+  // 프로필 업데이트 시 로컬 상태도 동기화
+  const handleUpdateProfile = useCallback(
+    (data: { name?: string; avatarUrl?: string }) => {
+      setUser((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          name: data.name ?? prev.name,
+          avatarUrl: data.avatarUrl ?? prev.avatarUrl,
+        }
+      })
+    },
+    []
+  )
+
   const value: AuthContextType = {
     user,
     firebaseUser,
@@ -147,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGithub: handleSignInWithGithub,
     signOut: handleSignOut,
     getIdToken,
+    updateProfile: handleUpdateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

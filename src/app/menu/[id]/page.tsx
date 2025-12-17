@@ -355,7 +355,7 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
           <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm md:text-base border-b border-slate-100 pb-8">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
               <ChefHat className="w-4 h-4 text-orange-500" />
-              <span className="font-semibold text-slate-700">{project.authorName} Chef</span>
+              <span className="font-semibold text-slate-700">{authorProfile?.name || project.authorName} Chef</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -652,25 +652,31 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Author Card */}
-              <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4">
+              <Link
+                href={`/profile/${project.authorId}`}
+                className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100 flex items-center gap-4 hover:bg-slate-100/50 hover:border-orange-200 transition-colors group"
+              >
                 {authorProfile?.avatarUrl ? (
                   <Image
                     src={authorProfile.avatarUrl}
-                    alt={project.authorName}
+                    alt={authorProfile?.name || project.authorName}
                     width={48}
                     height={48}
-                    className="w-12 h-12 rounded-full object-cover shrink-0"
+                    className="w-12 h-12 rounded-full object-cover shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0">
-                    {project.authorName.charAt(0).toUpperCase()}
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all">
+                    {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div>
-                  <div className="font-bold text-slate-900 text-sm">{project.authorName}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-slate-900 text-sm group-hover:text-orange-600 transition-colors">{authorProfile?.name || project.authorName}</div>
                   <div className="text-xs text-slate-500 mt-0.5">Head Chef</div>
                 </div>
-              </div>
+                <div className="text-slate-400 group-hover:text-orange-500 transition-colors">
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </div>
+              </Link>
             </div>
           </div>
         </div>

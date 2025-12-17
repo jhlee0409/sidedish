@@ -22,6 +22,7 @@ import {
 } from '@/lib/api-client'
 import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
+import ProfileEditModal from '@/components/ProfileEditModal'
 
 type TabType = 'menus' | 'likes' | 'whispers'
 
@@ -81,6 +82,7 @@ function MyPageContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showProfileEditModal, setShowProfileEditModal] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -225,12 +227,21 @@ function MyPageContent() {
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 flex items-center gap-6">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white/30 overflow-hidden">
-                {user.avatarUrl ? (
-                  <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
-                ) : (
-                  user.name.charAt(0).toUpperCase()
-                )}
+              <div className="relative">
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white/30 overflow-hidden">
+                  {user.avatarUrl ? (
+                    <Image src={user.avatarUrl} alt={user.name} fill className="object-cover" />
+                  ) : (
+                    user.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowProfileEditModal(true)}
+                  className="absolute bottom-0 right-0 p-1.5 bg-white text-orange-500 rounded-full shadow-lg hover:bg-orange-50 transition-colors"
+                  title="프로필 수정"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{user.name}</h1>
@@ -496,6 +507,12 @@ function MyPageContent() {
           )}
         </div>
       </div>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={showProfileEditModal}
+        onClose={() => setShowProfileEditModal(false)}
+      />
     </div>
   )
 }

@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { UpdateUserInput, UserResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
+import { del } from '@vercel/blob'
+
+// Vercel Blob URL 패턴 확인 (커스텀 업로드 이미지인지)
+function isVercelBlobUrl(url: string): boolean {
+  return url.includes('public.blob.vercel-storage.com')
+}
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -82,7 +88,24 @@ export async function PATCH(
     }
 
     if (body.name !== undefined) updateData.name = body.name
-    if (body.avatarUrl !== undefined) updateData.avatarUrl = body.avatarUrl
+    if (body.avatarUrl !== undefined) {
+      updateData.avatarUrl = body.avatarUrl
+
+      // 이전 avatarUrl이 Vercel Blob URL인 경우 삭제 (새 URL과 다를 때만)
+      const previousAvatarUrl = doc.data()?.avatarUrl
+      if (
+        previousAvatarUrl &&
+        previousAvatarUrl !== body.avatarUrl &&
+        isVercelBlobUrl(previousAvatarUrl)
+      ) {
+        try {
+          await del(previousAvatarUrl)
+        } catch (deleteError) {
+          // 이미지 삭제 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
+          console.error('Failed to delete previous avatar:', deleteError)
+        }
+      }
+    }
 
     await docRef.update(updateData)
 

@@ -967,7 +967,12 @@ export async function updateUser(userId: string, data: { name?: string; avatarUr
     method: 'PATCH',
     body: JSON.stringify(data),
   })
-  return handleResponse<UserResponse>(response)
+  const result = await handleResponse<UserResponse>(response)
+
+  // 캐시 자동 무효화
+  invalidateCache(`user:${userId}`)
+
+  return result
 }
 
 // ============ Image Upload API ============
