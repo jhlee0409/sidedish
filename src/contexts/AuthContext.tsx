@@ -9,7 +9,7 @@ import {
   isFirebaseConfigured,
   FirebaseUser,
 } from '@/lib/firebase'
-import { initApiClient, updateUser } from '@/lib/api-client'
+import { initApiClient, updateUser, getUser } from '@/lib/api-client'
 
 export interface User {
   id: string
@@ -71,16 +71,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthChange(async (fbUser) => {
       if (fbUser) {
         setFirebaseUser(fbUser)
-        setUser(firebaseUserToUser(fbUser))
 
-        // Sync user profile to Firestore (updateUser creates if not exists)
+        // Firestore에서 기존 사용자 정보 확인
         try {
-          await updateUser(fbUser.uid, {
-            name: fbUser.displayName || 'Anonymous Chef',
-            avatarUrl: fbUser.photoURL || '',
-          })
-        } catch (error) {
-          console.error('Failed to sync user profile:', error)
+          const existingUser = await getUser(fbUser.uid)
+          // 기존 사용자가 있으면 Firestore 정보 사용 (커스텀 닉네임/아바타 유지)
+          setUser(firebaseUserToUser(fbUser, existingUser.avatarUrl))
+          // 이름도 Firestore 값으로 업데이트
+          setUser((prev) =>
+            prev ? { ...prev, name: existingUser.name } : prev
+          )
+        } catch {
+          // 신규 사용자 - Firebase 정보로 생성
+          setUser(firebaseUserToUser(fbUser))
+          try {
+            await updateUser(fbUser.uid, {
+              name: fbUser.displayName || 'Anonymous Chef',
+              avatarUrl: fbUser.photoURL || '',
+            })
+          } catch (error) {
+            console.error('Failed to create user profile:', error)
+          }
         }
       } else {
         setFirebaseUser(null)
