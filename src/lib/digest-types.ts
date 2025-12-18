@@ -173,12 +173,48 @@ export interface DigestSubscriptionResponse {
   createdAt: string
 }
 
+/** 날씨 데이터 (미리보기용 간소화된 버전) */
+export interface WeatherPreviewData {
+  city: string
+  cityKo: string
+  current: {
+    temp: number
+    feelsLike: number
+    tempMin: number
+    tempMax: number
+    humidity: number
+    windSpeed: number
+    visibility: number
+    weather: {
+      main: string
+      description: string
+      icon: string
+    }
+  }
+}
+
+/** 날씨 추천 정보 */
+export interface WeatherRecommendations {
+  outfit: string
+  umbrella: boolean
+  activities: string[]
+}
+
 /** 다이제스트 미리보기 응답 */
 export interface DigestPreviewResponse {
   digestId: string
   digestName: string
   /** 도시별 콘텐츠 */
-  contents: Record<string, DigestContent>
+  contents?: Record<string, DigestContent>
+  /** 날씨 미리보기 데이터 */
+  weather?: {
+    cities: Array<{
+      city: string
+      today: WeatherPreviewData
+    }>
+  }
+  /** 추천 정보 */
+  recommendations?: WeatherRecommendations
   /** 생성 시간 */
   generatedAt: string
 }
