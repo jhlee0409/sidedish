@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
-  Globe, Smartphone, Gamepad2, Palette, Box, Loader2
+  Globe, Smartphone, Gamepad2, Palette, Box, Loader2, Package
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -20,13 +20,17 @@ import {
   markWhisperAsRead as markWhisperAsReadApi,
   getProject,
   withdrawUser,
+  getDigestSubscriptions,
+  unsubscribeFromDigest,
 } from '@/lib/api-client'
 import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
+import { DigestSubscriptionResponse } from '@/lib/digest-types'
+import { LUNCHBOX_TEXT } from '@/lib/lunchbox-text'
 import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
 import WithdrawalModal from '@/components/WithdrawalModal'
 
-type TabType = 'menus' | 'likes' | 'whispers'
+type TabType = 'menus' | 'likes' | 'whispers' | 'lunchbox'
 
 const platformIcons = {
   WEB: <Globe className="w-4 h-4" />,
@@ -51,7 +55,7 @@ export default function MyPage() {
   )
 }
 
-const validTabs: TabType[] = ['menus', 'likes', 'whispers']
+const validTabs: TabType[] = ['menus', 'likes', 'whispers', 'lunchbox']
 
 function MyPageContent() {
   const router = useRouter()
@@ -81,7 +85,10 @@ function MyPageContent() {
   const [myProjects, setMyProjects] = useState<ProjectResponse[]>([])
   const [likedProjects, setLikedProjects] = useState<ProjectResponse[]>([])
   const [whispers, setWhispers] = useState<WhisperResponse[]>([])
+  const [subscriptions, setSubscriptions] = useState<DigestSubscriptionResponse[]>([])
+  const [maxSubscriptions, setMaxSubscriptions] = useState(5)
   const [isLoading, setIsLoading] = useState(true)
+  const [unsubscribingId, setUnsubscribingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showProfileEditModal, setShowProfileEditModal] = useState(false)
@@ -114,6 +121,15 @@ function MyPageContent() {
         setWhispers(whispersResponse)
       } catch {
         setWhispers([])
+      }
+
+      // Load digest subscriptions
+      try {
+        const subsResponse = await getDigestSubscriptions()
+        setSubscriptions(subsResponse.data)
+        setMaxSubscriptions(subsResponse.max)
+      } catch {
+        setSubscriptions([])
       }
     } catch (error) {
       console.error('Failed to load data:', error)
@@ -172,10 +188,25 @@ function MyPageContent() {
     }
   }
 
+  const handleUnsubscribe = async (subscriptionId: string) => {
+    setUnsubscribingId(subscriptionId)
+    try {
+      await unsubscribeFromDigest(subscriptionId)
+      setSubscriptions(prev => prev.filter(s => s.id !== subscriptionId))
+      toast.success(LUNCHBOX_TEXT.UNSUBSCRIBE_SUCCESS)
+    } catch (error) {
+      console.error('Failed to unsubscribe:', error)
+      toast.error(LUNCHBOX_TEXT.UNSUBSCRIBE_ERROR)
+    } finally {
+      setUnsubscribingId(null)
+    }
+  }
+
   const tabs = [
     { id: 'menus' as TabType, label: '내 메뉴', icon: <Utensils className="w-4 h-4" />, count: myProjects.length },
     { id: 'likes' as TabType, label: '찜한 메뉴', icon: <Heart className="w-4 h-4" />, count: likedProjects.length },
     { id: 'whispers' as TabType, label: '받은 귓속말', icon: <Mail className="w-4 h-4" />, count: whispers.filter(w => !w.isRead).length },
+    { id: 'lunchbox' as TabType, label: LUNCHBOX_TEXT.MY_SUBSCRIPTIONS, icon: <Package className="w-4 h-4" />, count: subscriptions.length },
   ]
 
   const unreadWhispers = whispers.filter(w => !w.isRead).length
@@ -524,6 +555,93 @@ function MyPageContent() {
                     <Link href="/menu/register">
                       <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 rounded-xl">
                         메뉴 등록하기
+                      </Button>
+                    </Link>
+                  }
+                />
+              )}
+            </div>
+          )}
+
+          {/* Lunchbox Subscriptions Tab */}
+          {activeTab === 'lunchbox' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{LUNCHBOX_TEXT.MY_SUBSCRIPTIONS}</h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {subscriptions.length} / {maxSubscriptions}개 구독 중
+                  </p>
+                </div>
+                <Link href="/lunchbox">
+                  <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 rounded-xl">
+                    {LUNCHBOX_TEXT.BROWSE_LUNCHBOX}
+                  </Button>
+                </Link>
+              </div>
+
+              {subscriptions.length > 0 ? (
+                <div className="space-y-4">
+                  {subscriptions.map(sub => (
+                    <div
+                      key={sub.id}
+                      className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className="text-4xl">{sub.digest.icon}</div>
+                            <div className="flex-1">
+                              <h3 className="font-bold text-slate-900">{sub.digest.name}</h3>
+                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                                {sub.digest.description}
+                              </p>
+                              <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {new Date(sub.createdAt).toLocaleDateString()} 부터
+                                </span>
+                                {sub.digest.config.deliveryTime && (
+                                  <span className="flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    매일 {sub.digest.config.deliveryTime} 배달
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/lunchbox/${sub.digest.slug}`}>
+                              <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                <Globe className="w-4 h-4" />
+                              </button>
+                            </Link>
+                            <button
+                              onClick={() => handleUnsubscribe(sub.id)}
+                              disabled={unsubscribingId === sub.id}
+                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {unsubscribingId === sub.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  icon={<Package className="w-12 h-12" />}
+                  title={LUNCHBOX_TEXT.EMPTY_SUBSCRIPTIONS}
+                  description={LUNCHBOX_TEXT.EMPTY_SUBSCRIPTIONS_DESC}
+                  action={
+                    <Link href="/lunchbox">
+                      <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 rounded-xl">
+                        {LUNCHBOX_TEXT.BROWSE_LUNCHBOX}
                       </Button>
                     </Link>
                   }

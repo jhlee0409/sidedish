@@ -18,10 +18,14 @@ export const LUNCHBOX_TEXT = {
 
   // 마이페이지 탭
   TAB_TITLE: '도시락 구독',
+  MY_SUBSCRIPTIONS: '내 도시락',
+  BROWSE_LUNCHBOX: '도시락 둘러보기',
   SUBSCRIPTION_COUNT: (current: number, max: number) =>
     `신청 중인 도시락 (${current}/${max})`,
   EMPTY_STATE: '아직 신청한 도시락이 없어요',
   EMPTY_STATE_CTA: '도시락 둘러보기',
+  EMPTY_SUBSCRIPTIONS: '아직 신청한 도시락이 없어요',
+  EMPTY_SUBSCRIPTIONS_DESC: '매일 아침 필요한 정보를 받아보세요!',
   VIEW_MORE: '+ 더 많은 도시락 보기',
 
   // 상세 페이지
