@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
-import { getUserRole, isAdmin } from '@/lib/admin-utils'
+import { getUserRoleByUid, isAdmin } from '@/lib/admin-utils'
 import { DigestDoc, SupportedCity } from '@/lib/digest-types'
 import { getMultiCityWeather } from '@/services/weatherService'
 import { generateDigestEmailData } from '@/services/digestGeneratorService'
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse()
     }
 
-    // 관리자 권한 체크
-    const userRole = await getUserRole(user.email || '')
+    // 관리자 권한 체크 (UID로 조회)
+    const userRole = await getUserRoleByUid(user.uid)
     if (!isAdmin(userRole)) {
       return forbiddenResponse('관리자만 테스트 발송을 할 수 있습니다.')
     }

@@ -158,6 +158,7 @@ export async function PATCH(
       // Create user if not exists (for seamless user experience)
       const newUserData: Record<string, unknown> = {
         id,
+        email: authUser.email || '', // Firebase Auth에서 이메일 저장
         name: body.name || 'Anonymous Chef',
         avatarUrl: body.avatarUrl || '',
         isProfileComplete: body.isProfileComplete || false,
@@ -201,6 +202,12 @@ export async function PATCH(
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {
       updatedAt: now,
+    }
+
+    // 기존 유저에 email 필드가 없으면 추가 (마이그레이션)
+    const existingData = doc.data()
+    if (!existingData?.email && authUser.email) {
+      updateData.email = authUser.email
     }
 
     if (body.name !== undefined) updateData.name = body.name
