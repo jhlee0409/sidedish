@@ -25,32 +25,41 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get('activeOnly') !== 'false'
     const category = searchParams.get('category')
 
-    let query = db.collection(COLLECTIONS.DIGESTS).orderBy('createdAt', 'desc')
+    // 다이제스트 조회 (단순 쿼리로 변경 - 인덱스 불필요)
+    const snapshot = await db.collection(COLLECTIONS.DIGESTS).get()
 
-    if (activeOnly) {
-      query = query.where('isActive', '==', true)
+    if (snapshot.empty) {
+      return NextResponse.json({ data: [] })
     }
 
-    const snapshot = await query.get()
     const digests: DigestResponse[] = []
 
     // 유저의 구독 목록 조회 (로그인한 경우)
-    let userSubscriptions: Map<string, string> = new Map()
+    const userSubscriptions: Map<string, string> = new Map()
     if (user) {
-      const subsSnapshot = await db
-        .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
-        .where('userId', '==', user.uid)
-        .where('isActive', '==', true)
-        .get()
+      try {
+        const subsSnapshot = await db
+          .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
+          .where('userId', '==', user.uid)
+          .where('isActive', '==', true)
+          .get()
 
-      subsSnapshot.docs.forEach((doc) => {
-        const data = doc.data()
-        userSubscriptions.set(data.digestId, doc.id)
-      })
+        subsSnapshot.docs.forEach((doc) => {
+          const data = doc.data()
+          userSubscriptions.set(data.digestId, doc.id)
+        })
+      } catch {
+        // 구독 조회 실패해도 계속 진행
+      }
     }
 
     for (const doc of snapshot.docs) {
       const data = doc.data() as DigestDoc
+
+      // 활성 필터
+      if (activeOnly && !data.isActive) {
+        continue
+      }
 
       // 카테고리 필터
       if (category && data.category !== category) {
@@ -58,21 +67,30 @@ export async function GET(request: NextRequest) {
       }
 
       // 구독자 수 조회
-      const subsCount = await db
-        .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
-        .where('digestId', '==', doc.id)
-        .where('isActive', '==', true)
-        .count()
-        .get()
+      let subscriberCount = 0
+      try {
+        const subsCount = await db
+          .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
+          .where('digestId', '==', doc.id)
+          .where('isActive', '==', true)
+          .count()
+          .get()
+        subscriberCount = subsCount.data().count
+      } catch {
+        // 구독자 수 조회 실패해도 계속 진행
+      }
 
       digests.push(
         toDigestResponse(data, {
-          subscriberCount: subsCount.data().count,
+          subscriberCount,
           isSubscribed: userSubscriptions.has(doc.id),
           subscriptionId: userSubscriptions.get(doc.id),
         })
       )
     }
+
+    // createdAt으로 정렬 (클라이언트 사이드)
+    digests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json({ data: digests })
   } catch (error) {
