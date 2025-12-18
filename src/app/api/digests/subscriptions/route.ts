@@ -122,19 +122,66 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 이미 구독 중인지 확인
-    const existingSub = await db
+    // 기존 구독 확인 (활성/비활성 모두)
+    const existingSubSnapshot = await db
       .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
       .where('userId', '==', user.uid)
       .where('digestId', '==', body.digestId)
-      .where('isActive', '==', true)
       .limit(1)
       .get()
 
-    if (!existingSub.empty) {
+    const now = Timestamp.now()
+
+    // 기존 구독이 있는 경우
+    if (!existingSubSnapshot.empty) {
+      const existingSubDoc = existingSubSnapshot.docs[0]
+      const existingSubData = existingSubDoc.data() as DigestSubscriptionDoc
+
+      // 이미 활성 구독인 경우
+      if (existingSubData.isActive) {
+        return NextResponse.json(
+          { error: '이미 구독 중인 도시락입니다.' },
+          { status: 400 }
+        )
+      }
+
+      // 최대 구독 수 확인
+      const subsCount = await db
+        .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
+        .where('userId', '==', user.uid)
+        .where('isActive', '==', true)
+        .count()
+        .get()
+
+      if (subsCount.data().count >= MAX_SUBSCRIPTIONS) {
+        return NextResponse.json(
+          { error: `최대 ${MAX_SUBSCRIPTIONS}개까지 구독할 수 있습니다.` },
+          { status: 400 }
+        )
+      }
+
+      // 비활성 구독 재활성화
+      await existingSubDoc.ref.update({
+        isActive: true,
+        userEmail: user.email,
+        settings: body.settings || existingSubData.settings || {},
+        updatedAt: now,
+      })
+
+      const reactivatedData: DigestSubscriptionDoc = {
+        ...existingSubData,
+        isActive: true,
+        userEmail: user.email,
+        settings: body.settings || existingSubData.settings || {},
+        updatedAt: now,
+      }
+
       return NextResponse.json(
-        { error: '이미 구독 중인 도시락입니다.' },
-        { status: 400 }
+        toSubscriptionResponse(
+          reactivatedData,
+          toDigestResponse(digestData, { isSubscribed: true, subscriptionId: existingSubDoc.id })
+        ),
+        { status: 200 }
       )
     }
 
@@ -153,8 +200,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 구독 생성
-    const now = Timestamp.now()
+    // 신규 구독 생성
     const subRef = db.collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS).doc()
 
     const subscriptionData: DigestSubscriptionDoc = {

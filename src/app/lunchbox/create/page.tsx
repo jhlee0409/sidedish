@@ -3,18 +3,22 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import {
   ArrowLeft,
   Package,
   Loader2,
   Plus,
-  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { DigestCategory, SupportedCity, CATEGORY_NAMES, CITY_NAMES } from '@/lib/digest-types'
 import { isAdmin } from '@/lib/admin-constants'
+
+// ==================== Constants ====================
 
 const CATEGORY_OPTIONS: { value: DigestCategory; label: string; icon: string }[] = [
   { value: 'weather', label: '날씨', icon: '🌤️' },
@@ -28,6 +32,50 @@ const CITY_OPTIONS: SupportedCity[] = ['seoul', 'busan', 'daegu', 'incheon', 'da
 
 const ICON_SUGGESTIONS = ['🌤️', '📰', '📈', '🏃', '💼', '🎯', '📚', '🎨', '🎵', '🍳', '☕', '🌙']
 
+// ==================== Zod Schema ====================
+
+const digestCategories = ['weather', 'news', 'finance', 'lifestyle', 'other'] as const
+const supportedCities = ['seoul', 'busan', 'daegu', 'incheon', 'daejeon', 'gwangju'] as const
+
+const createDigestSchema = z.object({
+  name: z
+    .string()
+    .min(2, '이름은 2자 이상이어야 합니다.')
+    .max(50, '이름은 50자 이하여야 합니다.'),
+  slug: z
+    .string()
+    .min(2, '슬러그는 2자 이상이어야 합니다.')
+    .max(30, '슬러그는 30자 이하여야 합니다.')
+    .regex(/^[a-z0-9-]+$/, '슬러그는 영문 소문자, 숫자, 하이픈(-)만 사용할 수 있습니다.'),
+  description: z
+    .string()
+    .min(10, '설명은 10자 이상이어야 합니다.')
+    .max(200, '설명은 200자 이하여야 합니다.'),
+  icon: z.string().min(1, '아이콘을 선택해주세요.'),
+  category: z.enum(digestCategories, { message: '카테고리를 선택해주세요.' }),
+  isPremium: z.boolean(),
+  deliveryTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, '올바른 시간 형식이 아닙니다.'),
+  cities: z.array(z.enum(supportedCities)),
+}).refine(
+  (data) => {
+    // 날씨 카테고리일 때만 도시 필수
+    if (data.category === 'weather') {
+      return data.cities.length >= 1
+    }
+    return true
+  },
+  {
+    message: '날씨 도시락은 최소 1개 도시를 선택해야 해요.',
+    path: ['cities'],
+  }
+)
+
+type CreateDigestFormData = z.infer<typeof createDigestSchema>
+
+// ==================== Component ====================
+
 export default function CreateLunchboxPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading, getIdToken, user } = useAuth()
@@ -36,49 +84,60 @@ export default function CreateLunchboxPage() {
   const isUserAdmin = isAdmin(user?.role)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    icon: '🌤️',
-    category: 'weather' as DigestCategory,
-    isPremium: false,
-    deliveryTime: '07:00',
-    cities: ['seoul'] as SupportedCity[],
+
+  // React Hook Form
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateDigestFormData>({
+    resolver: zodResolver(createDigestSchema),
+    defaultValues: {
+      name: '',
+      slug: '',
+      description: '',
+      icon: '🌤️',
+      category: 'weather',
+      isPremium: false,
+      deliveryTime: '07:00',
+      cities: ['seoul'],
+    },
+    mode: 'onChange',
   })
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    }))
-  }
+  const watchName = watch('name')
+  const watchSlug = watch('slug')
+  const watchDescription = watch('description')
+  const watchIcon = watch('icon')
+  const watchCategory = watch('category')
+  const watchIsPremium = watch('isPremium')
+  const watchDeliveryTime = watch('deliveryTime')
+  const watchCities = watch('cities')
+
+  // ==================== Handlers ====================
 
   const handleCityToggle = (city: SupportedCity) => {
-    setFormData((prev) => ({
-      ...prev,
-      cities: prev.cities.includes(city)
-        ? prev.cities.filter((c) => c !== city)
-        : [...prev.cities, city],
-    }))
+    const current = watchCities || []
+    const updated = current.includes(city)
+      ? current.filter((c) => c !== city)
+      : [...current, city]
+    setValue('cities', updated, { shouldValidate: true })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // 슬러그 자동 생성 (이름 기반)
+  const generateSlug = () => {
+    const slug = watchName
+      .toLowerCase()
+      .replace(/[가-힣]/g, '') // 한글 제거
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+    setValue('slug', slug, { shouldValidate: true })
+  }
 
-    if (!formData.name || !formData.slug || !formData.description) {
-      toast.error('필수 항목을 모두 입력해주세요.')
-      return
-    }
-
-    if (formData.category === 'weather' && formData.cities.length === 0) {
-      toast.error('날씨 도시락은 최소 1개 도시를 선택해야 해요.')
-      return
-    }
-
+  const onSubmit = async (data: CreateDigestFormData) => {
     setIsSubmitting(true)
 
     try {
@@ -91,15 +150,15 @@ export default function CreateLunchboxPage() {
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
-          name: formData.name,
-          slug: formData.slug,
-          description: formData.description,
-          icon: formData.icon,
-          category: formData.category,
-          isPremium: formData.isPremium,
+          name: data.name,
+          slug: data.slug,
+          description: data.description,
+          icon: data.icon,
+          category: data.category,
+          isPremium: data.isPremium,
           config: {
-            deliveryTime: formData.deliveryTime,
-            ...(formData.category === 'weather' && { cities: formData.cities }),
+            deliveryTime: data.deliveryTime,
+            ...(data.category === 'weather' && { cities: data.cities }),
           },
         }),
       })
@@ -119,15 +178,7 @@ export default function CreateLunchboxPage() {
     }
   }
 
-  // 슬러그 자동 생성 (이름 기반)
-  const generateSlug = () => {
-    const slug = formData.name
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-    setFormData((prev) => ({ ...prev, slug }))
-  }
+  // ==================== Render: Loading / Auth ====================
 
   if (authLoading) {
     return (
@@ -172,6 +223,8 @@ export default function CreateLunchboxPage() {
     )
   }
 
+  // ==================== Render: Form ====================
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
@@ -195,7 +248,7 @@ export default function CreateLunchboxPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* 기본 정보 */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-4">기본 정보</h2>
@@ -210,9 +263,9 @@ export default function CreateLunchboxPage() {
                   <button
                     key={icon}
                     type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, icon }))}
+                    onClick={() => setValue('icon', icon, { shouldValidate: true })}
                     className={`w-10 h-10 text-xl rounded-lg border-2 transition-all ${
-                      formData.icon === icon
+                      watchIcon === icon
                         ? 'border-indigo-500 bg-indigo-50'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
@@ -221,56 +274,109 @@ export default function CreateLunchboxPage() {
                   </button>
                 ))}
               </div>
+              {errors.icon && (
+                <p className="mt-1 text-xs text-red-500">{errors.icon.message}</p>
+              )}
             </div>
 
             {/* 이름 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                이름 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                onBlur={generateSlug}
-                placeholder="예: 날씨 도시락"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-              />
-            </div>
+            <Controller
+              name="name"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    이름 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    {...field}
+                    type="text"
+                    onBlur={(e) => {
+                      field.onBlur()
+                      if (field.value && !watchSlug) {
+                        generateSlug()
+                      }
+                    }}
+                    placeholder="예: 날씨 도시락"
+                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none ${
+                      fieldState.error
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                    }`}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {fieldState.error ? (
+                      <p className="text-xs text-red-500">{fieldState.error.message}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400">도시락의 이름을 입력하세요</p>
+                    )}
+                    <p className="text-xs text-slate-400">{field.value?.length || 0}/50</p>
+                  </div>
+                </div>
+              )}
+            />
 
             {/* 슬러그 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                슬러그 (URL) <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-400">/lunchbox/</span>
-                <input
-                  type="text"
-                  name="slug"
-                  value={formData.slug}
-                  onChange={handleInputChange}
-                  placeholder="weather"
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-                />
-              </div>
-            </div>
+            <Controller
+              name="slug"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    슬러그 (URL) <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-sm">/lunchbox/</span>
+                    <input
+                      {...field}
+                      type="text"
+                      placeholder="weather"
+                      className={`flex-1 px-4 py-3 rounded-xl border transition-all outline-none ${
+                        fieldState.error
+                          ? 'border-red-500 focus:ring-2 focus:ring-red-200'
+                          : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                      }`}
+                    />
+                  </div>
+                  {fieldState.error ? (
+                    <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-400">영문 소문자, 숫자, 하이픈만 사용</p>
+                  )}
+                </div>
+              )}
+            />
 
             {/* 설명 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                설명 <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows={3}
-                placeholder="이 도시락이 어떤 정보를 제공하는지 설명해주세요."
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all resize-none"
-              />
-            </div>
+            <Controller
+              name="description"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    설명 <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    {...field}
+                    rows={3}
+                    placeholder="이 도시락이 어떤 정보를 제공하는지 설명해주세요."
+                    className={`w-full px-4 py-3 rounded-xl border transition-all outline-none resize-none ${
+                      fieldState.error
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                    }`}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {fieldState.error ? (
+                      <p className="text-xs text-red-500">{fieldState.error.message}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400">10자 이상 작성해주세요</p>
+                    )}
+                    <p className="text-xs text-slate-400">{field.value?.length || 0}/200</p>
+                  </div>
+                </div>
+              )}
+            />
 
             {/* 카테고리 */}
             <div className="mb-4">
@@ -282,9 +388,9 @@ export default function CreateLunchboxPage() {
                   <button
                     key={cat.value}
                     type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, category: cat.value }))}
+                    onClick={() => setValue('category', cat.value, { shouldValidate: true })}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      formData.category === cat.value
+                      watchCategory === cat.value
                         ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-500'
                         : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200'
                     }`}
@@ -293,22 +399,30 @@ export default function CreateLunchboxPage() {
                   </button>
                 ))}
               </div>
+              {errors.category && (
+                <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
+              )}
             </div>
 
             {/* 프리미엄 */}
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                name="isPremium"
-                id="isPremium"
-                checked={formData.isPremium}
-                onChange={handleInputChange}
-                className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label htmlFor="isPremium" className="text-sm text-slate-700">
-                프리미엄 도시락으로 설정
-              </label>
-            </div>
+            <Controller
+              name="isPremium"
+              control={control}
+              render={({ field }) => (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="isPremium"
+                    checked={field.value}
+                    onChange={field.onChange}
+                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label htmlFor="isPremium" className="text-sm text-slate-700">
+                    프리미엄 도시락으로 설정
+                  </label>
+                </div>
+              )}
+            />
           </div>
 
           {/* 배달 설정 */}
@@ -316,24 +430,35 @@ export default function CreateLunchboxPage() {
             <h2 className="text-lg font-bold text-slate-900 mb-4">배달 설정</h2>
 
             {/* 배달 시간 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                배달 시간 (KST)
-              </label>
-              <input
-                type="time"
-                name="deliveryTime"
-                value={formData.deliveryTime}
-                onChange={handleInputChange}
-                className="px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-              />
-            </div>
+            <Controller
+              name="deliveryTime"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    배달 시간 (KST)
+                  </label>
+                  <input
+                    {...field}
+                    type="time"
+                    className={`px-4 py-3 rounded-xl border transition-all outline-none ${
+                      fieldState.error
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-200'
+                        : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                    }`}
+                  />
+                  {fieldState.error && (
+                    <p className="mt-1 text-xs text-red-500">{fieldState.error.message}</p>
+                  )}
+                </div>
+              )}
+            />
 
             {/* 날씨 카테고리: 도시 선택 */}
-            {formData.category === 'weather' && (
+            {watchCategory === 'weather' && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  포함할 도시
+                  포함할 도시 <span className="text-red-500">*</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {CITY_OPTIONS.map((city) => (
@@ -342,7 +467,7 @@ export default function CreateLunchboxPage() {
                       type="button"
                       onClick={() => handleCityToggle(city)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                        formData.cities.includes(city)
+                        watchCities?.includes(city)
                           ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-500'
                           : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200'
                       }`}
@@ -351,6 +476,9 @@ export default function CreateLunchboxPage() {
                     </button>
                   ))}
                 </div>
+                {errors.cities && (
+                  <p className="mt-1 text-xs text-red-500">{errors.cities.message}</p>
+                )}
               </div>
             )}
           </div>
@@ -360,19 +488,19 @@ export default function CreateLunchboxPage() {
             <h2 className="text-lg font-bold text-slate-900 mb-4">미리보기</h2>
             <div className="bg-slate-50 rounded-xl p-4">
               <div className="flex items-start gap-4">
-                <span className="text-4xl">{formData.icon}</span>
+                <span className="text-4xl">{watchIcon}</span>
                 <div>
                   <h3 className="font-bold text-slate-900">
-                    {formData.name || '도시락 이름'}
+                    {watchName || '도시락 이름'}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">
-                    {formData.description || '도시락 설명이 여기에 표시됩니다.'}
+                    {watchDescription || '도시락 설명이 여기에 표시됩니다.'}
                   </p>
                   <div className="flex items-center gap-2 mt-2 text-xs text-slate-400">
-                    <span>{CATEGORY_NAMES[formData.category]}</span>
+                    <span>{CATEGORY_NAMES[watchCategory]}</span>
                     <span>•</span>
-                    <span>매일 {formData.deliveryTime} 배달</span>
-                    {formData.isPremium && (
+                    <span>매일 {watchDeliveryTime} 배달</span>
+                    {watchIsPremium && (
                       <>
                         <span>•</span>
                         <span className="text-amber-600">프리미엄</span>
