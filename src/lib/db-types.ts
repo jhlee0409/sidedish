@@ -3,6 +3,8 @@
 
 import { Timestamp } from 'firebase-admin/firestore'
 
+import { UserRole } from './admin-constants'
+
 export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
 
 // Reaction types - strongly typed reaction keys
@@ -41,8 +43,10 @@ export interface UserAgreements {
 // Firestore document structure for Users
 export interface UserDoc {
   id: string
+  email?: string // 이메일 (권한 체크용)
   name: string
   avatarUrl: string
+  role?: UserRole // 유저 역할 (user, admin, master)
   agreements?: UserAgreements // 회원가입 시 동의 정보
   isProfileComplete: boolean // 프로필 설정 완료 여부
   isWithdrawn?: boolean // 탈퇴 여부 (soft delete)
@@ -171,6 +175,7 @@ export interface UserResponse {
   id: string
   name: string
   avatarUrl: string
+  role?: UserRole
   agreements?: UserAgreementsResponse
   isProfileComplete: boolean
   createdAt: string

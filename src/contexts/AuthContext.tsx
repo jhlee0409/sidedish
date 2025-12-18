@@ -11,6 +11,7 @@ import {
 } from '@/lib/firebase'
 import { initApiClient, updateUser, getUser } from '@/lib/api-client'
 import { CreateUserAgreementsInput } from '@/lib/db-types'
+import { UserRole } from '@/lib/admin-constants'
 
 export interface User {
   id: string
@@ -20,6 +21,7 @@ export interface User {
   originalAvatarUrl: string // 소셜 로그인 기본 프로필 사진
   provider: 'google' | 'github' | null
   isProfileComplete: boolean
+  role: UserRole // 유저 역할 (user, admin, master)
 }
 
 interface AuthContextType {
@@ -48,7 +50,8 @@ function firebaseUserToUser(
   firebaseUser: FirebaseUser,
   customAvatarUrl?: string,
   customName?: string,
-  isProfileComplete: boolean = false
+  isProfileComplete: boolean = false,
+  role: UserRole = 'user'
 ): User {
   // Determine provider
   let provider: 'google' | 'github' | null = null
@@ -68,6 +71,7 @@ function firebaseUserToUser(
     originalAvatarUrl,
     provider,
     isProfileComplete,
+    role,
   }
 }
 
@@ -98,18 +102,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 fbUser,
                 existingUser.avatarUrl,
                 existingUser.name,
-                existingUser.isProfileComplete
+                existingUser.isProfileComplete,
+                existingUser.role || 'user'
               )
             )
             setNeedsProfileSetup(false)
           } else {
             // 프로필 설정이 완료되지 않은 경우
-            setUser(firebaseUserToUser(fbUser, '', '', false))
+            setUser(firebaseUserToUser(fbUser, '', '', false, 'user'))
             setNeedsProfileSetup(true)
           }
         } catch {
           // 신규 사용자 - 프로필 설정 필요
-          setUser(firebaseUserToUser(fbUser, '', '', false))
+          setUser(firebaseUserToUser(fbUser, '', '', false, 'user'))
           setNeedsProfileSetup(true)
         }
       } else {
