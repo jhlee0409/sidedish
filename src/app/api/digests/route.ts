@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { getUserRole, isAdmin, MASTER_EMAILS } from '@/lib/admin-utils'
 import { Timestamp } from 'firebase-admin/firestore'
 import {
   DigestDoc,
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/digests - 다이제스트 생성
- * 관리자 전용 (TODO: Admin 권한 체크 추가)
+ * 관리자 전용
  */
 export async function POST(request: NextRequest) {
   try {
@@ -114,8 +115,11 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse()
     }
 
-    // TODO: Admin 권한 체크 (Firebase Custom Claims)
-    // 현재는 로그인한 사용자만 허용 (개발용)
+    // 관리자 권한 체크
+    const userRole = await getUserRole(user.email || '')
+    if (!isAdmin(userRole)) {
+      return forbiddenResponse('관리자만 도시락을 생성할 수 있습니다.')
+    }
 
     const body: CreateDigestRequest = await request.json()
 

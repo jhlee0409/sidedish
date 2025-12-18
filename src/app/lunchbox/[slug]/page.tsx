@@ -15,6 +15,7 @@ import {
   Droplets,
   Wind,
   Eye,
+  Send,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -27,19 +28,24 @@ import {
 } from '@/lib/api-client'
 import { DigestResponse, DigestPreviewResponse } from '@/lib/digest-types'
 import { LUNCHBOX_TEXT, formatDeliveryTime, formatTodayKorean } from '@/lib/lunchbox-text'
+import { MASTER_EMAILS } from '@/lib/admin-constants'
 import LoginModal from '@/components/LoginModal'
 
 export default function LunchboxDetailPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, user, getIdToken } = useAuth()
 
   const [digest, setDigest] = useState<DigestResponse | null>(null)
   const [preview, setPreview] = useState<DigestPreviewResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
+  const [isSendingTest, setIsSendingTest] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
+
+  // 관리자 여부 체크 (마스터 이메일 목록 기준)
+  const isAdmin = user?.email && MASTER_EMAILS.includes(user.email as typeof MASTER_EMAILS[number])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -91,6 +97,41 @@ export default function LunchboxDetailPage() {
       toast.error(digest.isSubscribed ? LUNCHBOX_TEXT.UNSUBSCRIBE_ERROR : LUNCHBOX_TEXT.SUBSCRIBE_ERROR)
     } finally {
       setIsSubscribing(false)
+    }
+  }
+
+  // 테스트 이메일 즉시 발송 (관리자 전용)
+  const handleTestSend = async () => {
+    if (!digest || !user?.email) return
+
+    setIsSendingTest(true)
+    try {
+      const token = await getIdToken()
+
+      const response = await fetch('/api/digests/test-send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          digestId: digest.id,
+          email: user.email,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '발송 실패')
+      }
+
+      toast.success(`테스트 이메일이 발송되었습니다!\n제목: ${result.subject}`)
+    } catch (error) {
+      console.error('Test send error:', error)
+      toast.error(error instanceof Error ? error.message : '테스트 발송에 실패했습니다.')
+    } finally {
+      setIsSendingTest(false)
     }
   }
 
@@ -178,7 +219,7 @@ export default function LunchboxDetailPage() {
           </div>
 
           {/* Subscribe Button */}
-          <div className="p-6 border-t border-slate-100">
+          <div className="p-6 border-t border-slate-100 space-y-3">
             <button
               onClick={handleSubscribe}
               disabled={isSubscribing}
@@ -202,6 +243,27 @@ export default function LunchboxDetailPage() {
                 LUNCHBOX_TEXT.SUBSCRIBE
               )}
             </button>
+
+            {/* 관리자: 테스트 발송 버튼 */}
+            {isAdmin && (
+              <button
+                onClick={handleTestSend}
+                disabled={isSendingTest}
+                className="w-full py-3 px-6 rounded-xl font-medium text-sm bg-amber-500 text-white hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSendingTest ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    발송 중...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    테스트 이메일 즉시 발송 (관리자)
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 

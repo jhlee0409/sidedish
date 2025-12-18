@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { DigestCategory, SupportedCity, CATEGORY_NAMES, CITY_NAMES } from '@/lib/digest-types'
+import { MASTER_EMAILS } from '@/lib/admin-constants'
 
 const CATEGORY_OPTIONS: { value: DigestCategory; label: string; icon: string }[] = [
   { value: 'weather', label: '날씨', icon: '🌤️' },
@@ -29,7 +30,10 @@ const ICON_SUGGESTIONS = ['🌤️', '📰', '📈', '🏃', '💼', '🎯', '�
 
 export default function CreateLunchboxPage() {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading, getIdToken } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, getIdToken, user } = useAuth()
+
+  // 관리자 여부 체크
+  const isAdmin = user?.email && MASTER_EMAILS.includes(user.email as typeof MASTER_EMAILS[number])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -143,6 +147,24 @@ export default function CreateLunchboxPage() {
           <Link href="/login">
             <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700">
               로그인하기
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // 관리자만 접근 가능
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-slate-900 mb-2">관리자 전용 페이지예요</h1>
+          <p className="text-slate-500 mb-6">도시락 생성은 관리자만 할 수 있어요.</p>
+          <Link href="/lunchbox">
+            <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700">
+              도시락 목록으로
             </Button>
           </Link>
         </div>

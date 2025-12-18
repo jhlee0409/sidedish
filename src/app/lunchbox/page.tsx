@@ -15,11 +15,15 @@ import {
 } from '@/lib/api-client'
 import { DigestResponse } from '@/lib/digest-types'
 import { LUNCHBOX_TEXT } from '@/lib/lunchbox-text'
+import { MASTER_EMAILS } from '@/lib/admin-constants'
 import { toast } from 'sonner'
 
 export default function LunchboxPage() {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth()
+
+  // 관리자 여부 체크
+  const isAdmin = user?.email && MASTER_EMAILS.includes(user.email as typeof MASTER_EMAILS[number])
 
   const [digests, setDigests] = useState<DigestResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -116,7 +120,7 @@ export default function LunchboxPage() {
         {/* Content */}
         <div className="max-w-6xl mx-auto px-4 py-12">
           {/* Admin: Create Button */}
-          {isAuthenticated && (
+          {isAdmin && (
             <div className="flex justify-end mb-6">
               <Link href="/lunchbox/create">
                 <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium">
