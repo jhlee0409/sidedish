@@ -25,8 +25,24 @@ export async function POST(request: NextRequest) {
 
     // 관리자 권한 체크 (UID로 조회)
     const userRole = await getUserRoleByUid(user.uid)
+    console.log(`[Test Send] User UID: ${user.uid}, Role: ${userRole}`)
+
     if (!isAdmin(userRole)) {
       return forbiddenResponse('관리자만 테스트 발송을 할 수 있습니다.')
+    }
+
+    // 환경 변수 체크
+    const missingEnvVars: string[] = []
+    if (!process.env.OPENWEATHERMAP_API_KEY) missingEnvVars.push('OPENWEATHERMAP_API_KEY')
+    if (!process.env.GEMINI_API_KEY) missingEnvVars.push('GEMINI_API_KEY')
+    if (!process.env.RESEND_API_KEY) missingEnvVars.push('RESEND_API_KEY')
+
+    if (missingEnvVars.length > 0) {
+      console.error(`[Test Send] Missing env vars: ${missingEnvVars.join(', ')}`)
+      return NextResponse.json(
+        { error: `환경 변수가 설정되지 않았습니다: ${missingEnvVars.join(', ')}`, success: false },
+        { status: 500 }
+      )
     }
 
     const body = await request.json()
@@ -96,10 +112,26 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('[Test Send] Error:', error)
+
+    // 에러 상세 정보 추출
+    let errorMessage = 'Unknown error'
+    let errorStack = ''
+
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorStack = error.stack || ''
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error && typeof error === 'object') {
+      errorMessage = JSON.stringify(error)
+    }
+
+    console.error('[Test Send] Error message:', errorMessage)
+    console.error('[Test Send] Error stack:', errorStack)
+
     return NextResponse.json(
       {
-        error: '테스트 발송 중 오류가 발생했습니다.',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         success: false
       },
       { status: 500 }
