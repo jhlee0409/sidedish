@@ -3,18 +3,18 @@
 ## 개요
 
 SideDish에 **도시락 구독 시스템**을 추가합니다.
-- 관리자가 도시락 생성 (날씨, 뉴스, 코인 등)
+- 관리자가 다이제스트 생성 (날씨, 뉴스, 코인 등)
 - 사용자가 원하는 도시락 구독
 - 매일 정해진 시간에 이메일로 도시락 배달
 
 ### 용어 정리
 
-| 기존 | SideDish 용어 | 설명 |
-|------|--------------|------|
-| Plugin | **도시락 (Lunchbox)** | 매일 배달되는 정보 꾸러미 |
-| Subscribe | **도시락 신청** | 구독하기 |
-| Send Email | **도시락 배달** | 이메일 발송 |
-| Briefing | **오늘의 도시락** | AI가 만든 브리핑 |
+| UI (한글) | API/코드 (영문) | 설명 |
+|-----------|----------------|------|
+| 도시락 | **Digest** | 매일 배달되는 정보 꾸러미 |
+| 도시락 신청 | **Subscription** | 구독하기 |
+| 도시락 배달 | **Delivery** | 이메일 발송 |
+| 오늘의 도시락 | **Daily Digest** | AI가 만든 브리핑 |
 
 ---
 
@@ -23,28 +23,28 @@ SideDish에 **도시락 구독 시스템**을 추가합니다.
 ### 1.1 Firestore Collections
 
 ```
-lunchboxes/                 # 도시락 정의
-  {lunchboxId}/
+digests/                    # 다이제스트 정의
+  {digestId}/
     - id: string
-    - name: string          # "오늘의 날씨 도시락"
+    - name: string          # "오늘의 날씨 도시락" (UI용)
     - slug: string          # "weather" (URL용)
-    - description: string   # 도시락 설명
+    - description: string   # 다이제스트 설명
     - icon: string          # 이모지 "☀️"
     - category: string      # "weather" | "finance" | "news" | ...
     - isActive: boolean     # 활성화 여부
     - isPremium: boolean    # 유료 여부
-    - config: object        # 도시락별 설정
+    - config: object        # 다이제스트별 설정
       - cities?: string[]   # 날씨: 지원 도시 목록
       - deliveryTime: string # "07:00" 배달 시간 (KST)
     - createdAt: Timestamp
     - updatedAt: Timestamp
 
-lunchbox_subscriptions/     # 도시락 구독 정보
+digest_subscriptions/       # 구독 정보
   {subscriptionId}/
     - id: string
     - userId: string        # 구독한 사용자
     - userEmail: string     # 이메일 발송용
-    - lunchboxId: string    # 구독한 도시락
+    - digestId: string      # 구독한 다이제스트
     - settings: object      # 사용자별 설정
       - city?: string       # 날씨: 선택한 도시
       - detailMode?: boolean # 상세 모드 여부 (기본 false)
@@ -52,36 +52,47 @@ lunchbox_subscriptions/     # 도시락 구독 정보
     - createdAt: Timestamp
     - updatedAt: Timestamp
 
-lunchbox_logs/              # 배달 로그 (디버깅/통계용)
+digest_logs/                # 배달 로그 (디버깅/통계용)
   {logId}/
     - id: string
-    - lunchboxId: string
+    - digestId: string
     - deliveredAt: Timestamp
     - subscriberCount: number
     - successCount: number
     - failureCount: number
-    - generatedContent: string  # AI 생성 결과 (캐시)
+    - generatedContent: object  # AI 생성 결과 (캐시)
 ```
 
 ### 1.2 TypeScript 타입 정의
 
 ```typescript
-// src/lib/lunchbox-types.ts
+// src/lib/digest-types.ts
 
-// 도시락 카테고리
-type LunchboxCategory = 'weather' | 'finance' | 'news' | 'lifestyle' | 'other'
+import { Timestamp } from 'firebase-admin/firestore'
+
+// 다이제스트 카테고리
+export type DigestCategory = 'weather' | 'finance' | 'news' | 'lifestyle' | 'other'
 
 // 지원 도시
-type SupportedCity = 'seoul' | 'busan' | 'daegu' | 'incheon' | 'daejeon' | 'gwangju'
+export type SupportedCity = 'seoul' | 'busan' | 'daegu' | 'incheon' | 'daejeon' | 'gwangju'
+
+export const CITY_NAMES: Record<SupportedCity, string> = {
+  seoul: '서울',
+  busan: '부산',
+  daegu: '대구',
+  incheon: '인천',
+  daejeon: '대전',
+  gwangju: '광주',
+}
 
 // Firestore 문서 타입
-interface LunchboxDoc {
+export interface DigestDoc {
   id: string
   name: string
   slug: string
   description: string
   icon: string
-  category: LunchboxCategory
+  category: DigestCategory
   isActive: boolean
   isPremium: boolean
   config: {
@@ -92,11 +103,11 @@ interface LunchboxDoc {
   updatedAt: Timestamp
 }
 
-interface LunchboxSubscriptionDoc {
+export interface DigestSubscriptionDoc {
   id: string
   userId: string
   userEmail: string
-  lunchboxId: string
+  digestId: string
   settings: {
     city?: SupportedCity
     detailMode?: boolean
@@ -106,29 +117,44 @@ interface LunchboxSubscriptionDoc {
   updatedAt: Timestamp
 }
 
+export interface DigestLogDoc {
+  id: string
+  digestId: string
+  deliveredAt: Timestamp
+  subscriberCount: number
+  successCount: number
+  failureCount: number
+  generatedContent: Record<string, DigestContent>
+}
+
+export interface DigestContent {
+  summary: string   // 한 줄 요약 (이메일용)
+  content: string   // 상세 내용 (마크다운)
+}
+
 // API 응답 타입
-interface LunchboxResponse {
+export interface DigestResponse {
   id: string
   name: string
   slug: string
   description: string
   icon: string
-  category: LunchboxCategory
+  category: DigestCategory
   isActive: boolean
   isPremium: boolean
   config: {
     cities?: SupportedCity[]
     deliveryTime: string
   }
-  subscriberCount?: number  // 구독자 수 (옵션)
-  isSubscribed?: boolean    // 현재 유저 구독 여부
+  subscriberCount?: number
+  isSubscribed?: boolean
   createdAt: string
   updatedAt: string
 }
 
-interface LunchboxSubscriptionResponse {
+export interface DigestSubscriptionResponse {
   id: string
-  lunchbox: LunchboxResponse
+  digest: DigestResponse
   settings: {
     city?: SupportedCity
     detailMode?: boolean
@@ -142,46 +168,46 @@ interface LunchboxSubscriptionResponse {
 
 ## 2. API 엔드포인트
 
-### 2.1 도시락 관련
+### 2.1 다이제스트 관련
 
 | Endpoint | Method | Auth | 설명 |
 |----------|--------|------|------|
-| `/api/lunchbox` | GET | No | 활성 도시락 목록 |
-| `/api/lunchbox` | POST | Admin | 도시락 생성 |
-| `/api/lunchbox/[id]` | GET | No | 도시락 상세 |
-| `/api/lunchbox/[id]` | PATCH | Admin | 도시락 수정 |
-| `/api/lunchbox/[id]` | DELETE | Admin | 도시락 삭제 |
+| `/api/digests` | GET | No | 활성 다이제스트 목록 |
+| `/api/digests` | POST | Admin | 다이제스트 생성 |
+| `/api/digests/[id]` | GET | No | 다이제스트 상세 |
+| `/api/digests/[id]` | PATCH | Admin | 다이제스트 수정 |
+| `/api/digests/[id]` | DELETE | Admin | 다이제스트 삭제 |
+| `/api/digests/[id]/preview` | GET | No | 오늘의 다이제스트 미리보기 |
 
 ### 2.2 구독 관련
 
 | Endpoint | Method | Auth | 설명 |
 |----------|--------|------|------|
-| `/api/lunchbox/subscriptions` | GET | Yes | 내 구독 목록 |
-| `/api/lunchbox/subscriptions` | POST | Yes | 도시락 신청 |
-| `/api/lunchbox/subscriptions/[id]` | PATCH | Yes | 구독 설정 수정 |
-| `/api/lunchbox/subscriptions/[id]` | DELETE | Yes | 구독 해제 |
+| `/api/digests/subscriptions` | GET | Yes | 내 구독 목록 |
+| `/api/digests/subscriptions` | POST | Yes | 다이제스트 구독 |
+| `/api/digests/subscriptions/[id]` | PATCH | Yes | 구독 설정 수정 |
+| `/api/digests/subscriptions/[id]` | DELETE | Yes | 구독 해제 |
 
-### 2.3 배달/미리보기 관련
+### 2.3 배달 관련 (Cron)
 
 | Endpoint | Method | Auth | 설명 |
 |----------|--------|------|------|
-| `/api/cron/lunchbox/[slug]` | GET | Cron | 도시락 배달 (스케줄러용) |
-| `/api/lunchbox/[id]/preview` | GET | Yes | 오늘의 도시락 미리보기 |
+| `/api/cron/digests/[slug]` | GET | Cron Secret | 다이제스트 배달 실행 |
 
 ---
 
 ## 3. 페이지 구조
 
-### 3.1 새로운 페이지
+### 3.1 라우트 (URL은 브랜딩 용어 사용)
 
 ```
 src/app/
-├── lunchbox/
-│   ├── page.tsx              # 도시락 목록 (구독 가능)
+├── lunchbox/                     # UI: "도시락"
+│   ├── page.tsx                  # 도시락 목록
 │   └── [slug]/
-│       └── page.tsx          # 도시락 상세 + 오늘의 미리보기
+│       └── page.tsx              # 도시락 상세 + 미리보기
 └── mypage/
-    └── page.tsx              # 기존 + "도시락 구독" 탭 추가
+    └── page.tsx                  # 기존 + "도시락 구독" 탭
 ```
 
 ### 3.2 도시락 목록 페이지 (`/lunchbox`)
@@ -260,7 +286,7 @@ src/app/
 
 ---
 
-## 4. 날씨 도시락 상세 설계
+## 4. 날씨 다이제스트 상세 설계
 
 ### 4.1 데이터 흐름
 
@@ -271,7 +297,7 @@ src/app/
 [1. 날씨 API 호출]
    OpenWeatherMap API
    - 주요 도시별 현재 날씨
-   - 어제 날씨 (히스토리 API 또는 캐시)
+   - 어제 날씨 (캐시)
    - 오늘 예보
         │
         ▼
@@ -290,18 +316,18 @@ src/app/
         │
         ▼
 [4. 결과 캐시 저장]
-   lunchbox_logs에 저장
+   digest_logs에 저장
    (같은 날 재요청 시 캐시 사용)
         │
         ▼
-[5. 도시락 배달 - 7:00 KST]
+[5. 이메일 배달 - 7:00 KST]
    구독자별로 선택한 도시의 도시락 배달
 ```
 
 ### 4.2 AI 프롬프트
 
 ```typescript
-const WEATHER_LUNCHBOX_PROMPT = `
+const WEATHER_DIGEST_PROMPT = `
 당신은 SideDish 플랫폼의 날씨 도시락 담당 셰프입니다.
 
 ## 입력 데이터
@@ -374,7 +400,7 @@ import { Resend } from 'resend'
 
 export const resend = new Resend(process.env.RESEND_API_KEY)
 
-export async function sendLunchboxEmail({
+export async function sendDigestEmail({
   to,
   subject,
   html,
@@ -416,7 +442,7 @@ CRON_SECRET=xxxxx
 {
   "crons": [
     {
-      "path": "/api/cron/lunchbox/weather",
+      "path": "/api/cron/digests/weather",
       "schedule": "50 21 * * *"  // UTC 21:50 = KST 06:50
     }
   ]
@@ -426,7 +452,7 @@ CRON_SECRET=xxxxx
 ### 6.2 Cron 엔드포인트
 
 ```typescript
-// src/app/api/cron/lunchbox/weather/route.ts
+// src/app/api/cron/digests/weather/route.ts
 
 export async function GET(request: Request) {
   // 1. Cron 시크릿 검증
@@ -438,15 +464,15 @@ export async function GET(request: Request) {
   // 2. 날씨 데이터 수집
   const weatherData = await fetchWeatherData()
 
-  // 3. AI 도시락 내용 생성
-  const lunchboxContent = await generateWeatherLunchbox(weatherData)
+  // 3. AI 다이제스트 생성
+  const digestContent = await generateWeatherDigest(weatherData)
 
-  // 4. 구독자에게 도시락 배달
-  const subscribers = await getLunchboxSubscribers('weather')
-  await deliverLunchbox(subscribers, lunchboxContent)
+  // 4. 구독자에게 배달
+  const subscribers = await getDigestSubscribers('weather')
+  await deliverDigest(subscribers, digestContent)
 
   // 5. 로그 저장
-  await saveLunchboxLog('weather', { ... })
+  await saveDigestLog('weather', { ... })
 
   return Response.json({ success: true })
 }
@@ -457,9 +483,9 @@ export async function GET(request: Request) {
 ## 7. 구현 순서 (MVP)
 
 ### Phase 1: 기반 구조
-- [ ] 타입 정의 (`src/lib/lunchbox-types.ts`)
+- [ ] 타입 정의 (`src/lib/digest-types.ts`)
 - [ ] Firestore 컬렉션 상수 추가
-- [ ] 도시락 API 엔드포인트 (CRUD)
+- [ ] 다이제스트 API 엔드포인트 (CRUD)
 - [ ] 구독 API 엔드포인트
 
 ### Phase 2: UI 구현
@@ -468,9 +494,9 @@ export async function GET(request: Request) {
 - [ ] 구독 버튼/모달
 - [ ] 마이페이지 도시락 구독 탭
 
-### Phase 3: 날씨 도시락
+### Phase 3: 날씨 다이제스트
 - [ ] OpenWeatherMap API 연동
-- [ ] AI 도시락 생성 서비스
+- [ ] AI 다이제스트 생성 서비스
 - [ ] 미리보기 API
 - [ ] 도시락 상세 페이지
 
@@ -493,12 +519,12 @@ export async function GET(request: Request) {
 ```
 src/
 ├── app/
-│   ├── lunchbox/
+│   ├── lunchbox/                       # UI 라우트 (도시락)
 │   │   ├── page.tsx                    # 도시락 목록
 │   │   └── [slug]/
 │   │       └── page.tsx                # 도시락 상세
 │   ├── api/
-│   │   ├── lunchbox/
+│   │   ├── digests/                    # API (다이제스트)
 │   │   │   ├── route.ts                # GET (목록), POST (생성)
 │   │   │   ├── [id]/
 │   │   │   │   ├── route.ts            # GET, PATCH, DELETE
@@ -507,27 +533,27 @@ src/
 │   │   │       ├── route.ts            # GET (내 구독), POST (신청)
 │   │   │       └── [id]/route.ts       # PATCH, DELETE
 │   │   └── cron/
-│   │       └── lunchbox/
+│   │       └── digests/
 │   │           └── weather/route.ts    # Cron 배달
 │   └── mypage/page.tsx                 # 도시락 구독 탭 추가
 │
 ├── components/
-│   ├── lunchbox/
+│   ├── lunchbox/                       # UI 컴포넌트 (도시락)
 │   │   ├── LunchboxCard.tsx            # 도시락 카드
 │   │   ├── LunchboxSubscribeModal.tsx  # 구독 설정 모달
 │   │   ├── SubscriptionCard.tsx        # 구독 카드 (마이페이지용)
 │   │   └── WeatherPreview.tsx          # 날씨 미리보기
 │   └── emails/
-│       └── LunchboxEmail.tsx           # 이메일 템플릿
+│       └── DigestEmail.tsx             # 이메일 템플릿
 │
 ├── lib/
-│   ├── lunchbox-types.ts               # 도시락 타입 정의
+│   ├── digest-types.ts                 # 다이제스트 타입 정의
 │   ├── resend.ts                       # Resend 클라이언트
-│   └── api-client.ts                   # 도시락 API 함수 추가
+│   └── api-client.ts                   # 다이제스트 API 함수 추가
 │
 └── services/
     ├── weatherService.ts               # OpenWeatherMap API
-    └── lunchboxService.ts              # AI 도시락 생성
+    └── digestService.ts                # AI 다이제스트 생성
 ```
 
 ---
@@ -544,34 +570,63 @@ src/
 
 ## 10. 확장 계획
 
-### 향후 추가 도시락
-- 📈 코인/주식 도시락
-- 📰 IT 뉴스 도시락
-- 💱 환율 도시락
-- 📅 일정 리마인더 도시락
+### 향후 추가 다이제스트
+- 📈 코인/주식 다이제스트
+- 📰 IT 뉴스 다이제스트
+- 💱 환율 다이제스트
+- 📅 일정 리마인더 다이제스트
 
 ### 확장 기능
-- 사용자 도시락 레시피 생성 (Phase 2)
-- 도시락 마켓플레이스
-- 유료 도시락 결제 연동
+- 사용자 다이제스트 레시피 생성 (Phase 2)
+- 다이제스트 마켓플레이스
+- 유료 다이제스트 결제 연동
 - 푸시 알림 옵션
 
 ---
 
-## 11. UI 텍스트 가이드
+## 11. 용어 매핑 가이드
 
-| 상황 | 텍스트 |
-|------|--------|
-| 목록 페이지 헤더 | "🍱 오늘의 도시락" |
-| 목록 페이지 설명 | "매일 아침, 당신에게 필요한 정보를 배달해드려요" |
-| 구독 버튼 | "도시락 신청하기" |
-| 구독 중 | "신청 중 ✓" |
-| 구독 해제 | "구독 해제" |
-| 이메일 제목 | "🍱 오늘의 도시락이 도착했어요!" |
-| 마이페이지 탭 | "도시락 구독" |
-| 빈 상태 | "아직 신청한 도시락이 없어요" |
-| 배달 시간 | "매일 오전 7시 배달" |
+### UI ↔ 코드 매핑
+
+| UI 텍스트 | 코드/API | 파일명 |
+|-----------|----------|--------|
+| 도시락 | Digest | `digest-types.ts` |
+| 도시락 목록 | Digests | `/api/digests` |
+| 도시락 신청 | Subscribe | `subscriptions` |
+| 도시락 구독 | Subscription | `DigestSubscription` |
+| 배달 시간 | deliveryTime | `config.deliveryTime` |
+| 도시락 배달 | Delivery | `deliverDigest()` |
+
+### UI 텍스트 상수
+
+```typescript
+// src/lib/lunchbox-text.ts
+export const LUNCHBOX_TEXT = {
+  // 페이지
+  LIST_TITLE: '🍱 오늘의 도시락',
+  LIST_DESCRIPTION: '매일 아침, 당신에게 필요한 정보를 배달해드려요',
+
+  // 버튼
+  SUBSCRIBE: '도시락 신청하기',
+  SUBSCRIBED: '신청 중',
+  UNSUBSCRIBE: '구독 해제',
+
+  // 마이페이지
+  TAB_TITLE: '도시락 구독',
+  SUBSCRIPTION_COUNT: (current: number, max: number) =>
+    `신청 중인 도시락 (${current}/${max})`,
+  EMPTY_STATE: '아직 신청한 도시락이 없어요',
+  VIEW_MORE: '+ 더 많은 도시락 보기',
+
+  // 이메일
+  EMAIL_SUBJECT: '🍱 오늘의 도시락이 도착했어요!',
+  EMAIL_FOOTER: '이 메일은 SideDish 도시락 구독으로 배달되었습니다.',
+
+  // 시간
+  DELIVERY_TIME: (time: string) => `매일 오전 ${time} 배달`,
+} as const
+```
 
 ---
 
-이 계획으로 진행합니다!
+이 계획으로 구현을 시작합니다!

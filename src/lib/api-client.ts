@@ -50,6 +50,14 @@ import {
   Reactions,
 } from './db-types'
 
+import {
+  DigestResponse,
+  DigestSubscriptionResponse,
+  CreateSubscriptionRequest,
+  UpdateSubscriptionRequest,
+  DigestPreviewResponse,
+} from './digest-types'
+
 /**
  * Function type for retrieving Firebase ID tokens.
  * Returns null if user is not authenticated.
@@ -1240,4 +1248,166 @@ export async function getAiUsageInfo(draftId: string): Promise<AiUsageInfo> {
  */
 export function invalidateAiUsageCache(draftId: string): void {
   invalidateCache(`ai-usage:${draftId}`)
+}
+
+// ============ Digests (도시락) API ============
+// Daily digest subscription system. Users subscribe to receive daily email briefings.
+
+/**
+ * Fetches all active digests (도시락).
+ *
+ * Returns list of available digests with subscription status for authenticated users.
+ *
+ * @param category - Optional category filter
+ * @returns Array of digests with subscription info
+ *
+ * @example
+ * ```tsx
+ * const { data } = await getDigests()
+ * const weatherDigest = data.find(d => d.slug === 'weather')
+ * ```
+ */
+export async function getDigests(category?: string): Promise<{ data: DigestResponse[] }> {
+  const url = category ? `/api/digests?category=${category}` : '/api/digests'
+  const response = await fetchWithAuth(url)
+  return handleResponse<{ data: DigestResponse[] }>(response)
+}
+
+/**
+ * Fetches a single digest by ID or slug.
+ *
+ * @param idOrSlug - Digest ID or slug (e.g., 'weather')
+ * @returns Digest data with subscription status
+ * @throws {ApiError} 404 if digest not found
+ *
+ * @example
+ * ```tsx
+ * const digest = await getDigest('weather')
+ * console.log(digest.name, digest.config.deliveryTime)
+ * ```
+ */
+export async function getDigest(idOrSlug: string): Promise<DigestResponse> {
+  const response = await fetchWithAuth(`/api/digests/${idOrSlug}`)
+  return handleResponse<DigestResponse>(response)
+}
+
+/**
+ * Fetches digest preview content.
+ *
+ * @param idOrSlug - Digest ID or slug
+ * @returns Preview content for all supported cities/options
+ *
+ * @example
+ * ```tsx
+ * const preview = await getDigestPreview('weather')
+ * const seoulContent = preview.contents.seoul
+ * ```
+ */
+export async function getDigestPreview(idOrSlug: string): Promise<DigestPreviewResponse> {
+  const response = await fetch(`/api/digests/${idOrSlug}/preview`)
+  return handleResponse<DigestPreviewResponse>(response)
+}
+
+/**
+ * Fetches user's digest subscriptions (도시락 구독 목록).
+ *
+ * @returns Array of subscriptions with digest info and count/max
+ * @throws {ApiError} 401 if not authenticated
+ *
+ * @example
+ * ```tsx
+ * const { data, count, max } = await getDigestSubscriptions()
+ * console.log(`${count}/${max}개 구독 중`)
+ * ```
+ */
+export async function getDigestSubscriptions(): Promise<{
+  data: DigestSubscriptionResponse[]
+  count: number
+  max: number
+}> {
+  const response = await fetchWithAuth('/api/digests/subscriptions')
+  return handleResponse<{
+    data: DigestSubscriptionResponse[]
+    count: number
+    max: number
+  }>(response)
+}
+
+/**
+ * Subscribes to a digest (도시락 신청).
+ *
+ * @param data - Subscription request with digest ID and optional settings
+ * @returns Created subscription
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 400 if already subscribed or max limit reached
+ *
+ * @example
+ * ```tsx
+ * const subscription = await subscribeToDigest({
+ *   digestId: 'weather-digest-id',
+ *   settings: { city: 'seoul' }
+ * })
+ * ```
+ */
+export async function subscribeToDigest(
+  data: CreateSubscriptionRequest
+): Promise<DigestSubscriptionResponse> {
+  const response = await fetchWithAuth('/api/digests/subscriptions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  const result = await handleResponse<DigestSubscriptionResponse>(response)
+  invalidateCache('digests')
+  return result
+}
+
+/**
+ * Updates a digest subscription settings.
+ *
+ * @param subscriptionId - Subscription ID to update
+ * @param data - Updated settings
+ * @returns Updated subscription
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the subscription owner
+ *
+ * @example
+ * ```tsx
+ * await updateDigestSubscription(subId, {
+ *   settings: { city: 'busan' }
+ * })
+ * ```
+ */
+export async function updateDigestSubscription(
+  subscriptionId: string,
+  data: UpdateSubscriptionRequest
+): Promise<DigestSubscriptionResponse> {
+  const response = await fetchWithAuth(`/api/digests/subscriptions/${subscriptionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  return handleResponse<DigestSubscriptionResponse>(response)
+}
+
+/**
+ * Unsubscribes from a digest (도시락 구독 해제).
+ *
+ * @param subscriptionId - Subscription ID to cancel
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the subscription owner
+ *
+ * @example
+ * ```tsx
+ * await unsubscribeFromDigest(subscriptionId)
+ * invalidateCache('digests')
+ * ```
+ */
+export async function unsubscribeFromDigest(subscriptionId: string): Promise<void> {
+  const response = await fetchWithAuth(`/api/digests/subscriptions/${subscriptionId}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new ApiError(response.status, error.error || 'Request failed', error.code)
+  }
+  invalidateCache('digests')
 }

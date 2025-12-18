@@ -73,6 +73,10 @@ export const COLLECTIONS = {
   WHISPERS: 'whispers',
   AI_USAGE: 'aiUsage',
   REACTIONS: 'reactions',
+  // 다이제스트 (도시락) 시스템
+  DIGESTS: 'digests',
+  DIGEST_SUBSCRIPTIONS: 'digest_subscriptions',
+  DIGEST_LOGS: 'digest_logs',
 } as const
 
 export { adminApp, adminDb }
