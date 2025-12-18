@@ -3,7 +3,7 @@
 
 import { Timestamp } from 'firebase-admin/firestore'
 
-import { UserRole } from './admin-utils'
+import { UserRole } from './admin-constants'
 
 export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
 
@@ -175,6 +175,7 @@ export interface UserResponse {
   id: string
   name: string
   avatarUrl: string
+  role?: UserRole
   agreements?: UserAgreementsResponse
   isProfileComplete: boolean
   createdAt: string

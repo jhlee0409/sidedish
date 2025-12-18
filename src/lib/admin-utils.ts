@@ -8,25 +8,20 @@ import { getAdminDb, COLLECTIONS } from './firebase-admin'
 // 클라이언트에서도 사용할 수 있는 타입과 상수를 re-export
 export {
   type UserRole,
-  MASTER_EMAILS,
   ROLE_LEVELS,
   isAdmin,
   isMaster,
   hasPermission,
-  isMasterEmail,
 } from './admin-constants'
 
-import { MASTER_EMAILS, type UserRole } from './admin-constants'
+import { type UserRole } from './admin-constants'
 
 /**
  * 이메일로 유저 역할 확인 (서버 전용)
- * 마스터 이메일은 항상 master 역할 반환
+ * Firestore users 컬렉션에서 role 필드 조회
  */
 export async function getUserRole(email: string): Promise<UserRole> {
-  // 마스터 이메일 체크 (하드코딩된 목록)
-  if (MASTER_EMAILS.includes(email as typeof MASTER_EMAILS[number])) {
-    return 'master'
-  }
+  if (!email) return 'user'
 
   // Firestore에서 역할 조회
   try {
@@ -60,11 +55,6 @@ export async function getUserRoleByUid(uid: string): Promise<UserRole> {
 
     if (userDoc.exists) {
       const userData = userDoc.data()
-
-      // 이메일이 마스터 목록에 있으면 master 반환
-      if (userData?.email && MASTER_EMAILS.includes(userData.email as typeof MASTER_EMAILS[number])) {
-        return 'master'
-      }
 
       // 저장된 역할 반환
       if (userData?.role && ['admin', 'master'].includes(userData.role)) {

@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import Button from '@/components/Button'
 import { useAuth } from '@/contexts/AuthContext'
 import { DigestCategory, SupportedCity, CATEGORY_NAMES, CITY_NAMES } from '@/lib/digest-types'
-import { MASTER_EMAILS } from '@/lib/admin-constants'
+import { isAdmin } from '@/lib/admin-constants'
 
 const CATEGORY_OPTIONS: { value: DigestCategory; label: string; icon: string }[] = [
   { value: 'weather', label: '날씨', icon: '🌤️' },
@@ -33,7 +33,7 @@ export default function CreateLunchboxPage() {
   const { isAuthenticated, isLoading: authLoading, getIdToken, user } = useAuth()
 
   // 관리자 여부 체크
-  const isAdmin = user?.email && MASTER_EMAILS.includes(user.email as typeof MASTER_EMAILS[number])
+  const isUserAdmin = isAdmin(user?.role)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -155,7 +155,7 @@ export default function CreateLunchboxPage() {
   }
 
   // 관리자만 접근 가능
-  if (!isAdmin) {
+  if (!isUserAdmin) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">

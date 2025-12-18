@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
-import { getUserRole, isAdmin, MASTER_EMAILS } from '@/lib/admin-utils'
+import { getUserRole, isAdmin } from '@/lib/admin-utils'
 import { Timestamp } from 'firebase-admin/firestore'
 import {
   DigestDoc,

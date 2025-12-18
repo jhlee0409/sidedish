@@ -28,7 +28,7 @@ import {
 } from '@/lib/api-client'
 import { DigestResponse, DigestPreviewResponse } from '@/lib/digest-types'
 import { LUNCHBOX_TEXT, formatDeliveryTime, formatTodayKorean } from '@/lib/lunchbox-text'
-import { MASTER_EMAILS } from '@/lib/admin-constants'
+import { isAdmin } from '@/lib/admin-constants'
 import LoginModal from '@/components/LoginModal'
 
 export default function LunchboxDetailPage() {
@@ -44,8 +44,8 @@ export default function LunchboxDetailPage() {
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
 
-  // 관리자 여부 체크 (마스터 이메일 목록 기준)
-  const isAdmin = user?.email && MASTER_EMAILS.includes(user.email as typeof MASTER_EMAILS[number])
+  // 관리자 여부 체크
+  const isUserAdmin = isAdmin(user?.role)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -245,7 +245,7 @@ export default function LunchboxDetailPage() {
             </button>
 
             {/* 관리자: 테스트 발송 버튼 */}
-            {isAdmin && (
+            {isUserAdmin && (
               <button
                 onClick={handleTestSend}
                 disabled={isSendingTest}
