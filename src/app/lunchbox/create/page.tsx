@@ -52,7 +52,7 @@ const createDigestSchema = z.object({
     .min(10, '설명은 10자 이상이어야 합니다.')
     .max(200, '설명은 200자 이하여야 합니다.'),
   icon: z.string().min(1, '아이콘을 선택해주세요.'),
-  category: z.enum(digestCategories, { required_error: '카테고리를 선택해주세요.' }),
+  category: z.enum(digestCategories, { message: '카테고리를 선택해주세요.' }),
   isPremium: z.boolean(),
   deliveryTime: z
     .string()
