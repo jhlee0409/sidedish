@@ -34,13 +34,12 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 ```
 
-### Korean Validation Messages
+### Korean Validation Messages (Zod 4.x)
 ```typescript
 const schema = z.object({
-  // Required field
-  title: z.string({
-    required_error: '제목을 입력해주세요.',
-  }).min(1, '제목을 입력해주세요.'),
+  // Required field - Zod 4.x에서는 min(1)로 필수 처리
+  title: z.string()
+    .min(1, '제목을 입력해주세요.'),
 
   // Length validation
   description: z.string()
@@ -62,14 +61,12 @@ const schema = z.object({
     .max(20, '닉네임은 20자 이하여야 합니다.')
     .regex(/^[가-힣a-zA-Z0-9_]+$/, '한글, 영문, 숫자, 밑줄만 사용 가능합니다.'),
 
-  // Checkbox (must be true)
-  termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: '약관에 동의해주세요.' }),
-  }),
+  // Checkbox (must be true) - Zod 4.x
+  termsAccepted: z.literal(true, '약관에 동의해주세요.'),
 
-  // Select/Enum
+  // Select/Enum - Zod 4.x에서는 message 옵션 사용
   platform: z.enum(['WEB', 'APP', 'GAME', 'DESIGN', 'OTHER'], {
-    errorMap: () => ({ message: '플랫폼을 선택해주세요.' }),
+    message: '플랫폼을 선택해주세요.',
   }),
 
   // Array with min/max
@@ -361,7 +358,34 @@ const handleNext = async () => {
 }
 ```
 
+## Zod 4.x Migration Notes
+
+### Breaking Changes from Zod 3.x
+```typescript
+// ❌ Zod 3.x (deprecated)
+z.string({ required_error: '필수입니다.' })
+z.enum(['A', 'B'], { errorMap: () => ({ message: '선택하세요.' }) })
+z.literal(true, { errorMap: () => ({ message: '동의해주세요.' }) })
+
+// ✅ Zod 4.x
+z.string().min(1, '필수입니다.')
+z.enum(['A', 'B'], { message: '선택하세요.' })
+z.literal(true, '동의해주세요.')
+```
+
+### Error Message Patterns
+```typescript
+// Zod 4.x - 간단한 에러 메시지
+z.string().min(1, '에러 메시지')
+z.enum(['A', 'B'], { message: '에러 메시지' })
+z.number().min(0, { message: '0 이상이어야 합니다.' })
+
+// Zod 4.x - 커스텀 에러 함수 (동적 메시지)
+z.string().min(5, (val) => `최소 5자 필요 (현재: ${val.input?.length || 0}자)`)
+```
+
 ## Limitations
 - Schema changes require form re-mount
 - Large forms may have performance impact with `mode: 'onChange'`
 - Complex conditional validation may need custom refinements
+- Zod 4.x requires updated error message syntax (see Migration Notes)
