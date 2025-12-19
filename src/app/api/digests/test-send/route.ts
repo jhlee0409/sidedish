@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { getUserRoleByUid, isAdmin } from '@/lib/admin-utils'
-import { DigestDoc, SupportedCity } from '@/lib/digest-types'
-import { getMultiCityWeather } from '@/services/weatherService'
+import { DigestDoc, UserLocation } from '@/lib/digest-types'
+import { getCompactWeather, compareWeather } from '@/services/weatherService'
 import { generateDigestEmailData } from '@/services/digestGeneratorService'
 import { sendDigestEmail } from '@/services/emailService'
+
+/** 테스트용 기본 위치 (서울) */
+const DEFAULT_LOCATION: UserLocation = {
+  lat: 37.5665,
+  lon: 126.978,
+  address: '서울',
+}
 
 /**
  * POST /api/digests/test-send - 테스트 이메일 즉시 발송
@@ -34,7 +41,6 @@ export async function POST(request: NextRequest) {
     // 환경 변수 체크
     const missingEnvVars: string[] = []
     if (!process.env.OPENWEATHERMAP_API_KEY) missingEnvVars.push('OPENWEATHERMAP_API_KEY')
-    if (!process.env.GEMINI_API_KEY) missingEnvVars.push('GEMINI_API_KEY')
     if (!process.env.RESEND_API_KEY) missingEnvVars.push('RESEND_API_KEY')
 
     if (missingEnvVars.length > 0) {
@@ -79,13 +85,14 @@ export async function POST(request: NextRequest) {
 
     // 날씨 다이제스트인 경우
     if (digest.category === 'weather') {
-      const cities = (digest.config.cities as SupportedCity[]) || ['seoul']
+      console.log(`[Test Send] Fetching weather for default location: ${DEFAULT_LOCATION.address}`)
+      const todayWeather = await getCompactWeather(DEFAULT_LOCATION)
 
-      console.log(`[Test Send] Fetching weather for cities: ${cities.join(', ')}`)
-      const weatherData = await getMultiCityWeather(cities)
+      // 어제 데이터 없이 비교 (테스트용)
+      const comparison = compareWeather(todayWeather, undefined)
 
-      console.log(`[Test Send] Generating digest content with AI`)
-      const digestEmailData = await generateDigestEmailData(weatherData)
+      console.log(`[Test Send] Generating email content`)
+      const digestEmailData = generateDigestEmailData(comparison)
 
       console.log(`[Test Send] Sending email to: ${targetEmail}`)
       const result = await sendDigestEmail(targetEmail, digestEmailData)

@@ -77,6 +77,7 @@ export const COLLECTIONS = {
   DIGESTS: 'digests',
   DIGEST_SUBSCRIPTIONS: 'digest_subscriptions',
   DIGEST_LOGS: 'digest_logs',
+  WEATHER_LOGS: 'weather_logs',
 } as const
 
 export { adminApp, adminDb }

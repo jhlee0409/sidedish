@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { DigestDoc, DigestPreviewResponse, SupportedCity } from '@/lib/digest-types'
-import { getMultiCityWeather, generateWeatherRecommendations } from '@/services/weatherService'
+import { DigestDoc, UserLocation } from '@/lib/digest-types'
+import { getCompactWeather, compareWeather, getOutfitRecommendation, needsUmbrella } from '@/services/weatherService'
 
 interface RouteParams {
   params: Promise<{ id: string }>
+}
+
+/** 미리보기용 기본 위치 (서울) */
+const DEFAULT_LOCATION: UserLocation = {
+  lat: 37.5665,
+  lon: 126.978,
+  address: '서울',
 }
 
 /**
@@ -50,40 +57,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // 날씨 다이제스트인 경우 날씨 데이터 조회
     if (digestData.category === 'weather') {
       try {
-        const cities = (digestData.config.cities as SupportedCity[]) || ['seoul']
-        const weatherData = await getMultiCityWeather(cities)
+        const todayWeather = await getCompactWeather(DEFAULT_LOCATION)
+        const comparison = compareWeather(todayWeather, undefined)
 
-        // 첫 번째 도시 기준으로 추천 정보 생성
-        const firstCity = weatherData.cities[0]
-        const recommendations = generateWeatherRecommendations(firstCity.today)
-
-        const response: DigestPreviewResponse = {
+        return NextResponse.json({
           digestId: digestData.id,
           digestName: digestData.name,
           weather: {
-            cities: weatherData.cities.map((city) => ({
-              city: city.city,
-              today: {
-                city: city.today.city,
-                cityKo: city.today.cityKo,
-                current: {
-                  temp: city.today.current.temp,
-                  feelsLike: city.today.current.feelsLike,
-                  tempMin: city.today.current.tempMin,
-                  tempMax: city.today.current.tempMax,
-                  humidity: city.today.current.humidity,
-                  windSpeed: city.today.current.windSpeed,
-                  visibility: city.today.current.visibility,
-                  weather: city.today.current.weather,
-                },
-              },
-            })),
+            location: todayWeather.location.address,
+            feelsLike: todayWeather.feelsLike,
+            temperature: todayWeather.temperature,
+            tempMin: todayWeather.tempMin,
+            tempMax: todayWeather.tempMax,
+            precipitationProbability: todayWeather.precipitationProbability,
+            airQuality: todayWeather.airQuality,
+            weatherMain: todayWeather.weatherMain,
           },
-          recommendations,
+          recommendations: {
+            outfit: getOutfitRecommendation(todayWeather.feelsLike),
+            umbrella: needsUmbrella(todayWeather),
+            activities: [],
+          },
           generatedAt: new Date().toISOString(),
-        }
-
-        return NextResponse.json(response)
+        })
       } catch (weatherError) {
         console.error('Weather data fetch error:', weatherError)
         // 날씨 데이터 조회 실패 시 기본 응답
