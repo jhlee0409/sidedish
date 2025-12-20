@@ -12,10 +12,10 @@ import { Timestamp } from 'firebase-admin/firestore'
 /** 다이제스트 카테고리 */
 export type DigestCategory = 'weather' | 'finance' | 'news' | 'lifestyle' | 'other'
 
-/** 지원 도시 */
+/** 지원 도시 (관리자용 - 하위 호환성) */
 export type SupportedCity = 'seoul' | 'busan' | 'daegu' | 'incheon' | 'daejeon' | 'gwangju'
 
-/** 도시 한글명 매핑 */
+/** 도시 한글명 매핑 (관리자용 - 하위 호환성) */
 export const CITY_NAMES: Record<SupportedCity, string> = {
   seoul: '서울',
   busan: '부산',
@@ -25,14 +25,25 @@ export const CITY_NAMES: Record<SupportedCity, string> = {
   gwangju: '광주',
 }
 
-/** 도시 좌표 (OpenWeatherMap용) */
-export const CITY_COORDS: Record<SupportedCity, { lat: number; lon: number }> = {
-  seoul: { lat: 37.5665, lon: 126.978 },
-  busan: { lat: 35.1796, lon: 129.0756 },
-  daegu: { lat: 35.8714, lon: 128.6014 },
-  incheon: { lat: 37.4563, lon: 126.7052 },
-  daejeon: { lat: 36.3504, lon: 127.3845 },
-  gwangju: { lat: 35.1595, lon: 126.8526 },
+/** 사용자 위치 정보 */
+export interface UserLocation {
+  lat: number
+  lon: number
+  /** 주소 (시/군/구 레벨) - 예: "서울 강남구" */
+  address: string
+}
+
+/** 미세먼지 등급 */
+export type AirQualityLevel = 'good' | 'moderate' | 'unhealthy_sensitive' | 'unhealthy' | 'very_unhealthy' | 'hazardous'
+
+/** 미세먼지 등급 한글명 */
+export const AIR_QUALITY_NAMES: Record<AirQualityLevel, string> = {
+  good: '좋음',
+  moderate: '보통',
+  unhealthy_sensitive: '민감군 주의',
+  unhealthy: '나쁨',
+  very_unhealthy: '매우 나쁨',
+  hazardous: '위험',
 }
 
 /** 카테고리 한글명 매핑 */
@@ -86,10 +97,10 @@ export interface DigestDoc {
 
 /** 구독 설정 타입 */
 export interface SubscriptionSettings {
-  /** 날씨: 선택한 도시 */
-  city?: SupportedCity
-  /** 상세 모드 여부 (기본 false = 요약 모드) */
-  detailMode?: boolean
+  /** 사용자 위치 정보 (위도/경도/주소) */
+  location?: UserLocation
+  /** @deprecated 도시 기반에서 위치 기반으로 마이그레이션 */
+  city?: string
 }
 
 /** 구독 Firestore 문서 */
@@ -134,6 +145,33 @@ export interface DigestLogDoc {
   failureCount: number
   /** AI 생성 결과 (도시별 캐시) */
   generatedContent: Record<string, DigestContent>
+}
+
+/** 날씨 로그 Firestore 문서 - 어제 날씨 비교용 */
+export interface WeatherLogDoc {
+  id: string
+  /** 구독 ID (사용자별 위치별 고유) */
+  subscriptionId: string
+  /** 사용자 ID */
+  userId: string
+  /** 위치 정보 */
+  location: UserLocation
+  /** 기록 날짜 (YYYY-MM-DD 형식) */
+  date: string
+  /** 체감온도 */
+  feelsLike: number
+  /** 실제 기온 */
+  temperature: number
+  /** 강수량 (mm) */
+  precipitation: number
+  /** 강수 확률 (%) */
+  precipitationProbability: number
+  /** 미세먼지 등급 */
+  airQuality: AirQualityLevel
+  /** 날씨 상태 (Clear, Rain 등) */
+  weatherMain: string
+  /** 생성일 */
+  createdAt: Timestamp
 }
 
 // ============================================

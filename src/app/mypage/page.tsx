@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
-  Globe, Smartphone, Gamepad2, Palette, Box, Loader2, Package
+  Globe, Smartphone, Gamepad2, Palette, Box, Loader2, Package, MapPin
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -22,13 +22,15 @@ import {
   withdrawUser,
   getDigestSubscriptions,
   unsubscribeFromDigest,
+  updateDigestSubscription,
 } from '@/lib/api-client'
 import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
-import { DigestSubscriptionResponse } from '@/lib/digest-types'
+import { DigestSubscriptionResponse, UserLocation } from '@/lib/digest-types'
 import { LUNCHBOX_TEXT } from '@/lib/lunchbox-text'
 import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
 import WithdrawalModal from '@/components/WithdrawalModal'
+import LocationPicker from '@/components/lunchbox/LocationPicker'
 
 type TabType = 'menus' | 'likes' | 'whispers' | 'lunchbox'
 
@@ -93,6 +95,8 @@ function MyPageContent() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showProfileEditModal, setShowProfileEditModal] = useState(false)
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false)
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null)
+  const [updatingLocationId, setUpdatingLocationId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -199,6 +203,25 @@ function MyPageContent() {
       toast.error(LUNCHBOX_TEXT.UNSUBSCRIBE_ERROR)
     } finally {
       setUnsubscribingId(null)
+    }
+  }
+
+  const handleUpdateLocation = async (subscriptionId: string, location: UserLocation) => {
+    setUpdatingLocationId(subscriptionId)
+    try {
+      const updated = await updateDigestSubscription(subscriptionId, {
+        settings: { location },
+      })
+      setSubscriptions(prev =>
+        prev.map(s => (s.id === subscriptionId ? updated : s))
+      )
+      setEditingLocationId(null)
+      toast.success('위치가 변경되었습니다.')
+    } catch (error) {
+      console.error('Failed to update location:', error)
+      toast.error('위치 변경에 실패했습니다.')
+    } finally {
+      setUpdatingLocationId(null)
     }
   }
 
@@ -582,56 +605,91 @@ function MyPageContent() {
 
               {subscriptions.length > 0 ? (
                 <div className="space-y-4">
-                  {subscriptions.map(sub => (
-                    <div
-                      key={sub.id}
-                      className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="p-5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className="text-4xl">{sub.digest.icon}</div>
-                            <div className="flex-1">
-                              <h3 className="font-bold text-slate-900">{sub.digest.name}</h3>
-                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                                {sub.digest.description}
-                              </p>
-                              <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {new Date(sub.createdAt).toLocaleDateString()} 부터
-                                </span>
-                                {sub.digest.config.deliveryTime && (
+                  {subscriptions.map(sub => {
+                    const isWeatherDigest = sub.digest.category === 'weather'
+                    const currentLocation = sub.settings?.location
+                    const isEditingThis = editingLocationId === sub.id
+                    const isUpdatingThis = updatingLocationId === sub.id
+
+                    return (
+                      <div
+                        key={sub.id}
+                        className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="p-5">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="text-4xl">{sub.digest.icon}</div>
+                              <div className="flex-1">
+                                <h3 className="font-bold text-slate-900">{sub.digest.name}</h3>
+                                <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                                  {sub.digest.description}
+                                </p>
+                                <div className="flex items-center flex-wrap gap-4 mt-3 text-xs text-slate-400">
                                   <span className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
-                                    매일 {sub.digest.config.deliveryTime} 배달
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(sub.createdAt).toLocaleDateString()} 부터
                                   </span>
+                                  {sub.digest.config.deliveryTime && (
+                                    <span className="flex items-center gap-1">
+                                      <Mail className="w-3 h-3" />
+                                      매일 {sub.digest.config.deliveryTime} 배달
+                                    </span>
+                                  )}
+                                  {isWeatherDigest && currentLocation && (
+                                    <span className="flex items-center gap-1 text-indigo-600">
+                                      <MapPin className="w-3 h-3" />
+                                      {currentLocation.address}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* 위치 수정 UI (날씨 도시락만) */}
+                                {isWeatherDigest && isEditingThis && (
+                                  <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <LocationPicker
+                                      location={currentLocation}
+                                      onLocationChange={(loc) => handleUpdateLocation(sub.id, loc)}
+                                      onClose={() => setEditingLocationId(null)}
+                                      isLoading={isUpdatingThis}
+                                    />
+                                  </div>
                                 )}
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Link href={`/lunchbox/${sub.digest.slug}`}>
-                              <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                                <Globe className="w-4 h-4" />
-                              </button>
-                            </Link>
-                            <button
-                              onClick={() => handleUnsubscribe(sub.id)}
-                              disabled={unsubscribingId === sub.id}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              {unsubscribingId === sub.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
+                            <div className="flex items-center gap-2">
+                              {/* 위치 변경 버튼 (날씨 도시락만) */}
+                              {isWeatherDigest && !isEditingThis && (
+                                <button
+                                  onClick={() => setEditingLocationId(sub.id)}
+                                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                  title="위치 변경"
+                                >
+                                  <MapPin className="w-4 h-4" />
+                                </button>
                               )}
-                            </button>
+                              <Link href={`/lunchbox/${sub.digest.slug}`}>
+                                <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                  <Globe className="w-4 h-4" />
+                                </button>
+                              </Link>
+                              <button
+                                onClick={() => handleUnsubscribe(sub.id)}
+                                disabled={unsubscribingId === sub.id}
+                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {unsubscribingId === sub.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <EmptyState
