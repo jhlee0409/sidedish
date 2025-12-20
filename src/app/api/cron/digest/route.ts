@@ -33,9 +33,19 @@ const DEFAULT_LOCATION: UserLocation = {
 }
 
 /**
- * POST /api/cron/digest - Cron으로 호출되는 다이제스트 발송 엔드포인트
+ * POST /api/cron/digest - 수동 트리거용 (관리자 테스트)
+ */
+export async function POST(request: NextRequest) {
+  if (!verifyCronSecret(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return executeDigestCron()
+}
+
+/**
+ * 다이제스트 발송 로직
  *
- * 새로운 로직:
+ * 처리 순서:
  * 1. 각 구독자의 위치 정보 가져오기
  * 2. 어제 날씨 로그 조회 (DB)
  * 3. 오늘 날씨 조회 (API)
@@ -44,18 +54,18 @@ const DEFAULT_LOCATION: UserLocation = {
  * 6. 오늘 날씨 DB에 저장
  * 7. 오래된 로그 삭제
  */
-export async function POST(request: NextRequest) {
-  if (!verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+async function executeDigestCron() {
   try {
     const db = getAdminDb()
     const now = new Date()
-    const currentHour = now.getHours().toString().padStart(2, '0')
-    const currentTime = `${currentHour}:00`
 
-    console.log(`[Cron] Running digest cron at ${now.toISOString()}, target time: ${currentTime}`)
+    // KST (UTC+9)로 변환
+    const kstOffset = 9 * 60 * 60 * 1000 // 9시간을 밀리초로
+    const kstTime = new Date(now.getTime() + kstOffset)
+    const kstHour = kstTime.getUTCHours().toString().padStart(2, '0')
+    const currentTime = `${kstHour}:00`
+
+    console.log(`[Cron] Running digest cron at ${now.toISOString()} (KST: ${kstTime.toISOString()}), target time: ${currentTime}`)
 
     // 1. 현재 시간에 발송해야 하는 활성화된 다이제스트 조회
     const digestsSnapshot = await db
@@ -231,37 +241,48 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/cron/digest - Cron 상태 확인용 엔드포인트
+ * GET /api/cron/digest - Vercel Cron이 호출하는 다이제스트 발송 엔드포인트
+ * Vercel Crons는 항상 GET 요청을 사용
  */
 export async function GET(request: NextRequest) {
   if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // URL 파라미터로 status 체크 모드 지원
+  const { searchParams } = new URL(request.url)
+  if (searchParams.get('status') === 'true') {
+    return getHealthStatus()
+  }
+
+  // 실제 발송 로직 실행
+  return executeDigestCron()
+}
+
+/**
+ * 크론 상태 확인
+ */
+async function getHealthStatus() {
   try {
     const db = getAdminDb()
 
-    // 활성 다이제스트 수
     const activeDigestsCount = await db
       .collection(COLLECTIONS.DIGESTS)
       .where('isActive', '==', true)
       .count()
       .get()
 
-    // 활성 구독 수
     const activeSubscriptionsCount = await db
       .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
       .where('isActive', '==', true)
       .count()
       .get()
 
-    // 날씨 로그 수
     const weatherLogsCount = await db
       .collection(COLLECTIONS.WEATHER_LOGS)
       .count()
       .get()
 
-    // 최근 발송 로그
     const recentLogs = await db
       .collection(COLLECTIONS.DIGEST_LOGS)
       .orderBy('sentAt', 'desc')
