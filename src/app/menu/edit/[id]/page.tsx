@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon, Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle, FlaskConical } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
@@ -98,6 +98,7 @@ interface FormData {
   link: string
   githubUrl: string
   platform: ProjectPlatform
+  isBeta: boolean
 }
 
 export default function MenuEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -114,7 +115,8 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     imageUrl: '',
     link: '',
     githubUrl: '',
-    platform: 'WEB'
+    platform: 'WEB',
+    isBeta: false
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -155,7 +157,8 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             imageUrl: found.imageUrl,
             link: found.link,
             githubUrl: found.githubUrl || '',
-            platform: found.platform
+            platform: found.platform,
+            isBeta: found.isBeta ?? false
           })
 
           // Load saved AI candidates for this project
@@ -425,6 +428,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         link: formData.link,
         githubUrl: formData.githubUrl,
         platform: formData.platform,
+        isBeta: formData.isBeta,
       })
 
       router.push('/mypage')
@@ -574,6 +578,29 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                     <span className="text-xs font-semibold">{opt.label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Beta 체크박스 */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  id="isBeta"
+                  checked={formData.isBeta}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isBeta: e.target.checked }))}
+                  className="w-4 h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="isBeta" className="flex items-center gap-2 text-sm font-bold text-amber-800 cursor-pointer">
+                  <FlaskConical className="w-4 h-4" />
+                  Beta / 개발 중인 프로젝트
+                </label>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  아직 완성되지 않았거나 개선 중인 프로젝트라면 체크해주세요.<br />
+                  완벽하지 않아도 괜찮아요! 사이드 프로젝트는 함께 성장하는 거니까요.
+                </p>
               </div>
             </div>
 

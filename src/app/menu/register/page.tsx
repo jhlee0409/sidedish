@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
   Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2,
-  ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle
+  ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -92,7 +92,8 @@ export default function MenuRegisterPage() {
     imageUrl: '',
     link: '',
     githubUrl: '',
-    platform: 'WEB' as ProjectPlatform
+    platform: 'WEB' as ProjectPlatform,
+    isBeta: false
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -130,6 +131,7 @@ export default function MenuRegisterPage() {
         link: existingDraft.link,
         githubUrl: existingDraft.githubUrl,
         platform: existingDraft.platform,
+        isBeta: existingDraft.isBeta ?? false,
       })
 
       // If there's a selected candidate, apply its content
@@ -194,6 +196,7 @@ export default function MenuRegisterPage() {
         link: formData.link,
         githubUrl: formData.githubUrl,
         platform: formData.platform,
+        isBeta: formData.isBeta,
       }
 
       saveDraft(updatedDraft)
@@ -441,6 +444,7 @@ export default function MenuRegisterPage() {
         link: formData.link,
         githubUrl: formData.githubUrl,
         platform: formData.platform,
+        isBeta: formData.isBeta,
       })
 
       // Clear the draft after successful submission
@@ -559,6 +563,29 @@ export default function MenuRegisterPage() {
                     <span className="text-xs font-semibold">{opt.label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Beta 체크박스 */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  id="isBeta"
+                  checked={formData.isBeta}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isBeta: e.target.checked }))}
+                  className="w-4 h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="isBeta" className="flex items-center gap-2 text-sm font-bold text-amber-800 cursor-pointer">
+                  <FlaskConical className="w-4 h-4" />
+                  Beta / 개발 중인 프로젝트
+                </label>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  아직 완성되지 않았거나 개선 중인 프로젝트라면 체크해주세요.<br />
+                  완벽하지 않아도 괜찮아요! 사이드 프로젝트는 함께 성장하는 거니까요.
+                </p>
               </div>
             </div>
 

@@ -88,6 +88,7 @@ export const createDraft = (userId: string): DraftData => {
     link: '',
     githubUrl: '',
     platform: 'WEB',
+    isBeta: false,
     aiCandidates: [],
     selectedCandidateId: null,
     generationCount: 0,
@@ -209,6 +210,7 @@ export interface DraftFormData {
   link?: string
   githubUrl?: string
   platform?: ProjectPlatform
+  isBeta?: boolean
 }
 
 export const updateDraftFormData = (draftId: string, formData: DraftFormData): void => {

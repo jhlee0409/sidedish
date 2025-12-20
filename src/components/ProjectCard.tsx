@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart, ArrowUpRight, Smartphone, Globe, Gamepad2, Palette, Box } from 'lucide-react'
+import { Heart, ArrowUpRight, Smartphone, Globe, Gamepad2, Palette, Box, FlaskConical } from 'lucide-react'
 import Image from 'next/image'
 import { ProjectPlatform } from '@/lib/types'
 import { ProjectResponse } from '@/lib/db-types'
@@ -37,9 +37,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         />
 
         {/* Platform badge */}
-        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-          {getPlatformIcon(project.platform || 'WEB')}
-          <span>{project.platform || 'WEB'}</span>
+        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+          <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
+            {getPlatformIcon(project.platform || 'WEB')}
+            <span>{project.platform || 'WEB'}</span>
+          </div>
+          {project.isBeta && (
+            <div className="bg-amber-500/95 backdrop-blur-sm px-2 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-1 shadow-sm">
+              <FlaskConical className="w-3 h-3" />
+              <span>Beta</span>
+            </div>
+          )}
         </div>
 
         {/* Link button on hover */}

@@ -28,6 +28,7 @@ export interface ProjectDoc {
   link: string
   githubUrl?: string
   platform: ProjectPlatform
+  isBeta?: boolean // 베타/개발중 표시
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -93,6 +94,7 @@ export interface CreateProjectInput {
   link: string
   githubUrl?: string
   platform: ProjectPlatform
+  isBeta?: boolean
 }
 
 export interface UpdateProjectInput {
@@ -104,6 +106,7 @@ export interface UpdateProjectInput {
   link?: string
   githubUrl?: string
   platform?: ProjectPlatform
+  isBeta?: boolean
 }
 
 export interface CreateCommentInput {
@@ -159,6 +162,7 @@ export interface ProjectResponse {
   link: string
   githubUrl?: string
   platform: ProjectPlatform
+  isBeta?: boolean
   createdAt: string
   updatedAt: string
 }

@@ -478,6 +478,8 @@ export interface CreateProjectData {
   githubUrl?: string
   /** Project platform type */
   platform: ProjectPlatform
+  /** Beta/development status flag */
+  isBeta?: boolean
 }
 
 /**
