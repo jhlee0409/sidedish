@@ -367,10 +367,18 @@ function generatePreviewText(content: CompactDigestContent): string {
 export function generateDigestEmailData(comparison: WeatherComparisonData): DigestEmailData {
   const content = generateCompactDigest(comparison)
 
+  // KST (UTC+9) 기준으로 날짜 계산
   const now = new Date()
-  const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`
+  const kstOffset = 9 * 60 * 60 * 1000
+  const kstDate = new Date(now.getTime() + kstOffset)
+
+  const month = kstDate.getUTCMonth() + 1
+  const day = kstDate.getUTCDate()
+  const dayOfWeek = kstDate.getUTCDay()
+
+  const dateStr = `${month}월 ${day}일`
   const dayNames = ['일', '월', '화', '수', '목', '금', '토']
-  const fullDateStr = `${dateStr} ${dayNames[now.getDay()]}요일`
+  const fullDateStr = `${dateStr} ${dayNames[dayOfWeek]}요일`
 
   return {
     subject: generateSubject(content, dateStr),
