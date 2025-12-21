@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
       message: `어제(${yesterday}) 날씨 로그가 생성되었습니다`,
       data: {
         id: docId,
-        date: yesterday,
         ...logData,
       },
     })
