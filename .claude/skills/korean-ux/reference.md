@@ -1,9 +1,4 @@
----
-name: writing-korean-ux-text
-description: Writes Korean UI text for SideDish. Use when adding buttons, labels, error messages, placeholders, or any user-facing Korean text. Includes culinary metaphors (메이커=셰프, 프로젝트=메뉴) and tone guidelines.
----
-
-# Korean UX Writing Skill
+# Korean UX Reference
 
 ## When to Use
 - Writing button labels (등록하기, 저장, 취소)
@@ -11,11 +6,6 @@ description: Writes Korean UI text for SideDish. Use when adding buttons, labels
 - Writing error and success messages
 - Adding empty state messages
 - Using culinary metaphors consistently
-
-## Tone & Voice
-- **친근하고 전문적인** (Friendly yet professional)
-- **음식/요리 메타포 활용** (Use culinary metaphors)
-- **간결하고 명확하게** (Concise and clear)
 
 ## Common UI Text
 
