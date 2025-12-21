@@ -82,6 +82,23 @@ export interface WhisperDoc {
   createdAt: Timestamp
 }
 
+// Project Update Types (마일스톤 + 메이커로그)
+export type ProjectUpdateType = 'milestone' | 'devlog'
+
+// Firestore document structure for Project Updates
+export interface ProjectUpdateDoc {
+  id: string
+  projectId: string
+  authorId: string
+  authorName: string
+  type: ProjectUpdateType
+  title: string           // 마일스톤: "v1.0 출시", 개발로그: "로그인 기능 구현 중"
+  content: string         // 마크다운 내용
+  version?: string        // 마일스톤용 버전 (예: "1.0.0", "Beta 2")
+  emoji?: string          // 마일스톤용 이모지 (🎉, 🚀, 🐛, ✨ 등)
+  createdAt: Timestamp
+}
+
 // API Request/Response types
 export interface CreateProjectInput {
   title: string
@@ -124,6 +141,29 @@ export interface CreateWhisperInput {
   senderName: string
   senderId?: string
   content: string
+}
+
+// Project Update Input/Response types
+export interface CreateProjectUpdateInput {
+  projectId: string
+  type: ProjectUpdateType
+  title: string
+  content: string
+  version?: string
+  emoji?: string
+}
+
+export interface ProjectUpdateResponse {
+  id: string
+  projectId: string
+  authorId: string
+  authorName: string
+  type: ProjectUpdateType
+  title: string
+  content: string
+  version?: string
+  emoji?: string
+  createdAt: string
 }
 
 // API Request types for user agreements (without Timestamp)

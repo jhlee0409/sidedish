@@ -10,6 +10,7 @@ import {
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
+import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
 import { sanitizePlainText } from '@/lib/sanitize-utils'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -461,6 +462,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                   )
                 })}
               </div>
+            </div>
+
+            {/* Project Updates Timeline */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-6">
+              <ProjectUpdateTimeline
+                projectId={project.id}
+                projectAuthorId={project.authorId}
+              />
             </div>
 
             {/* Comments Section */}
