@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { getUserRoleByUid, isAdmin } from '@/lib/admin-utils'
-import { DigestDoc, UserLocation } from '@/lib/digest-types'
+import { DigestDoc, DigestSubscriptionDoc, UserLocation } from '@/lib/digest-types'
 import { getCompactWeather, compareWeather } from '@/services/weatherService'
 import { generateDigestEmailData } from '@/services/digestGeneratorService'
 import { sendDigestEmail } from '@/services/emailService'
+import { getYesterdayWeatherLog } from '@/services/weatherLogService'
 
 /** 테스트용 기본 위치 (서울) */
 const DEFAULT_LOCATION: UserLocation = {
@@ -85,13 +86,36 @@ export async function POST(request: NextRequest) {
 
     // 날씨 다이제스트인 경우
     if (digest.category === 'weather') {
-      console.log(`[Test Send] Fetching weather for default location: ${DEFAULT_LOCATION.address}`)
-      const todayWeather = await getCompactWeather(DEFAULT_LOCATION)
+      // 현재 유저의 구독 정보 조회 (위치 및 어제 로그용)
+      const subscriptionSnapshot = await db
+        .collection(COLLECTIONS.DIGEST_SUBSCRIPTIONS)
+        .where('digestId', '==', digestId)
+        .where('userId', '==', user.uid)
+        .where('isActive', '==', true)
+        .limit(1)
+        .get()
 
-      // 어제 데이터 없이 비교 (테스트용)
-      const comparison = compareWeather(todayWeather, undefined)
+      let location = DEFAULT_LOCATION
+      let yesterdayLog = null
 
-      console.log(`[Test Send] Generating email content`)
+      if (!subscriptionSnapshot.empty) {
+        const subscription = subscriptionSnapshot.docs[0].data() as DigestSubscriptionDoc
+        location = subscription.settings?.location || DEFAULT_LOCATION
+
+        // 어제 날씨 로그 조회
+        yesterdayLog = await getYesterdayWeatherLog(subscription.id)
+        console.log(`[Test Send] Found subscription: ${subscription.id}, yesterday log: ${yesterdayLog ? 'exists' : 'none'}`)
+      } else {
+        console.log(`[Test Send] No subscription found for user, using default location`)
+      }
+
+      console.log(`[Test Send] Fetching weather for location: ${location.address}`)
+      const todayWeather = await getCompactWeather(location)
+
+      // 어제 데이터와 비교
+      const comparison = compareWeather(todayWeather, yesterdayLog || undefined)
+
+      console.log(`[Test Send] Generating email content (yesterday comparison: ${yesterdayLog ? 'yes' : 'no'})`)
       const digestEmailData = generateDigestEmailData(comparison)
 
       console.log(`[Test Send] Sending email to: ${targetEmail}`)
