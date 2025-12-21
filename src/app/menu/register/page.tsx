@@ -1,78 +1,37 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
-  Smartphone, Globe, Gamepad2, Palette, Box, Github, Wand2,
-  ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle
+  Github, Wand2, ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import { ProjectPlatform, DraftData } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { createProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
+import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
 import {
   getOrCreateDraft,
   saveDraft,
   deleteDraft,
-  addAiCandidate,
-  selectCandidate,
   clearCurrentDraftId,
   formatLastSaved,
   hasUnsavedChanges,
+  addAiCandidate,
+  selectCandidate,
 } from '@/lib/draftService'
 
-const platformOptions: { value: ProjectPlatform; label: string; icon: React.ReactNode }[] = [
-  { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
-  { value: 'APP', label: '모바일 앱', icon: <Smartphone className="w-4 h-4" /> },
-  { value: 'GAME', label: '게임', icon: <Gamepad2 className="w-4 h-4" /> },
-  { value: 'DESIGN', label: '디자인/작품', icon: <Palette className="w-4 h-4" /> },
-  { value: 'OTHER', label: '기타', icon: <Box className="w-4 h-4" /> },
-]
+// 리팩토링된 상수 및 설정
+import { AI_CONSTRAINTS, FORM_ERROR_MESSAGES, FORM_TIMING } from '@/lib/form-constants'
+import { PLATFORM_OPTIONS, getLinkConfig } from '@/lib/platform-config'
 
-const getLinkConfig = (platform: ProjectPlatform) => {
-  switch (platform) {
-    case 'WEB':
-      return {
-        label: '서비스 주소 (URL)',
-        placeholder: 'https://myservice.com',
-        desc: '프로젝트를 확인할 수 있는 URL을 입력해주세요.'
-      }
-    case 'APP':
-      return {
-        label: '다운로드 링크 (App Store/Play Store)',
-        placeholder: 'https://apps.apple.com/... 또는 https://play.google.com/...',
-        desc: '앱을 설치할 수 있는 스토어 링크를 입력해주세요.'
-      }
-    case 'GAME':
-      return {
-        label: '플레이 / 다운로드 링크',
-        placeholder: 'https://store.steampowered.com/... 또는 https://itch.io/...',
-        desc: '게임을 바로 즐길 수 있는 링크를 입력해주세요.'
-      }
-    case 'DESIGN':
-      return {
-        label: '포트폴리오 주소',
-        placeholder: 'https://behance.net/... 또는 https://notion.so/...',
-        desc: '작품을 감상할 수 있는 페이지 링크를 입력해주세요.'
-      }
-    default:
-      return {
-        label: '프로젝트 링크',
-        placeholder: '프로젝트를 확인할 수 있는 URL',
-        desc: '프로젝트와 관련된 웹페이지 주소를 입력해주세요.'
-      }
-  }
-}
-
-const MIN_DESCRIPTION_LENGTH = 30
-const DEFAULT_MAX_PER_DRAFT = 3
-const DEFAULT_MAX_PER_DAY = 10
+// 리팩토링된 훅
+import { useImageUpload, useTagInput, useAiGeneration } from '@/hooks'
 
 export default function MenuRegisterPage() {
   const router = useRouter()
@@ -92,7 +51,8 @@ export default function MenuRegisterPage() {
     imageUrl: '',
     link: '',
     githubUrl: '',
-    platform: 'WEB' as ProjectPlatform
+    platform: 'WEB' as ProjectPlatform,
+    isBeta: false
   })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -102,11 +62,17 @@ export default function MenuRegisterPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
   // AI limit state (fetched from server)
-  const [aiLimitInfo, setAiLimitInfo] = useState({
-    remainingForDraft: DEFAULT_MAX_PER_DRAFT,
-    remainingForDay: DEFAULT_MAX_PER_DAY,
-    maxPerDraft: DEFAULT_MAX_PER_DRAFT,
-    maxPerDay: DEFAULT_MAX_PER_DAY,
+  const [aiLimitInfo, setAiLimitInfo] = useState<{
+    remainingForDraft: number
+    remainingForDay: number
+    maxPerDraft: number
+    maxPerDay: number
+    cooldownRemaining: number
+  }>({
+    remainingForDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
+    remainingForDay: AI_CONSTRAINTS.MAX_PER_DAY,
+    maxPerDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
+    maxPerDay: AI_CONSTRAINTS.MAX_PER_DAY,
     cooldownRemaining: 0,
   })
   const [aiError, setAiError] = useState<string | null>(null)
@@ -130,6 +96,7 @@ export default function MenuRegisterPage() {
         link: existingDraft.link,
         githubUrl: existingDraft.githubUrl,
         platform: existingDraft.platform,
+        isBeta: existingDraft.isBeta ?? false,
       })
 
       // If there's a selected candidate, apply its content
@@ -194,6 +161,7 @@ export default function MenuRegisterPage() {
         link: formData.link,
         githubUrl: formData.githubUrl,
         platform: formData.platform,
+        isBeta: formData.isBeta,
       }
 
       saveDraft(updatedDraft)
@@ -294,8 +262,8 @@ export default function MenuRegisterPage() {
     setAiError(null)
 
     // Validate minimum description length (client-side pre-check)
-    if (formData.description.length < MIN_DESCRIPTION_LENGTH) {
-      setAiError(`최소 ${MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
+    if (formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH) {
+      setAiError(`최소 ${AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
       return
     }
 
@@ -441,6 +409,7 @@ export default function MenuRegisterPage() {
         link: formData.link,
         githubUrl: formData.githubUrl,
         platform: formData.platform,
+        isBeta: formData.isBeta,
       })
 
       // Clear the draft after successful submission
@@ -545,7 +514,7 @@ export default function MenuRegisterPage() {
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">메뉴 유형 <span className="text-orange-500">*</span></label>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {platformOptions.map((opt) => (
+                {PLATFORM_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
@@ -559,6 +528,29 @@ export default function MenuRegisterPage() {
                     <span className="text-xs font-semibold">{opt.label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Beta 체크박스 */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  id="isBeta"
+                  checked={formData.isBeta}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isBeta: e.target.checked }))}
+                  className="w-4 h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="isBeta" className="flex items-center gap-2 text-sm font-bold text-amber-800 cursor-pointer">
+                  <FlaskConical className="w-4 h-4" />
+                  Beta / 개발 중인 프로젝트
+                </label>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  아직 완성되지 않았거나 개선 중인 프로젝트라면 체크해주세요.<br />
+                  완벽하지 않아도 괜찮아요! 사이드 프로젝트는 함께 성장하는 거니까요.
+                </p>
               </div>
             </div>
 
@@ -628,7 +620,7 @@ export default function MenuRegisterPage() {
                 <div>
                   <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    최소 {MIN_DESCRIPTION_LENGTH}자 이상 작성 후 AI 생성이 가능합니다
+                    최소 {AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상 작성 후 AI 생성이 가능합니다
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -641,7 +633,7 @@ export default function MenuRegisterPage() {
                     type="button"
                     onClick={handleAiGenerate}
                     disabled={
-                      formData.description.length < MIN_DESCRIPTION_LENGTH ||
+                      formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH ||
                       isAiLoading ||
                       aiLimitInfo.remainingForDraft === 0 ||
                       aiLimitInfo.cooldownRemaining > 0
@@ -682,10 +674,10 @@ export default function MenuRegisterPage() {
                 />
 
                 {/* Character count */}
-                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= MIN_DESCRIPTION_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
+                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= AI_CONSTRAINTS.MIN_DESC_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
                   {formData.description.length}자
-                  {formData.description.length < MIN_DESCRIPTION_LENGTH && (
-                    <span className="text-slate-400"> / 최소 {MIN_DESCRIPTION_LENGTH}자</span>
+                  {formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH && (
+                    <span className="text-slate-400"> / 최소 {AI_CONSTRAINTS.MIN_DESC_LENGTH}자</span>
                   )}
                 </div>
 

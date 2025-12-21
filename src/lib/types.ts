@@ -88,6 +88,7 @@ export interface DraftData {
   link: string
   githubUrl: string
   platform: ProjectPlatform
+  isBeta: boolean // 베타/개발중 표시
   aiCandidates: AiGenerationCandidate[]
   selectedCandidateId: string | null
   generationCount: number

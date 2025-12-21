@@ -73,6 +73,7 @@ export const COLLECTIONS = {
   WHISPERS: 'whispers',
   AI_USAGE: 'aiUsage',
   REACTIONS: 'reactions',
+  PROJECT_UPDATES: 'projectUpdates', // 마일스톤 + 메이커로그
   // 다이제스트 (도시락) 시스템
   DIGESTS: 'digests',
   DIGEST_SUBSCRIPTIONS: 'digest_subscriptions',

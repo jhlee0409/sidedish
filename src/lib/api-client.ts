@@ -48,6 +48,8 @@ import {
   PaginatedResponse,
   ProjectPlatform,
   Reactions,
+  ProjectUpdateResponse,
+  ProjectUpdateType,
 } from './db-types'
 
 import {
@@ -478,6 +480,8 @@ export interface CreateProjectData {
   githubUrl?: string
   /** Project platform type */
   platform: ProjectPlatform
+  /** Beta/development status flag */
+  isBeta?: boolean
 }
 
 /**
@@ -1410,4 +1414,124 @@ export async function unsubscribeFromDigest(subscriptionId: string): Promise<voi
     throw new ApiError(response.status, error.error || 'Request failed', error.code)
   }
   invalidateCache('digests')
+}
+
+// ============ Project Updates API (마일스톤 + 메이커로그) ============
+// Track project progress with milestones and development logs.
+
+/**
+ * Data required to create a project update.
+ */
+export interface CreateProjectUpdateData {
+  /** Update type: 'milestone' for achievements, 'devlog' for progress notes */
+  type: ProjectUpdateType
+  /** Update title (2-100 characters) */
+  title: string
+  /** Markdown content describing the update */
+  content: string
+  /** Version string for milestones (e.g., "1.0.0", "Beta 2") */
+  version?: string
+  /** Emoji for milestones (🎉, 🚀, ✨, 🐛, 🔧, 📦, 🎨, ⚡, 🔒, 📝, 🌟, 💡) */
+  emoji?: string
+}
+
+/**
+ * Fetches updates for a project.
+ *
+ * @param projectId - Project ID to fetch updates for
+ * @param options - Pagination and filter options
+ * @returns Paginated list of project updates
+ *
+ * @example
+ * ```tsx
+ * const { data: updates } = await getProjectUpdates('abc123')
+ * // Filter by type
+ * const milestones = await getProjectUpdates('abc123', { type: 'milestone' })
+ * ```
+ */
+export async function getProjectUpdates(
+  projectId: string,
+  options?: {
+    limit?: number
+    cursor?: string
+    type?: ProjectUpdateType
+  }
+): Promise<PaginatedResponse<ProjectUpdateResponse>> {
+  const params = new URLSearchParams()
+  if (options?.limit) params.set('limit', String(options.limit))
+  if (options?.cursor) params.set('cursor', options.cursor)
+  if (options?.type) params.set('type', options.type)
+
+  const queryString = params.toString()
+  const url = `/api/projects/${projectId}/updates${queryString ? `?${queryString}` : ''}`
+
+  const response = await fetch(url)
+  return handleResponse<PaginatedResponse<ProjectUpdateResponse>>(response)
+}
+
+/**
+ * Creates a project update (milestone or devlog).
+ *
+ * Only the project owner can create updates.
+ *
+ * @param projectId - Project ID to add update to
+ * @param data - Update data
+ * @returns The created update
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the project owner
+ *
+ * @example
+ * ```tsx
+ * // Create a milestone
+ * const milestone = await createProjectUpdate('abc123', {
+ *   type: 'milestone',
+ *   title: 'v1.0 정식 출시',
+ *   content: '드디어 정식 버전을 출시했습니다! 🎉',
+ *   version: '1.0.0',
+ *   emoji: '🎉'
+ * })
+ *
+ * // Create a devlog
+ * const devlog = await createProjectUpdate('abc123', {
+ *   type: 'devlog',
+ *   title: '로그인 기능 구현 중',
+ *   content: '오늘은 OAuth 연동 작업을 진행했습니다...'
+ * })
+ * ```
+ */
+export async function createProjectUpdate(
+  projectId: string,
+  data: CreateProjectUpdateData
+): Promise<ProjectUpdateResponse> {
+  const response = await fetchWithAuth(`/api/projects/${projectId}/updates`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return handleResponse<ProjectUpdateResponse>(response)
+}
+
+/**
+ * Deletes a project update.
+ *
+ * Only the update author can delete their updates.
+ *
+ * @param updateId - Update ID to delete
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the update author
+ * @throws {ApiError} 404 if update not found
+ *
+ * @example
+ * ```tsx
+ * await deleteProjectUpdate('update123')
+ * setUpdates(prev => prev.filter(u => u.id !== 'update123'))
+ * ```
+ */
+export async function deleteProjectUpdate(updateId: string): Promise<void> {
+  const response = await fetchWithAuth(`/api/updates/${updateId}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new ApiError(response.status, error.error || 'Request failed', error.code)
+  }
 }

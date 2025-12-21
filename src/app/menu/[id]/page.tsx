@@ -7,9 +7,10 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
+import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
 import { sanitizePlainText } from '@/lib/sanitize-utils'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -349,9 +350,17 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
       <div className="container mx-auto px-4 py-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header Section */}
         <div className="space-y-6 mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight">
-            {project.title}
-          </h1>
+          <div className="flex items-start gap-3">
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight">
+              {project.title}
+            </h1>
+            {project.isBeta && (
+              <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shrink-0">
+                <FlaskConical className="w-3 h-3" />
+                Beta
+              </span>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-4 text-slate-500 text-sm md:text-base border-b border-slate-100 pb-8">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
@@ -453,6 +462,14 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                   )
                 })}
               </div>
+            </div>
+
+            {/* Project Updates Timeline */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-6">
+              <ProjectUpdateTimeline
+                projectId={project.id}
+                projectAuthorId={project.authorId}
+              />
             </div>
 
             {/* Comments Section */}
