@@ -132,52 +132,52 @@ export const generateWeatherContent = async (input: WeatherDigestInput): Promise
 
   const prompt = `
 <system_role>
-당신은 아침 날씨 도시락 서비스의 친근한 날씨 캐스터입니다.
-매일 아침 사용자에게 보내는 날씨 이메일의 핵심 메시지들을 작성합니다.
+당신은 아침에 날씨를 알려주는 친한 친구입니다.
 </system_role>
 
 <style_guide>
-1. **톤앤매너**:
-   - 친구가 아침에 건네는 것처럼 따뜻하고 위트있게
-   - 해요체 사용, 이모지는 문장 끝에 1개만
-   - 짧고 임팩트 있게 (각 메시지 25자 이내)
-2. **금지사항**:
-   - "오늘의 날씨는~" 같은 뻔한 시작 금지
-   - 데이터에 없는 내용 지어내기 금지
+1. **톤**: 담백하고 자연스럽게. 친구가 툭 던지듯이.
+2. **길이**: 각 메시지 20자 이내로 짧게
+3. **이모지**: 문장 끝에 1개, 과하지 않게
+4. **금지**:
+   - "꽁꽁", "완무장", "필수!" 같은 과장된 표현
+   - "~하세요!", "~입니다" 같은 딱딱한 어미
+   - 불필요한 강조나 느낌표 남발
 </style_guide>
 
 <weather_data>
 - 위치: ${input.location}
 - 오늘 체감온도: ${input.todayFeelsLike}°C
-- 어제 체감온도: ${input.yesterdayFeelsLike !== null ? `${input.yesterdayFeelsLike}°C` : '데이터 없음'}
+- 어제 체감온도: ${input.yesterdayFeelsLike !== null ? `${input.yesterdayFeelsLike}°C` : '없음'}
 - 온도 변화: ${input.tempDiff !== null ? `${input.tempDiff > 0 ? '+' : ''}${input.tempDiff}도` : '비교 불가'}
-- 날씨 상태: ${input.weatherMain}
+- 날씨: ${input.weatherMain}
 - 강수확률: ${input.precipitationProbability}%
 - 미세먼지: ${airQualityKorean[input.airQuality]}
 </weather_data>
 
-<task>
-위 데이터를 바탕으로 4가지 메시지를 JSON으로 생성하세요:
-
-1. temperatureMessage: 기온 변화 한줄 (어제 비교 있으면 활용, 없으면 오늘 체감온도 기반)
-2. outfitTip: 옷차림 추천 한줄
-3. precipitationTip: 강수 관련 팁 (30% 미만이면 null)
+<output_format>
+1. temperatureMessage: 기온 변화 한줄 (어제 비교 or 오늘 날씨 느낌)
+2. outfitTip: 옷차림 한줄
+3. precipitationTip: 강수 팁 (30% 미만이면 null)
 4. airQualityTip: 미세먼지 팁 (좋음이면 null)
-</task>
+</output_format>
 
-<few_shot_examples>
-예시1 (추워짐):
-입력: 오늘 -9°C, 어제 -6°C, 변화 -3도
-출력: {"temperatureMessage": "어제보다 3도 더 꽁꽁! 🥶", "outfitTip": "패딩은 기본, 목도리까지 완무장 🧣", "precipitationTip": null, "airQualityTip": null}
+<examples>
+예시1 (추워짐, -9°C):
+{"temperatureMessage": "어제보다 3도 더 춥네요 🥶", "outfitTip": "패딩에 목도리까지 챙기세요 🧣", "precipitationTip": null, "airQualityTip": null}
 
-예시2 (따뜻해짐):
-입력: 오늘 15°C, 어제 8°C, 변화 +7도
-출력: {"temperatureMessage": "어제보다 훈훈, 7도나 올랐어요 ☀️", "outfitTip": "가디건 하나면 충분해요 👔", "precipitationTip": null, "airQualityTip": null}
+예시2 (따뜻해짐, 15°C):
+{"temperatureMessage": "어제보다 7도 올랐어요 ☀️", "outfitTip": "가디건 하나면 충분해요 👔", "precipitationTip": null, "airQualityTip": null}
 
 예시3 (비+미세먼지):
-입력: 오늘 12°C, 강수확률 80%, 미세먼지 나쁨
-출력: {"temperatureMessage": "쌀쌀한 봄비가 내려요 🌧️", "outfitTip": "우비나 방수 재킷 추천 ☔", "precipitationTip": "우산 필수! 접이식 말고 큰 거요 ☂️", "airQualityTip": "마스크 꼭 챙기세요 😷"}
-</few_shot_examples>
+{"temperatureMessage": "오늘은 비 소식이 있어요 🌧️", "outfitTip": "우산 챙기고 가벼운 겉옷 걸치세요 🧥", "precipitationTip": "비 올 확률 높아요, 우산 꼭요 ☔", "airQualityTip": "미세먼지 있어요, 마스크 챙기세요 😷"}
+
+예시4 (포근, 18°C):
+{"temperatureMessage": "나들이하기 좋은 날씨예요 🌸", "outfitTip": "얇은 자켓이나 셔츠 추천 👕", "precipitationTip": null, "airQualityTip": null}
+
+예시5 (영하, -5°C, 어제 데이터 없음):
+{"temperatureMessage": "영하권 추위예요 ❄️", "outfitTip": "두꺼운 외투 필수 🧥", "precipitationTip": null, "airQualityTip": null}
+</examples>
 `
 
   try {
@@ -219,36 +219,41 @@ export const generateWeatherContent = async (input: WeatherDigestInput): Promise
 function generateFallbackWeatherContent(input: WeatherDigestInput): GeneratedWeatherContent {
   const { todayFeelsLike, tempDiff, precipitationProbability, airQuality } = input
 
-  // 기온 메시지
+  // 기온 메시지 - 담백하게
   let temperatureMessage: string
   if (tempDiff !== null && Math.abs(tempDiff) >= 2) {
+    const absDiff = Math.abs(tempDiff)
     if (tempDiff > 0) {
-      temperatureMessage = `어제보다 ${Math.abs(tempDiff)}도 따뜻해요 ☀️`
+      temperatureMessage = `어제보다 ${absDiff}도 올랐어요 ☀️`
     } else {
-      temperatureMessage = todayFeelsLike <= 10
-        ? `어제보다 ${Math.abs(tempDiff)}도 쌀쌀해요 🧣`
-        : `어제보다 ${Math.abs(tempDiff)}도 선선해요 🍃`
+      temperatureMessage = `어제보다 ${absDiff}도 떨어졌어요 🥶`
     }
+  } else if (todayFeelsLike <= 0) {
+    temperatureMessage = '영하권 추위예요 ❄️'
+  } else if (todayFeelsLike <= 10) {
+    temperatureMessage = '쌀쌀한 날씨예요 🧥'
+  } else if (todayFeelsLike <= 20) {
+    temperatureMessage = '선선한 날씨예요 🍃'
   } else {
-    temperatureMessage = `오늘 체감온도 ${todayFeelsLike}°C에요`
+    temperatureMessage = '따뜻한 날씨예요 ☀️'
   }
 
-  // 옷차림
+  // 옷차림 - 자연스럽게
   let outfitTip: string
-  if (todayFeelsLike <= 0) outfitTip = '패딩, 두꺼운 코트, 목도리 필수 🧣'
-  else if (todayFeelsLike <= 10) outfitTip = '코트나 두꺼운 자켓 챙기세요 🧥'
-  else if (todayFeelsLike <= 20) outfitTip = '가디건이나 얇은 자켓 하나면 충분 👔'
-  else outfitTip = '반팔도 괜찮은 날씨예요 👕'
+  if (todayFeelsLike <= 0) outfitTip = '패딩에 목도리까지 챙기세요 🧣'
+  else if (todayFeelsLike <= 10) outfitTip = '두꺼운 외투 챙기세요 🧥'
+  else if (todayFeelsLike <= 20) outfitTip = '가디건 하나면 충분해요 👔'
+  else outfitTip = '가볍게 입어도 괜찮아요 👕'
 
   // 강수
   const precipitationTip = precipitationProbability >= 30
-    ? `비 올 확률 ${precipitationProbability}%, 우산 챙기세요 ☔`
+    ? '비 소식 있어요, 우산 챙기세요 ☔'
     : null
 
   // 미세먼지
   const badAir = ['unhealthy_sensitive', 'unhealthy', 'very_unhealthy', 'hazardous']
   const airQualityTip = badAir.includes(airQuality)
-    ? '미세먼지 나빠요, 마스크 착용 추천 😷'
+    ? '미세먼지 있어요, 마스크 챙기세요 😷'
     : null
 
   return { temperatureMessage, outfitTip, precipitationTip, airQualityTip }
