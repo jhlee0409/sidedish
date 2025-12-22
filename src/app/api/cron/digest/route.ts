@@ -152,8 +152,8 @@ async function executeDigestCron() {
             // 날씨 비교
             const comparison = compareWeather(todayWeather, yesterdayLog || undefined)
 
-            // 이메일 데이터 생성
-            const emailData = generateDigestEmailData(comparison)
+            // 이메일 데이터 생성 (AI 콘텐츠 포함)
+            const emailData = await generateDigestEmailData(comparison)
 
             subscriberEmails.push(subscriber.userEmail)
             digestDataList.push(emailData)

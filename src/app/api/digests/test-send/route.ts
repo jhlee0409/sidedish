@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
       // 어제 데이터와 비교
       const comparison = compareWeather(todayWeather, yesterdayLog || undefined)
 
-      console.log(`[Test Send] Generating email content (yesterday comparison: ${yesterdayLog ? 'yes' : 'no'})`)
-      const digestEmailData = generateDigestEmailData(comparison)
+      console.log(`[Test Send] Generating email content with AI (yesterday comparison: ${yesterdayLog ? 'yes' : 'no'})`)
+      const digestEmailData = await generateDigestEmailData(comparison)
 
       console.log(`[Test Send] Sending email to: ${targetEmail}`)
       const result = await sendDigestEmail(targetEmail, digestEmailData)
