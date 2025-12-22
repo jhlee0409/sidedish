@@ -282,14 +282,15 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
     <!-- 메인 카드 -->
     <div style="background: white; border-radius: 20px; padding: 28px 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 16px;">
 
-      <!-- 메인 메시지: AI 생성 기온 변화 한줄 -->
+      <!-- 메인: 체감온도 먼저, 변화 메시지는 서브 -->
       <div style="text-align: center; padding: 20px 0;">
-        <span style="font-size: 56px; display: block; margin-bottom: 8px;">${content.weatherEmoji}</span>
-        <p style="font-size: 24px; font-weight: 700; margin: 12px 0 8px 0; color: #1e293b; line-height: 1.3;">
-          ${content.aiTemperatureMessage}
+        <span style="font-size: 48px; display: block; margin-bottom: 12px;">${content.weatherEmoji}</span>
+        <p style="font-size: 48px; font-weight: 800; margin: 0; color: #1e293b;">
+          ${content.feelsLike}°C
         </p>
-        <p style="font-size: 40px; font-weight: 800; margin: 16px 0 0 0; color: #4f46e5;">
-          체감 ${content.feelsLike}°C
+        <p style="font-size: 14px; color: #64748b; margin: 8px 0 0 0;">체감온도</p>
+        <p style="font-size: 18px; font-weight: 600; margin: 16px 0 0 0; color: #4f46e5; line-height: 1.4;">
+          ${content.aiTemperatureMessage}
         </p>
       </div>
 
