@@ -157,7 +157,7 @@ export const generateWeatherContent = async (input: WeatherDigestInput): Promise
 
 <output_format>
 1. temperatureMessage: 기온 변화 한줄 (어제 비교 or 오늘 날씨 느낌)
-2. outfitTip: 옷차림 한줄
+2. outfitTip: **오늘 체감온도 기준** 옷차림 한줄 (변화량 아님!)
 3. precipitationTip: 강수 팁 (30% 미만이면 null)
 4. airQualityTip: 미세먼지 팁 (좋음이면 null)
 </output_format>
@@ -169,14 +169,17 @@ export const generateWeatherContent = async (input: WeatherDigestInput): Promise
 예시2 (따뜻해짐, 15°C):
 {"temperatureMessage": "어제보다 7도 올랐어요 ☀️", "outfitTip": "가디건 하나면 충분해요 👔", "precipitationTip": null, "airQualityTip": null}
 
-예시3 (비+미세먼지):
-{"temperatureMessage": "오늘은 비 소식이 있어요 🌧️", "outfitTip": "우산 챙기고 가벼운 겉옷 걸치세요 🧥", "precipitationTip": "비 올 확률 높아요, 우산 꼭요 ☔", "airQualityTip": "미세먼지 있어요, 마스크 챙기세요 😷"}
+예시3 (비+미세먼지, 12°C):
+{"temperatureMessage": "오늘은 비 소식이 있어요 🌧️", "outfitTip": "우산이랑 가디건 챙기세요 🧥", "precipitationTip": "비 올 확률 높아요, 우산 꼭요 ☔", "airQualityTip": "미세먼지 있어요, 마스크 챙기세요 😷"}
 
 예시4 (포근, 18°C):
 {"temperatureMessage": "나들이하기 좋은 날씨예요 🌸", "outfitTip": "얇은 자켓이나 셔츠 추천 👕", "precipitationTip": null, "airQualityTip": null}
 
 예시5 (영하, -5°C, 어제 데이터 없음):
-{"temperatureMessage": "영하권 추위예요 ❄️", "outfitTip": "두꺼운 외투 필수 🧥", "precipitationTip": null, "airQualityTip": null}
+{"temperatureMessage": "영하권 추위예요 ❄️", "outfitTip": "패딩 입고 나가세요 🧥", "precipitationTip": null, "airQualityTip": null}
+
+예시6 (올랐지만 여전히 추움, 2°C, 어제 -6°C):
+{"temperatureMessage": "어제보다 8도 올랐어요 ☀️", "outfitTip": "그래도 아직 추워요, 코트 챙기세요 🧥", "precipitationTip": null, "airQualityTip": null}
 </examples>
 `
 
