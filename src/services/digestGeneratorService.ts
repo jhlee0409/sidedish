@@ -7,6 +7,7 @@ import {
   getOutfitRecommendation,
 } from './weatherService'
 import { AIR_QUALITY_NAMES, AirQualityLevel } from '@/lib/digest-types'
+import { generateWeatherContent, GeneratedWeatherContent } from './geminiService'
 
 /** 간소화된 날씨 다이제스트 콘텐츠 */
 export interface CompactDigestContent {
@@ -40,6 +41,14 @@ export interface CompactDigestContent {
   needsMask: boolean
   /** 옷차림 추천 */
   outfitRecommendation: string
+  /** AI 생성 기온 메시지 */
+  aiTemperatureMessage: string
+  /** AI 생성 옷차림 팁 */
+  aiOutfitTip: string
+  /** AI 생성 강수 팁 */
+  aiPrecipitationTip: string | null
+  /** AI 생성 미세먼지 팁 */
+  aiAirQualityTip: string | null
 }
 
 /** 이메일 데이터 */
@@ -53,10 +62,21 @@ export interface DigestEmailData {
 }
 
 /**
- * 날씨 비교 데이터를 간소화된 다이제스트로 변환
+ * 날씨 비교 데이터를 간소화된 다이제스트로 변환 (AI 콘텐츠 포함)
  */
-export function generateCompactDigest(comparison: WeatherComparisonData): CompactDigestContent {
+export async function generateCompactDigest(comparison: WeatherComparisonData): Promise<CompactDigestContent> {
   const { today, yesterday, feelsLikeDiff, feelsLikeDiffText } = comparison
+
+  // AI 콘텐츠 생성
+  const aiContent = await generateWeatherContent({
+    todayFeelsLike: today.feelsLike,
+    yesterdayFeelsLike: yesterday?.feelsLike ?? null,
+    tempDiff: feelsLikeDiff,
+    weatherMain: today.weatherMain,
+    precipitationProbability: today.precipitationProbability,
+    airQuality: today.airQuality,
+    location: today.location.address,
+  })
 
   return {
     location: today.location.address,
@@ -77,6 +97,11 @@ export function generateCompactDigest(comparison: WeatherComparisonData): Compac
     yesterdayAirQuality: yesterday?.airQuality ?? null,
     needsMask: needsMask(today),
     outfitRecommendation: getOutfitRecommendation(today.feelsLike),
+    // AI 생성 콘텐츠
+    aiTemperatureMessage: aiContent.temperatureMessage,
+    aiOutfitTip: aiContent.outfitTip,
+    aiPrecipitationTip: aiContent.precipitationTip,
+    aiAirQualityTip: aiContent.airQualityTip,
   }
 }
 
@@ -172,12 +197,9 @@ function generateMainMessage(diff: number | null, feelsLike: number): string {
 }
 
 /**
- * 이메일용 HTML 본문 생성
+ * 이메일용 HTML 본문 생성 (AI 콘텐츠 사용)
  */
 function generateHtmlBody(content: CompactDigestContent, dateStr: string): string {
-  const greeting = generateGreeting(content.feelsLike, content.needsUmbrella ? 'Rain' : 'Clear')
-  const mainMessage = generateMainMessage(content.feelsLikeDiff, content.feelsLike)
-
   // 어제 vs 오늘 비교 섹션 (어제 데이터가 있을 때만)
   const comparisonSection = content.yesterdayFeelsLike !== null ? `
     <!-- 어제 vs 오늘 비교 -->
@@ -201,8 +223,8 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
     </div>
   ` : ''
 
-  // 우산 섹션 - 더 친근하게
-  const umbrellaSection = content.precipitationProbability > 0 || content.needsUmbrella
+  // 우산 섹션 - AI 생성 팁 사용
+  const umbrellaSection = content.aiPrecipitationTip
     ? `
       <div style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border-radius: 12px;">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -211,19 +233,15 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
             <p style="margin: 0; font-size: 15px; color: #0c4a6e; font-weight: 600;">
               강수확률 ${content.precipitationProbability}%
             </p>
-            ${content.needsUmbrella
-              ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">오늘은 우산이랑 같이 나가세요!</p>`
-              : `<p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">혹시 모르니 작은 우산 하나 챙겨두면 좋아요</p>`
-            }
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">${content.aiPrecipitationTip}</p>
           </div>
         </div>
       </div>
     `
     : ''
 
-  // 미세먼지 섹션 - 더 친근하게
-  const showAirQuality = content.airQuality !== 'good'
-  const airQualitySection = showAirQuality
+  // 미세먼지 섹션 - AI 생성 팁 사용
+  const airQualitySection = content.aiAirQualityTip
     ? `
       <div style="margin-top: 16px; padding: 16px; background: ${content.needsMask ? 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'}; border-radius: 12px;">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -232,10 +250,7 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
             <p style="margin: 0; font-size: 15px; color: ${content.needsMask ? '#991b1b' : '#92400e'}; font-weight: 600;">
               미세먼지 ${content.airQualityText}
             </p>
-            ${content.needsMask
-              ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #b91c1c;">오늘은 마스크 착용하시는 게 좋아요</p>`
-              : `<p style="margin: 4px 0 0 0; font-size: 13px; color: #a16207;">환기는 잠깐만, 공기청정기 틀어두세요</p>`
-            }
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: ${content.needsMask ? '#b91c1c' : '#a16207'};">${content.aiAirQualityTip}</p>
           </div>
         </div>
       </div>
@@ -267,16 +282,11 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
     <!-- 메인 카드 -->
     <div style="background: white; border-radius: 20px; padding: 28px 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 16px;">
 
-      <!-- 인사말 -->
-      <p style="color: #475569; font-size: 15px; margin: 0 0 20px 0; text-align: center; line-height: 1.5;">
-        ${greeting}
-      </p>
-
-      <!-- 메인 메시지: 어제 대비 변화 강조 -->
+      <!-- 메인 메시지: AI 생성 기온 변화 한줄 -->
       <div style="text-align: center; padding: 20px 0;">
         <span style="font-size: 56px; display: block; margin-bottom: 8px;">${content.weatherEmoji}</span>
         <p style="font-size: 24px; font-weight: 700; margin: 12px 0 8px 0; color: #1e293b; line-height: 1.3;">
-          ${mainMessage}
+          ${content.aiTemperatureMessage}
         </p>
         <p style="font-size: 40px; font-weight: 800; margin: 16px 0 0 0; color: #4f46e5;">
           체감 ${content.feelsLike}°C
@@ -285,14 +295,14 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
 
       ${comparisonSection}
 
-      <!-- 옷차림 추천 -->
+      <!-- 옷차림 추천: AI 생성 -->
       <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 12px;">
         <div style="display: flex; align-items: flex-start; gap: 12px;">
           <span style="font-size: 24px;">👔</span>
           <div>
             <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500;">오늘의 옷차림</p>
             <p style="margin: 4px 0 0 0; font-size: 15px; color: #334155; font-weight: 500;">
-              ${content.outfitRecommendation}
+              ${content.aiOutfitTip}
             </p>
           </div>
         </div>
@@ -335,28 +345,20 @@ function generateSubject(content: CompactDigestContent, dateStr: string): string
 }
 
 /**
- * 프리뷰 텍스트 생성 (친근한 톤)
+ * 프리뷰 텍스트 생성 (AI 콘텐츠 기반)
  */
 function generatePreviewText(content: CompactDigestContent): string {
   const parts: string[] = []
 
-  // 메인 메시지
-  if (content.feelsLikeDiff !== null && Math.abs(content.feelsLikeDiff) >= 2) {
-    const absDiff = Math.abs(content.feelsLikeDiff)
-    if (content.feelsLikeDiff > 0) {
-      parts.push(`어제보다 ${absDiff}도 따뜻해요`)
-    } else {
-      parts.push(`어제보다 ${absDiff}도 쌀쌀해요`)
-    }
-  } else {
-    parts.push(`체감 ${content.feelsLike}°C`)
-  }
+  // AI 생성 기온 메시지 사용 (이모지 제거)
+  const tempMessage = content.aiTemperatureMessage.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()
+  parts.push(tempMessage)
 
   // 핵심 알림만 추가
-  if (content.needsUmbrella) {
-    parts.push('☔ 우산 필수')
+  if (content.aiPrecipitationTip) {
+    parts.push('☔ 우산 챙기세요')
   }
-  if (content.needsMask) {
+  if (content.aiAirQualityTip) {
     parts.push('😷 마스크 챙기세요')
   }
 
@@ -364,10 +366,10 @@ function generatePreviewText(content: CompactDigestContent): string {
 }
 
 /**
- * 이메일 데이터 생성
+ * 이메일 데이터 생성 (AI 콘텐츠 포함)
  */
-export function generateDigestEmailData(comparison: WeatherComparisonData): DigestEmailData {
-  const content = generateCompactDigest(comparison)
+export async function generateDigestEmailData(comparison: WeatherComparisonData): Promise<DigestEmailData> {
+  const content = await generateCompactDigest(comparison)
 
   // KST (UTC+9) 기준으로 날짜 계산
   const now = new Date()

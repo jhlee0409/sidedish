@@ -13,6 +13,24 @@ interface GeneratedProjectContent {
   tags: string[]
 }
 
+// Type for AI-generated weather digest content
+export interface WeatherDigestInput {
+  todayFeelsLike: number
+  yesterdayFeelsLike: number | null
+  tempDiff: number | null
+  weatherMain: string
+  precipitationProbability: number
+  airQuality: 'good' | 'moderate' | 'unhealthy_sensitive' | 'unhealthy' | 'very_unhealthy' | 'hazardous'
+  location: string
+}
+
+export interface GeneratedWeatherContent {
+  temperatureMessage: string
+  outfitTip: string
+  precipitationTip: string | null
+  airQualityTip: string | null
+}
+
 export const generateProjectContent = async (draft: string): Promise<{ shortDescription: string, description: string, tags: string[] }> => {
   if (!draft.trim()) {
     throw new Error("설명 내용을 입력해주세요.")
@@ -97,4 +115,141 @@ ${draft}
     console.error("Gemini Generate Content Error:", error)
     throw new Error("AI 콘텐츠 생성에 실패했습니다.")
   }
+}
+
+/**
+ * 날씨 데이터를 기반으로 친근한 날씨 메시지 생성
+ */
+export const generateWeatherContent = async (input: WeatherDigestInput): Promise<GeneratedWeatherContent> => {
+  const airQualityKorean: Record<string, string> = {
+    good: '좋음',
+    moderate: '보통',
+    unhealthy_sensitive: '민감군 나쁨',
+    unhealthy: '나쁨',
+    very_unhealthy: '매우 나쁨',
+    hazardous: '위험',
+  }
+
+  const prompt = `
+<system_role>
+당신은 아침 날씨 도시락 서비스의 친근한 날씨 캐스터입니다.
+매일 아침 사용자에게 보내는 날씨 이메일의 핵심 메시지들을 작성합니다.
+</system_role>
+
+<style_guide>
+1. **톤앤매너**:
+   - 친구가 아침에 건네는 것처럼 따뜻하고 위트있게
+   - 해요체 사용, 이모지는 문장 끝에 1개만
+   - 짧고 임팩트 있게 (각 메시지 25자 이내)
+2. **금지사항**:
+   - "오늘의 날씨는~" 같은 뻔한 시작 금지
+   - 데이터에 없는 내용 지어내기 금지
+</style_guide>
+
+<weather_data>
+- 위치: ${input.location}
+- 오늘 체감온도: ${input.todayFeelsLike}°C
+- 어제 체감온도: ${input.yesterdayFeelsLike !== null ? `${input.yesterdayFeelsLike}°C` : '데이터 없음'}
+- 온도 변화: ${input.tempDiff !== null ? `${input.tempDiff > 0 ? '+' : ''}${input.tempDiff}도` : '비교 불가'}
+- 날씨 상태: ${input.weatherMain}
+- 강수확률: ${input.precipitationProbability}%
+- 미세먼지: ${airQualityKorean[input.airQuality]}
+</weather_data>
+
+<task>
+위 데이터를 바탕으로 4가지 메시지를 JSON으로 생성하세요:
+
+1. temperatureMessage: 기온 변화 한줄 (어제 비교 있으면 활용, 없으면 오늘 체감온도 기반)
+2. outfitTip: 옷차림 추천 한줄
+3. precipitationTip: 강수 관련 팁 (30% 미만이면 null)
+4. airQualityTip: 미세먼지 팁 (좋음이면 null)
+</task>
+
+<few_shot_examples>
+예시1 (추워짐):
+입력: 오늘 -9°C, 어제 -6°C, 변화 -3도
+출력: {"temperatureMessage": "어제보다 3도 더 꽁꽁! 🥶", "outfitTip": "패딩은 기본, 목도리까지 완무장 🧣", "precipitationTip": null, "airQualityTip": null}
+
+예시2 (따뜻해짐):
+입력: 오늘 15°C, 어제 8°C, 변화 +7도
+출력: {"temperatureMessage": "어제보다 훈훈, 7도나 올랐어요 ☀️", "outfitTip": "가디건 하나면 충분해요 👔", "precipitationTip": null, "airQualityTip": null}
+
+예시3 (비+미세먼지):
+입력: 오늘 12°C, 강수확률 80%, 미세먼지 나쁨
+출력: {"temperatureMessage": "쌀쌀한 봄비가 내려요 🌧️", "outfitTip": "우비나 방수 재킷 추천 ☔", "precipitationTip": "우산 필수! 접이식 말고 큰 거요 ☂️", "airQualityTip": "마스크 꼭 챙기세요 😷"}
+</few_shot_examples>
+`
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            temperatureMessage: { type: Type.STRING },
+            outfitTip: { type: Type.STRING },
+            precipitationTip: { type: Type.STRING, nullable: true },
+            airQualityTip: { type: Type.STRING, nullable: true },
+          },
+          required: ["temperatureMessage", "outfitTip"]
+        }
+      }
+    })
+
+    if (!response.text) {
+      throw new Error("AI returned empty response")
+    }
+
+    const result: GeneratedWeatherContent = JSON.parse(response.text)
+    return result
+
+  } catch (error) {
+    console.error("Gemini Weather Content Error:", error)
+    // AI 실패 시 기본 폴백 메시지 반환
+    return generateFallbackWeatherContent(input)
+  }
+}
+
+/**
+ * AI 실패 시 폴백 메시지 생성
+ */
+function generateFallbackWeatherContent(input: WeatherDigestInput): GeneratedWeatherContent {
+  const { todayFeelsLike, tempDiff, precipitationProbability, airQuality } = input
+
+  // 기온 메시지
+  let temperatureMessage: string
+  if (tempDiff !== null && Math.abs(tempDiff) >= 2) {
+    if (tempDiff > 0) {
+      temperatureMessage = `어제보다 ${Math.abs(tempDiff)}도 따뜻해요 ☀️`
+    } else {
+      temperatureMessage = todayFeelsLike <= 10
+        ? `어제보다 ${Math.abs(tempDiff)}도 쌀쌀해요 🧣`
+        : `어제보다 ${Math.abs(tempDiff)}도 선선해요 🍃`
+    }
+  } else {
+    temperatureMessage = `오늘 체감온도 ${todayFeelsLike}°C에요`
+  }
+
+  // 옷차림
+  let outfitTip: string
+  if (todayFeelsLike <= 0) outfitTip = '패딩, 두꺼운 코트, 목도리 필수 🧣'
+  else if (todayFeelsLike <= 10) outfitTip = '코트나 두꺼운 자켓 챙기세요 🧥'
+  else if (todayFeelsLike <= 20) outfitTip = '가디건이나 얇은 자켓 하나면 충분 👔'
+  else outfitTip = '반팔도 괜찮은 날씨예요 👕'
+
+  // 강수
+  const precipitationTip = precipitationProbability >= 30
+    ? `비 올 확률 ${precipitationProbability}%, 우산 챙기세요 ☔`
+    : null
+
+  // 미세먼지
+  const badAir = ['unhealthy_sensitive', 'unhealthy', 'very_unhealthy', 'hazardous']
+  const airQualityTip = badAir.includes(airQuality)
+    ? '미세먼지 나빠요, 마스크 착용 추천 😷'
+    : null
+
+  return { temperatureMessage, outfitTip, precipitationTip, airQualityTip }
 }
