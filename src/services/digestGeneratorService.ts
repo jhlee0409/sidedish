@@ -201,58 +201,71 @@ function generateMainMessage(diff: number | null, feelsLike: number): string {
  */
 function generateHtmlBody(content: CompactDigestContent, dateStr: string): string {
   // 어제 vs 오늘 비교 섹션 (어제 데이터가 있을 때만)
+  // Gmail 호환: gap 대신 margin, flex: 1 대신 width 사용
   const comparisonSection = content.yesterdayFeelsLike !== null ? `
     <!-- 어제 vs 오늘 비교 -->
-    <div style="display: flex; gap: 12px; margin-top: 16px;">
-      <!-- 어제 -->
-      <div style="flex: 1; background: #f1f5f9; border-radius: 12px; padding: 16px; text-align: center;">
-        <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0; font-weight: 500;">어제</p>
-        <span style="font-size: 24px;">${content.yesterdayWeatherEmoji || '🌤️'}</span>
-        <p style="color: #475569; font-size: 20px; font-weight: 600; margin: 8px 0 0 0;">
-          ${content.yesterdayFeelsLike}°
-        </p>
-      </div>
-      <!-- 오늘 -->
-      <div style="flex: 1; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 12px; padding: 16px; text-align: center;">
-        <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin: 0 0 8px 0; font-weight: 500;">오늘</p>
-        <span style="font-size: 24px;">${content.weatherEmoji}</span>
-        <p style="color: white; font-size: 20px; font-weight: 600; margin: 8px 0 0 0;">
-          ${content.feelsLike}°
-        </p>
-      </div>
-    </div>
+    <table style="width: 100%; margin-top: 16px; border-spacing: 8px 0;">
+      <tr>
+        <!-- 어제 -->
+        <td style="width: 50%; background: #f1f5f9; border-radius: 12px; padding: 16px; text-align: center;">
+          <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0; font-weight: 500;">어제</p>
+          <span style="font-size: 24px;">${content.yesterdayWeatherEmoji || '🌤️'}</span>
+          <p style="color: #475569; font-size: 20px; font-weight: 600; margin: 8px 0 0 0;">
+            ${content.yesterdayFeelsLike}°
+          </p>
+        </td>
+        <!-- 오늘 -->
+        <td style="width: 50%; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 12px; padding: 16px; text-align: center;">
+          <p style="color: rgba(255,255,255,0.8); font-size: 12px; margin: 0 0 8px 0; font-weight: 500;">오늘</p>
+          <span style="font-size: 24px;">${content.weatherEmoji}</span>
+          <p style="color: white; font-size: 20px; font-weight: 600; margin: 8px 0 0 0;">
+            ${content.feelsLike}°
+          </p>
+        </td>
+      </tr>
+    </table>
   ` : ''
 
   // 우산 섹션 - AI 생성 팁 사용
+  // Gmail 호환: gap 대신 margin 사용
   const umbrellaSection = content.aiPrecipitationTip
     ? `
       <div style="margin-top: 16px; padding: 16px; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border-radius: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 28px;">☔</span>
-          <div>
-            <p style="margin: 0; font-size: 15px; color: #0c4a6e; font-weight: 600;">
-              강수확률 ${content.precipitationProbability}%
-            </p>
-            <p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">${content.aiPrecipitationTip}</p>
-          </div>
-        </div>
+        <table style="width: 100%;">
+          <tr>
+            <td style="width: 40px; vertical-align: top;">
+              <span style="font-size: 28px;">☔</span>
+            </td>
+            <td>
+              <p style="margin: 0; font-size: 15px; color: #0c4a6e; font-weight: 600;">
+                강수확률 ${content.precipitationProbability}%
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: #0369a1;">${content.aiPrecipitationTip}</p>
+            </td>
+          </tr>
+        </table>
       </div>
     `
     : ''
 
   // 미세먼지 섹션 - AI 생성 팁 사용
+  // Gmail 호환: table 레이아웃 사용
   const airQualitySection = content.aiAirQualityTip
     ? `
       <div style="margin-top: 16px; padding: 16px; background: ${content.needsMask ? 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'}; border-radius: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 28px;">${content.needsMask ? '😷' : '🌫️'}</span>
-          <div>
-            <p style="margin: 0; font-size: 15px; color: ${content.needsMask ? '#991b1b' : '#92400e'}; font-weight: 600;">
-              미세먼지 ${content.airQualityText}
-            </p>
-            <p style="margin: 4px 0 0 0; font-size: 13px; color: ${content.needsMask ? '#b91c1c' : '#a16207'};">${content.aiAirQualityTip}</p>
-          </div>
-        </div>
+        <table style="width: 100%;">
+          <tr>
+            <td style="width: 40px; vertical-align: top;">
+              <span style="font-size: 28px;">${content.needsMask ? '😷' : '🌫️'}</span>
+            </td>
+            <td>
+              <p style="margin: 0; font-size: 15px; color: ${content.needsMask ? '#991b1b' : '#92400e'}; font-weight: 600;">
+                미세먼지 ${content.airQualityText}
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: ${content.needsMask ? '#b91c1c' : '#a16207'};">${content.aiAirQualityTip}</p>
+            </td>
+          </tr>
+        </table>
       </div>
     `
     : ''
@@ -296,17 +309,21 @@ function generateHtmlBody(content: CompactDigestContent, dateStr: string): strin
 
       ${comparisonSection}
 
-      <!-- 옷차림 추천: AI 생성 -->
+      <!-- 옷차림 추천: AI 생성 (Gmail 호환: table 레이아웃) -->
       <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 12px;">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <span style="font-size: 24px;">👔</span>
-          <div>
-            <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500;">오늘의 옷차림</p>
-            <p style="margin: 4px 0 0 0; font-size: 15px; color: #334155; font-weight: 500;">
-              ${content.aiOutfitTip}
-            </p>
-          </div>
-        </div>
+        <table style="width: 100%;">
+          <tr>
+            <td style="width: 40px; vertical-align: top;">
+              <span style="font-size: 24px;">👔</span>
+            </td>
+            <td>
+              <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 500;">오늘의 옷차림</p>
+              <p style="margin: 4px 0 0 0; font-size: 15px; color: #334155; font-weight: 500;">
+                ${content.aiOutfitTip}
+              </p>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
 
