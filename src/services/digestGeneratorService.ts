@@ -162,9 +162,11 @@ function generateMainMessage(diff: number | null, feelsLike: number): string {
     if (absDiff >= 5) return `어제보다 ${absDiff}도 따뜻해요 ☀️`
     return `어제보다 ${absDiff}도 포근해요 🌤️`
   } else {
-    // 더 추워짐
+    // 더 추워짐 - 현재 체감온도에 따라 표현 다르게
     if (absDiff >= 8) return `어제보다 ${absDiff}도나 떨어졌어요! 🥶`
     if (absDiff >= 5) return `어제보다 ${absDiff}도 쌀쌀해요 ❄️`
+    // 체감온도가 10도 이하면 "선선해요" 대신 "쌀쌀해요" 사용
+    if (feelsLike <= 10) return `어제보다 ${absDiff}도 쌀쌀해요 🧣`
     return `어제보다 ${absDiff}도 선선해요 🍃`
   }
 }
