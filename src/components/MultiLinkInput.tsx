@@ -1,7 +1,24 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { Plus, Trash2, Star, ExternalLink, ChevronDown, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, Star, ExternalLink, ChevronDown, AlertCircle, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ProjectLink, StoreType, MAX_PROJECT_LINKS } from '@/lib/types'
 import { STORE_CONFIGS, STORE_GROUPS, getStoreConfig, inferStoreType } from '@/lib/store-config'
 import ConfirmModal from './ConfirmModal'
@@ -29,12 +46,36 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; hasContent: boolean } | null>(null)
 
+  // DnD 센서 설정
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px 이동해야 드래그 시작 (클릭과 구분)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
   // 대표 링크가 설정되어 있는지 확인
   const hasPrimaryLink = links.some(link => link.isPrimary)
   const hasAtLeastOneLink = links.length > 0
 
   // 유효성: 링크가 있으면 반드시 하나의 대표 링크가 필요
   const isValid = !hasAtLeastOneLink || hasPrimaryLink
+
+  // 드래그 끝났을 때 순서 변경
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = links.findIndex(link => link.id === active.id)
+      const newIndex = links.findIndex(link => link.id === over.id)
+      const newLinks = arrayMove(links, oldIndex, newIndex)
+      onChange(newLinks)
+    }
+  }, [links, onChange])
 
   // 새 링크 추가
   const handleAddLink = useCallback(() => {
@@ -197,29 +238,40 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
           <span>첫 번째 링크 추가하기</span>
         </button>
       ) : (
-        <div className="space-y-3">
-          {links.map((link, index) => (
-            <LinkItem
-              key={link.id}
-              link={link}
-              index={index}
-              isOnlyLink={links.length === 1}
-              isDropdownOpen={expandedDropdown === link.id}
-              onToggleDropdown={() => toggleDropdown(link.id)}
-              onCloseDropdown={() => setExpandedDropdown(null)}
-              onUpdate={handleUpdateLink}
-              onUrlChange={handleUrlChange}
-              onTogglePrimary={handleTogglePrimary}
-              onRemove={handleTryRemoveLink}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={links.map(link => link.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {links.map((link, index) => (
+                <SortableLinkItem
+                  key={link.id}
+                  link={link}
+                  index={index}
+                  isOnlyLink={links.length === 1}
+                  isDropdownOpen={expandedDropdown === link.id}
+                  onToggleDropdown={() => toggleDropdown(link.id)}
+                  onCloseDropdown={() => setExpandedDropdown(null)}
+                  onUpdate={handleUpdateLink}
+                  onUrlChange={handleUrlChange}
+                  onTogglePrimary={handleTogglePrimary}
+                  onRemove={handleTryRemoveLink}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* 도움말 */}
       {links.length > 1 && (
         <p className="text-xs text-slate-500">
-          별표를 눌러 대표 링크를 지정하세요. 상세 페이지에서 메인 버튼으로 표시됩니다.
+          드래그하여 순서를 변경하세요. 별표를 눌러 대표 링크를 지정하면 상세 페이지에서 메인 버튼으로 표시됩니다.
         </p>
       )}
 
@@ -238,8 +290,8 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
   )
 }
 
-// 개별 링크 아이템 컴포넌트
-interface LinkItemProps {
+// Sortable 개별 링크 아이템 컴포넌트
+interface SortableLinkItemProps {
   link: ProjectLink
   index: number
   isOnlyLink: boolean
@@ -252,7 +304,7 @@ interface LinkItemProps {
   onRemove: (id: string) => void
 }
 
-const LinkItem: React.FC<LinkItemProps> = ({
+const SortableLinkItem: React.FC<SortableLinkItemProps> = ({
   link,
   isOnlyLink,
   isDropdownOpen,
@@ -263,18 +315,55 @@ const LinkItem: React.FC<LinkItemProps> = ({
   onTogglePrimary,
   onRemove,
 }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.9 : 1,
+  }
+
   const storeConfig = getStoreConfig(link.storeType)
 
   // 유일한 링크이고 대표 링크인 경우 토글 비활성화
   const isPrimaryLocked = isOnlyLink && link.isPrimary
 
   return (
-    <div className={`group relative rounded-xl p-4 border transition-colors ${
-      link.isPrimary
-        ? 'bg-amber-50/50 border-amber-200 hover:border-amber-300'
-        : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-    }`}>
-      <div className="flex items-start gap-3">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative rounded-xl p-4 border transition-colors ${
+        isDragging ? 'shadow-lg ring-2 ring-indigo-500/20' : ''
+      } ${
+        link.isPrimary
+          ? 'bg-amber-50/50 border-amber-200 hover:border-amber-300'
+          : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {/* 드래그 핸들 */}
+        <button
+          type="button"
+          className={`mt-2 p-1 rounded cursor-grab active:cursor-grabbing transition-colors ${
+            isDragging
+              ? 'text-indigo-500'
+              : 'text-slate-300 hover:text-slate-500'
+          }`}
+          title="드래그하여 순서 변경"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-5 h-5" />
+        </button>
+
         {/* 대표 링크 토글 */}
         <button
           type="button"
@@ -397,7 +486,7 @@ const LinkItem: React.FC<LinkItemProps> = ({
       </div>
 
       {/* URL 힌트 및 대표 링크 배지 */}
-      <div className="mt-2 ml-9 flex items-center gap-2">
+      <div className="mt-2 ml-16 flex items-center gap-2">
         {link.isPrimary && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
             <Star className="w-3 h-3 fill-current" />
