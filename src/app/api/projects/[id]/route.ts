@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateProjectInput, ProjectResponse, ProjectPlatform } from '@/lib/db-types'
+import { UpdateProjectInput, ProjectResponse, ProjectPlatform, ProjectLinkDoc } from '@/lib/db-types'
 import { Timestamp, UpdateData } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { validateProjectLinks, badRequestResponse } from '@/lib/security-utils'
 import { del } from '@vercel/blob'
 
 // Typed update data for project patches
@@ -15,7 +16,9 @@ interface ProjectUpdateFields {
   imageUrl?: string
   link?: string
   githubUrl?: string
+  links?: ProjectLinkDoc[]
   platform?: ProjectPlatform
+  isBeta?: boolean
 }
 
 interface RouteContext {
@@ -54,7 +57,9 @@ export async function GET(
       reactions: data.reactions || {},
       link: data.link,
       githubUrl: data.githubUrl,
+      links: data.links || [],
       platform: data.platform,
+      isBeta: data.isBeta,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
@@ -114,6 +119,14 @@ export async function PATCH(
     if (body.link !== undefined) updateData.link = body.link
     if (body.githubUrl !== undefined) updateData.githubUrl = body.githubUrl
     if (body.platform !== undefined) updateData.platform = body.platform
+    if (body.isBeta !== undefined) updateData.isBeta = body.isBeta
+
+    // Links 배열 검증 및 업데이트
+    if (body.links !== undefined) {
+      const linksValidation = validateProjectLinks(body.links, '스토어 링크')
+      if (!linksValidation.valid) return badRequestResponse(linksValidation.error)
+      updateData.links = linksValidation.value as ProjectLinkDoc[]
+    }
 
     // Delete old image from Vercel Blob if image is being updated
     if (body.imageUrl !== undefined && body.imageUrl !== projectData.imageUrl) {
@@ -146,7 +159,9 @@ export async function PATCH(
       reactions: data.reactions || {},
       link: data.link,
       githubUrl: data.githubUrl,
+      links: data.links || [],
       platform: data.platform,
+      isBeta: data.isBeta,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }

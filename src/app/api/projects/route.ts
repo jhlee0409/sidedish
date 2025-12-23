@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { CreateProjectInput, ProjectResponse, PaginatedResponse } from '@/lib/db-types'
+import { CreateProjectInput, ProjectResponse, PaginatedResponse, ProjectLinkDoc } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import {
@@ -10,6 +10,7 @@ import {
   validateLimit,
   validateSearchQuery,
   isValidPlatform,
+  validateProjectLinks,
   CONTENT_LIMITS,
   badRequestResponse,
 } from '@/lib/security-utils'
@@ -69,7 +70,9 @@ export async function GET(request: NextRequest) {
         reactions: data.reactions || {},
         link: data.link,
         githubUrl: data.githubUrl,
+        links: data.links || [],
         platform: data.platform,
+        isBeta: data.isBeta,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       }
@@ -162,12 +165,16 @@ export async function POST(request: NextRequest) {
     const tagsValidation = validateTags(body.tags)
     if (!tagsValidation.valid) return badRequestResponse(tagsValidation.error)
 
-    // URL validations
+    // URL validations (하위 호환용 - links 없으면 link 사용)
     const linkValidation = validateUrl(body.link, '프로젝트 링크')
     if (!linkValidation.valid) return badRequestResponse(linkValidation.error)
 
     const githubValidation = validateUrl(body.githubUrl, 'GitHub 링크')
     if (!githubValidation.valid) return badRequestResponse(githubValidation.error)
+
+    // Links 배열 검증 (새로운 멀티링크 시스템)
+    const linksValidation = validateProjectLinks(body.links, '스토어 링크')
+    if (!linksValidation.valid) return badRequestResponse(linksValidation.error)
 
     // Platform validation
     const platform = isValidPlatform(body.platform) ? body.platform : 'OTHER'
@@ -188,7 +195,9 @@ export async function POST(request: NextRequest) {
       reactions: {},
       link: linkValidation.value,
       githubUrl: githubValidation.value,
+      links: linksValidation.value as ProjectLinkDoc[],
       platform,
+      isBeta: body.isBeta === true,
       createdAt: now,
       updatedAt: now,
     }
