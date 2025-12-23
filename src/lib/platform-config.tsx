@@ -5,54 +5,85 @@
  * 아이콘, 라벨, 링크 설정을 중앙에서 관리합니다.
  */
 
-import { Smartphone, Globe, Gamepad2, Palette, Box, ExternalLink } from 'lucide-react'
+import {
+  Smartphone,
+  Globe,
+  Gamepad2,
+  Palette,
+  Box,
+  ExternalLink,
+  Puzzle,
+  Package,
+} from 'lucide-react'
 import { ProjectPlatform } from './types'
+import { StoreType } from './db-types'
 
 // 플랫폼 옵션 (폼 선택용)
 export const PLATFORM_OPTIONS: Array<{
   value: ProjectPlatform
   label: string
+  shortLabel: string
   icon: React.ReactNode
+  description: string
+  suggestedStores: StoreType[]
 }> = [
-  { value: 'WEB', label: '웹 서비스', icon: <Globe className="w-4 h-4" /> },
-  { value: 'APP', label: '모바일 앱', icon: <Smartphone className="w-4 h-4" /> },
-  { value: 'GAME', label: '게임', icon: <Gamepad2 className="w-4 h-4" /> },
-  { value: 'DESIGN', label: '디자인/작품', icon: <Palette className="w-4 h-4" /> },
-  { value: 'OTHER', label: '기타', icon: <Box className="w-4 h-4" /> },
+  {
+    value: 'WEB',
+    label: '웹 서비스',
+    shortLabel: '웹',
+    icon: <Globe className="w-5 h-5" />,
+    description: '웹사이트, SaaS, 웹앱',
+    suggestedStores: ['WEBSITE', 'GITHUB'],
+  },
+  {
+    value: 'APP',
+    label: '앱',
+    shortLabel: '앱',
+    icon: <Smartphone className="w-5 h-5" />,
+    description: '모바일/데스크탑 앱',
+    suggestedStores: ['APP_STORE', 'PLAY_STORE', 'MAC_APP_STORE', 'WINDOWS_STORE', 'DIRECT_DOWNLOAD'],
+  },
+  {
+    value: 'GAME',
+    label: '게임',
+    shortLabel: '게임',
+    icon: <Gamepad2 className="w-5 h-5" />,
+    description: 'PC/모바일/콘솔 게임',
+    suggestedStores: ['STEAM', 'EPIC_GAMES', 'ITCH_IO', 'GOG', 'APP_STORE', 'PLAY_STORE'],
+  },
+  {
+    value: 'EXTENSION',
+    label: '확장 프로그램',
+    shortLabel: '확장',
+    icon: <Puzzle className="w-5 h-5" />,
+    description: '브라우저/에디터 확장',
+    suggestedStores: ['CHROME_WEB_STORE', 'FIREFOX_ADDONS', 'EDGE_ADDONS', 'VS_CODE'],
+  },
+  {
+    value: 'LIBRARY',
+    label: '라이브러리',
+    shortLabel: '라이브러리',
+    icon: <Package className="w-5 h-5" />,
+    description: '패키지, CLI, 오픈소스',
+    suggestedStores: ['NPM', 'PYPI', 'GITHUB'],
+  },
+  {
+    value: 'DESIGN',
+    label: '디자인/템플릿',
+    shortLabel: '디자인',
+    icon: <Palette className="w-5 h-5" />,
+    description: 'UI 킷, 템플릿, 리소스',
+    suggestedStores: ['FIGMA', 'NOTION', 'WEBSITE', 'GITHUB'],
+  },
+  {
+    value: 'OTHER',
+    label: '기타',
+    shortLabel: '기타',
+    icon: <Box className="w-5 h-5" />,
+    description: '그 외 모든 프로젝트',
+    suggestedStores: ['WEBSITE', 'GITHUB', 'OTHER'],
+  },
 ]
-
-// 링크 입력 필드 설정 (플랫폼별)
-export const LINK_CONFIG: Record<ProjectPlatform, {
-  label: string
-  placeholder: string
-  desc: string
-}> = {
-  WEB: {
-    label: '서비스 주소 (URL)',
-    placeholder: 'https://myservice.com',
-    desc: '유저들이 맛볼 수 있는 웹사이트 주소를 입력해주세요.',
-  },
-  APP: {
-    label: '다운로드 링크 (App Store/Play Store)',
-    placeholder: 'https://apps.apple.com/... 또는 https://play.google.com/...',
-    desc: '앱을 설치할 수 있는 스토어 링크를 입력해주세요.',
-  },
-  GAME: {
-    label: '플레이 / 다운로드 링크',
-    placeholder: 'https://store.steampowered.com/... 또는 https://itch.io/...',
-    desc: '게임을 바로 즐길 수 있는 링크를 입력해주세요.',
-  },
-  DESIGN: {
-    label: '포트폴리오 주소',
-    placeholder: 'https://behance.net/... 또는 https://notion.so/...',
-    desc: '작품을 감상할 수 있는 페이지 링크를 입력해주세요.',
-  },
-  OTHER: {
-    label: '프로젝트 링크',
-    placeholder: '프로젝트를 확인할 수 있는 URL',
-    desc: '프로젝트와 관련된 웹페이지 주소를 입력해주세요.',
-  },
-}
 
 // CTA 버튼 설정 (상세 페이지용)
 export const CTA_CONFIG: Record<ProjectPlatform, {
@@ -62,7 +93,9 @@ export const CTA_CONFIG: Record<ProjectPlatform, {
   WEB: { icon: <Globe className="w-5 h-5" />, label: '서비스 보기' },
   APP: { icon: <Smartphone className="w-5 h-5" />, label: '앱 다운로드' },
   GAME: { icon: <Gamepad2 className="w-5 h-5" />, label: '게임 플레이' },
-  DESIGN: { icon: <Palette className="w-5 h-5" />, label: '작품 보기' },
+  EXTENSION: { icon: <Puzzle className="w-5 h-5" />, label: '설치하기' },
+  LIBRARY: { icon: <Package className="w-5 h-5" />, label: '설치하기' },
+  DESIGN: { icon: <Palette className="w-5 h-5" />, label: '보러가기' },
   OTHER: { icon: <ExternalLink className="w-5 h-5" />, label: '자세히 보기' },
 }
 
@@ -71,13 +104,10 @@ export const PLATFORM_ICONS: Record<ProjectPlatform, React.ReactNode> = {
   WEB: <Globe className="w-4 h-4" />,
   APP: <Smartphone className="w-4 h-4" />,
   GAME: <Gamepad2 className="w-4 h-4" />,
+  EXTENSION: <Puzzle className="w-4 h-4" />,
+  LIBRARY: <Package className="w-4 h-4" />,
   DESIGN: <Palette className="w-4 h-4" />,
   OTHER: <Box className="w-4 h-4" />,
-}
-
-// 헬퍼 함수: 플랫폼별 링크 설정 가져오기
-export function getLinkConfig(platform: ProjectPlatform) {
-  return LINK_CONFIG[platform] || LINK_CONFIG.OTHER
 }
 
 // 헬퍼 함수: 플랫폼별 CTA 가져오기
@@ -94,4 +124,15 @@ export function getPlatformIcon(platform: ProjectPlatform): React.ReactNode {
 export function getPlatformLabel(platform: ProjectPlatform): string {
   const option = PLATFORM_OPTIONS.find(opt => opt.value === platform)
   return option?.label || '기타'
+}
+
+// 헬퍼 함수: 플랫폼 옵션 가져오기
+export function getPlatformOption(platform: ProjectPlatform) {
+  return PLATFORM_OPTIONS.find(opt => opt.value === platform) || PLATFORM_OPTIONS.find(opt => opt.value === 'OTHER')!
+}
+
+// 헬퍼 함수: 플랫폼별 추천 스토어 가져오기
+export function getSuggestedStores(platform: ProjectPlatform): StoreType[] {
+  const option = PLATFORM_OPTIONS.find(opt => opt.value === platform)
+  return option?.suggestedStores || ['WEBSITE', 'OTHER']
 }

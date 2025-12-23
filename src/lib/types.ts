@@ -6,7 +6,15 @@ export interface Comment {
   avatarUrl?: string
 }
 
-export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
+// 프로젝트 메뉴 유형
+export type ProjectPlatform =
+  | 'WEB'        // 웹 서비스/웹앱
+  | 'APP'        // 모바일/데스크탑 앱
+  | 'GAME'       // 게임
+  | 'EXTENSION'  // 확장 프로그램 (브라우저, IDE, 에디터)
+  | 'LIBRARY'    // 라이브러리/패키지/CLI 도구
+  | 'DESIGN'     // 디자인/템플릿/리소스
+  | 'OTHER'      // 기타
 
 // 스토어/플랫폼 타입 (다중 링크용)
 export type StoreType =

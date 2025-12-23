@@ -236,10 +236,12 @@ export const STORE_CONFIGS: Record<StoreType, StoreConfig> = {
 // 플랫폼별 추천 스토어 타입
 export const RECOMMENDED_STORES: Record<ProjectPlatform, StoreType[]> = {
   WEB: ['WEBSITE', 'GITHUB', 'NOTION'],
-  APP: ['APP_STORE', 'PLAY_STORE', 'GALAXY_STORE', 'GITHUB'],
+  APP: ['APP_STORE', 'PLAY_STORE', 'MAC_APP_STORE', 'WINDOWS_STORE', 'DIRECT_DOWNLOAD', 'GITHUB'],
   GAME: ['STEAM', 'EPIC_GAMES', 'ITCH_IO', 'GOG', 'APP_STORE', 'PLAY_STORE'],
+  EXTENSION: ['CHROME_WEB_STORE', 'FIREFOX_ADDONS', 'EDGE_ADDONS', 'VS_CODE', 'GITHUB'],
+  LIBRARY: ['NPM', 'PYPI', 'GITHUB'],
   DESIGN: ['FIGMA', 'NOTION', 'WEBSITE', 'GITHUB'],
-  OTHER: ['WEBSITE', 'GITHUB', 'NPM', 'PYPI', 'CHROME_WEB_STORE', 'VS_CODE'],
+  OTHER: ['WEBSITE', 'GITHUB', 'OTHER'],
 }
 
 // 스토어 타입 목록 (드롭다운용)

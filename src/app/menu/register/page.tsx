@@ -518,21 +518,26 @@ export default function MenuRegisterPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-bold text-slate-700">메뉴 유형 <span className="text-orange-500">*</span></label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {PLATFORM_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, platform: opt.value }))}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.platform === opt.value
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${formData.platform === opt.value
                       ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
-                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                       }`}
                   >
-                    <div className="mb-1">{opt.icon}</div>
-                    <span className="text-xs font-semibold">{opt.label}</span>
+                    <div className={`shrink-0 ${formData.platform === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
+                      {opt.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{opt.label}</div>
+                      <div className="text-xs text-slate-400 truncate">{opt.description}</div>
+                    </div>
                   </button>
                 ))}
               </div>
