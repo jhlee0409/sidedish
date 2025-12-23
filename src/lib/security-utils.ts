@@ -14,7 +14,7 @@ export const ALLOWED_REACTION_KEYS = ['fire', 'clap', 'party', 'idea', 'love'] a
 export type ReactionKey = typeof ALLOWED_REACTION_KEYS[number]
 
 // Allowed platform types
-export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'GAME', 'DESIGN', 'OTHER'] as const
+export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'GAME', 'EXTENSION', 'LIBRARY', 'DESIGN', 'OTHER'] as const
 export type PlatformType = typeof ALLOWED_PLATFORMS[number]
 
 // Allowed store types
@@ -190,8 +190,8 @@ export function validateProjectLinks(
       id: id.trim(),
       storeType: storeType as StoreTypeValidation,
       url: urlResult.value,
-      label: sanitizedLabel,
-      isPrimary: isPrimary === true ? true : undefined,
+      ...(sanitizedLabel && { label: sanitizedLabel }),
+      isPrimary: isPrimary === true,
     })
   }
 
