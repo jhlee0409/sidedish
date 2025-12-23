@@ -217,9 +217,9 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
       )}
 
       {/* 도움말 */}
-      {links.length > 0 && (
+      {links.length > 1 && (
         <p className="text-xs text-slate-500">
-          ⭐ 대표 링크는 메인 버튼으로 표시됩니다. {links.length === 1 && '(유일한 링크는 자동으로 대표 링크입니다)'}
+          별표를 눌러 대표 링크를 지정하세요. 상세 페이지에서 메인 버튼으로 표시됩니다.
         </p>
       )}
 
