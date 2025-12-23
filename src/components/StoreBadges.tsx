@@ -172,24 +172,19 @@ export const LinkList: React.FC<LinkListProps> = ({
             `}
           >
             <span className={`
-              p-2 rounded-lg
+              p-2 rounded-lg flex-shrink-0
               ${link.isPrimary ? 'bg-indigo-100 text-indigo-600' : 'bg-white text-slate-600'}
             `}>
               {config.icon}
             </span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-slate-900">
-                  {link.label || config.label}
-                </span>
-                {link.isPrimary && (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
-                    대표
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-slate-500 truncate">{link.url}</p>
-            </div>
+            <span className="flex-1 font-medium text-slate-900 truncate">
+              {link.label || config.label}
+            </span>
+            {link.isPrimary && (
+              <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                대표
+              </span>
+            )}
             <ExternalLink className="w-5 h-5 text-slate-400 flex-shrink-0" />
           </a>
         )
