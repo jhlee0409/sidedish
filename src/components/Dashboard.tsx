@@ -5,15 +5,16 @@ import { useRouter } from 'next/navigation'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
 import { getProjectsWithAbort } from '@/lib/api-client'
-import { ProjectResponse } from '@/lib/db-types'
+import { ProjectResponse, ProjectPlatform } from '@/lib/db-types'
 import { Search, Loader2, FolderOpen } from 'lucide-react'
+import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 
 const Dashboard: React.FC = () => {
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [activeTab, setActiveTab] = useState('All')
+  const [activeFilter, setActiveFilter] = useState<ProjectPlatform | 'ALL'>('ALL')
   const [isLoading, setIsLoading] = useState(true)
   const [hasMore, setHasMore] = useState(false)
   const [nextCursor, setNextCursor] = useState<string | undefined>()
@@ -38,9 +39,7 @@ const Dashboard: React.FC = () => {
 
     try {
       setIsLoading(true)
-      const platform = activeTab === 'All' ? undefined :
-        activeTab === 'Tech' ? 'WEB' :
-        activeTab === 'Design' ? 'DESIGN' : undefined
+      const platform = activeFilter === 'ALL' ? undefined : activeFilter
 
       const response = await getProjectsWithAbort({
         limit: 20,
@@ -68,7 +67,7 @@ const Dashboard: React.FC = () => {
         setIsLoading(false)
       }
     }
-  }, [activeTab, debouncedSearch])
+  }, [activeFilter, debouncedSearch])
 
   useEffect(() => {
     loadProjects()
@@ -89,15 +88,15 @@ const Dashboard: React.FC = () => {
     }
   }
 
-  const tabs = [
-    { id: 'All', label: '전체' },
-    { id: 'Tech', label: '개발' },
-    { id: 'Design', label: '디자인' },
-    { id: 'Life', label: '라이프' },
-  ]
-
   const handleProjectClick = (project: ProjectResponse) => {
     router.push(`/menu/${project.id}`)
+  }
+
+  // 현재 필터의 라벨 가져오기
+  const getFilterLabel = () => {
+    if (activeFilter === 'ALL') return '전체'
+    const option = PLATFORM_OPTIONS.find(opt => opt.value === activeFilter)
+    return option?.label || '전체'
   }
 
   return (
@@ -121,18 +120,31 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Filter Chips */}
-            <div className="flex items-center gap-2">
-              {tabs.map(tab => (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {/* 전체 필터 */}
+              <button
+                onClick={() => setActiveFilter('ALL')}
+                className={`px-4 py-2 text-sm font-medium rounded-full border transition-all whitespace-nowrap ${
+                  activeFilter === 'ALL'
+                    ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
+                }`}
+              >
+                전체
+              </button>
+              {/* 플랫폼별 필터 */}
+              {PLATFORM_OPTIONS.filter(opt => opt.value !== 'OTHER').map(opt => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 text-sm font-medium rounded-full border transition-all ${
-                    activeTab === tab.id
+                  key={opt.value}
+                  onClick={() => setActiveFilter(opt.value)}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border transition-all whitespace-nowrap ${
+                    activeFilter === opt.value
                       ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
                   }`}
                 >
-                  {tab.label}
+                  <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
+                  {opt.shortLabel}
                 </button>
               ))}
             </div>
@@ -142,7 +154,7 @@ const Dashboard: React.FC = () => {
         {/* Section header */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-slate-900">
-            {activeTab === 'All' ? '최신 메뉴' : `${tabs.find(t => t.id === activeTab)?.label} 메뉴`}
+            {activeFilter === 'ALL' ? '최신 메뉴' : `${getFilterLabel()} 메뉴`}
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
             메이커들이 만든 메뉴를 둘러보세요
@@ -197,7 +209,7 @@ const Dashboard: React.FC = () => {
             <button
               onClick={() => {
                 setSearchTerm('')
-                setActiveTab('All')
+                setActiveFilter('ALL')
               }}
               className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
             >
