@@ -1465,8 +1465,25 @@ export async function getProjectUpdates(
   const queryString = params.toString()
   const url = `/api/projects/${projectId}/updates${queryString ? `?${queryString}` : ''}`
 
-  const response = await fetch(url)
-  return handleResponse<PaginatedResponse<ProjectUpdateResponse>>(response)
+  // 커서 페이지네이션은 캐싱하지 않음 (더보기 요청)
+  if (options?.cursor) {
+    const response = await fetch(url)
+    return handleResponse<PaginatedResponse<ProjectUpdateResponse>>(response)
+  }
+
+  // 첫 페이지는 캐싱 (30초)
+  const cacheKey = `project-updates:${projectId}:${options?.type || 'all'}`
+  const cached = getCached<PaginatedResponse<ProjectUpdateResponse>>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  return deduplicatedFetch(cacheKey, async () => {
+    const response = await fetch(url)
+    const data = await handleResponse<PaginatedResponse<ProjectUpdateResponse>>(response)
+    setCache(cacheKey, data)
+    return data
+  })
 }
 
 /**
@@ -1507,7 +1524,10 @@ export async function createProjectUpdate(
     method: 'POST',
     body: JSON.stringify(data),
   })
-  return handleResponse<ProjectUpdateResponse>(response)
+  const result = await handleResponse<ProjectUpdateResponse>(response)
+  // 캐시 무효화 - 새 업데이트 추가됨
+  invalidateCache(`project-updates:${projectId}`)
+  return result
 }
 
 /**
@@ -1534,4 +1554,6 @@ export async function deleteProjectUpdate(updateId: string): Promise<void> {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }))
     throw new ApiError(response.status, error.error || 'Request failed', error.code)
   }
+  // 캐시 무효화 - 업데이트 삭제됨
+  invalidateCache('project-updates')
 }

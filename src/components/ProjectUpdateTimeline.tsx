@@ -68,6 +68,7 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
   const { user, isAuthenticated } = useAuth()
   const [updates, setUpdates] = useState<ProjectUpdateResponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isFiltering, setIsFiltering] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [nextCursor, setNextCursor] = useState<string | undefined>()
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -96,12 +97,18 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
       console.error('Failed to load updates:', error)
     } finally {
       setIsLoading(false)
+      setIsFiltering(false)
       setIsLoadingMore(false)
     }
   }
 
   useEffect(() => {
-    setIsLoading(true)
+    // 초기 로딩은 전체 로딩 스피너, 필터 변경은 subtle 로딩
+    if (updates.length === 0) {
+      setIsLoading(true)
+    } else {
+      setIsFiltering(true)
+    }
     loadUpdates()
   }, [projectId, filter])
 
@@ -150,6 +157,9 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold text-slate-900">개발 여정</h3>
           <span className="text-sm text-slate-500">({updates.length})</span>
+          {isFiltering && (
+            <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Filter */}
