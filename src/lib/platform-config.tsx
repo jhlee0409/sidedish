@@ -90,13 +90,13 @@ export const CTA_CONFIG: Record<ProjectPlatform, {
   icon: React.ReactNode
   label: string
 }> = {
-  WEB: { icon: <Globe className="w-5 h-5" />, label: '서비스 보기' },
-  APP: { icon: <Smartphone className="w-5 h-5" />, label: '앱 다운로드' },
-  GAME: { icon: <Gamepad2 className="w-5 h-5" />, label: '게임 플레이' },
-  EXTENSION: { icon: <Puzzle className="w-5 h-5" />, label: '설치하기' },
-  LIBRARY: { icon: <Package className="w-5 h-5" />, label: '설치하기' },
-  DESIGN: { icon: <Palette className="w-5 h-5" />, label: '보러가기' },
-  OTHER: { icon: <ExternalLink className="w-5 h-5" />, label: '자세히 보기' },
+  WEB: { icon: <Globe className="w-5 h-5" />, label: '바로가기' },
+  APP: { icon: <Smartphone className="w-5 h-5" />, label: '설치하기' },
+  GAME: { icon: <Gamepad2 className="w-5 h-5" />, label: '플레이' },
+  EXTENSION: { icon: <Puzzle className="w-5 h-5" />, label: '추가하기' },
+  LIBRARY: { icon: <Package className="w-5 h-5" />, label: '시작하기' },
+  DESIGN: { icon: <Palette className="w-5 h-5" />, label: '살펴보기' },
+  OTHER: { icon: <ExternalLink className="w-5 h-5" />, label: '바로가기' },
 }
 
 // 플랫폼 아이콘만 필요할 때 (카드 등에서 사용)

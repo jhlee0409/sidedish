@@ -281,18 +281,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const getCTAContent = (platform: string) => {
     switch (platform) {
       case 'APP':
-        return { icon: <Smartphone className="w-4 h-4" />, label: '앱 다운로드' }
+        return { icon: <Smartphone className="w-4 h-4" />, label: '설치하기' }
       case 'GAME':
-        return { icon: <Gamepad2 className="w-4 h-4" />, label: '게임 플레이' }
+        return { icon: <Gamepad2 className="w-4 h-4" />, label: '플레이' }
       case 'EXTENSION':
-        return { icon: <Puzzle className="w-4 h-4" />, label: '확장 프로그램 설치' }
+        return { icon: <Puzzle className="w-4 h-4" />, label: '추가하기' }
       case 'LIBRARY':
-        return { icon: <Package className="w-4 h-4" />, label: '패키지 설치' }
+        return { icon: <Package className="w-4 h-4" />, label: '시작하기' }
       case 'DESIGN':
-        return { icon: <Palette className="w-4 h-4" />, label: '작품 보기' }
+        return { icon: <Palette className="w-4 h-4" />, label: '살펴보기' }
       case 'WEB':
       default:
-        return { icon: <Globe className="w-4 h-4" />, label: '서비스 방문' }
+        return { icon: <Globe className="w-4 h-4" />, label: '바로가기' }
     }
   }
 
