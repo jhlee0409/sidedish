@@ -7,7 +7,8 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
+  Puzzle, Package
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
@@ -280,14 +281,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const getCTAContent = (platform: string) => {
     switch (platform) {
       case 'APP':
-        return { icon: <Smartphone className="w-4 h-4" />, label: '앱 맛보기 (다운로드)' }
+        return { icon: <Smartphone className="w-4 h-4" />, label: '앱 다운로드' }
       case 'GAME':
-        return { icon: <Gamepad2 className="w-4 h-4" />, label: '게임 한 판 하기' }
+        return { icon: <Gamepad2 className="w-4 h-4" />, label: '게임 플레이' }
+      case 'EXTENSION':
+        return { icon: <Puzzle className="w-4 h-4" />, label: '확장 프로그램 설치' }
+      case 'LIBRARY':
+        return { icon: <Package className="w-4 h-4" />, label: '패키지 설치' }
       case 'DESIGN':
-        return { icon: <Palette className="w-4 h-4" />, label: '작품 감상하기' }
+        return { icon: <Palette className="w-4 h-4" />, label: '작품 보기' }
       case 'WEB':
       default:
-        return { icon: <Globe className="w-4 h-4" />, label: '웹사이트 방문하기' }
+        return { icon: <Globe className="w-4 h-4" />, label: '서비스 방문' }
     }
   }
 
