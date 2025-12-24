@@ -21,6 +21,9 @@ import {
 
 /**
  * 프로젝트 등록/수정 폼 스키마
+ *
+ * 주의: react-hook-form zodResolver 호환을 위해 .default() 사용 금지
+ * 기본값은 useForm의 defaultValues에서 설정
  */
 export const projectFormSchema = z.object({
   title: z
@@ -35,22 +38,27 @@ export const projectFormSchema = z.object({
 
   description: z
     .string()
-    .max(PROJECT_CONSTRAINTS.DESC_MAX_LENGTH, `설명은 ${PROJECT_CONSTRAINTS.DESC_MAX_LENGTH}자 이하여야 합니다.`)
-    .default(''),
+    .max(PROJECT_CONSTRAINTS.DESC_MAX_LENGTH, `설명은 ${PROJECT_CONSTRAINTS.DESC_MAX_LENGTH}자 이하여야 합니다.`),
 
-  tags: tagsSchema,
+  tags: z.array(z.string().min(1).max(PROJECT_CONSTRAINTS.TAG_MAX_LENGTH)).max(PROJECT_CONSTRAINTS.MAX_TAGS),
 
-  imageUrl: imageUrlSchema,
+  imageUrl: z.string(),
 
-  link: optionalUrlSchema,
+  link: z.string(),
 
-  githubUrl: optionalUrlSchema,
+  githubUrl: z.string(),
 
-  links: projectLinksSchema,
+  links: z.array(z.object({
+    id: z.string(),
+    storeType: z.string(),
+    url: z.string(),
+    label: z.string(),
+    isPrimary: z.boolean(),
+  })),
 
   platform: platformSchema,
 
-  isBeta: z.boolean().default(false),
+  isBeta: z.boolean(),
 })
 
 export type ProjectFormData = z.infer<typeof projectFormSchema>
