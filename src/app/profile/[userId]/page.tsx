@@ -193,7 +193,7 @@ function ProfilePageContent() {
               </div>
               <div className="text-xs sm:text-sm mt-0.5 sm:mt-1 text-slate-500 flex items-center justify-center gap-1">
                 <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">받은 좋아요</span>
+                <span className="hidden sm:inline">받은 찜</span>
               </div>
             </div>
           </div>

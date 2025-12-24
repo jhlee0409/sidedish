@@ -472,7 +472,7 @@ function MyPageContent() {
           {/* Whispers Tab */}
           {activeTab === 'whispers' && (
             <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-6">받은 비밀 귓속말</h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4 sm:mb-6">받은 귓속말</h2>
 
               {whispers.length > 0 ? (
                 <div className="space-y-3 sm:space-y-4">
