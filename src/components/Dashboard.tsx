@@ -132,21 +132,20 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter row - full width scroll on mobile */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:max-w-4xl sm:mx-auto">
-            {/* Platform filters - horizontal scroll container */}
-            <div className="relative w-full sm:flex-1 sm:min-w-0 overflow-hidden">
+          {/* Filter row */}
+          <div className="max-w-4xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* Platform filters - horizontal scroll */}
               <div
-                className="flex items-center gap-2 overflow-x-auto pb-2 pl-0 pr-6 sm:pr-0 scrollbar-hide"
+                className="flex items-center gap-2 overflow-x-scroll pb-1 -mx-6 px-6 sm:mx-0 sm:px-0 sm:overflow-visible scrollbar-hide"
                 role="tablist"
                 aria-label="플랫폼 필터"
-                style={{ WebkitOverflowScrolling: 'touch' }}
               >
                 <button
                   onClick={() => setActiveFilter('ALL')}
                   role="tab"
                   aria-selected={activeFilter === 'ALL'}
-                  className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap flex-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                  className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                     activeFilter === 'ALL'
                       ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
@@ -160,7 +159,7 @@ const Dashboard: React.FC = () => {
                     onClick={() => setActiveFilter(opt.value)}
                     role="tab"
                     aria-selected={activeFilter === opt.value}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap flex-none focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                    className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                       activeFilter === opt.value
                         ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
@@ -171,9 +170,6 @@ const Dashboard: React.FC = () => {
                   </button>
                 ))}
               </div>
-              {/* Fade edge indicator for scroll */}
-              <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none sm:hidden" />
-            </div>
 
               {/* Sort options */}
               <div className="flex items-center gap-1 shrink-0">
@@ -202,6 +198,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
 
         {/* Section header */}
         <div className="mb-6">
