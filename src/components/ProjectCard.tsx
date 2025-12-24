@@ -49,10 +49,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   // 대표 URL
   const primaryUrl = primaryLink?.url || project.link
 
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
     <article
       onClick={onClick}
-      className="group bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300 cursor-pointer"
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`${project.title} 프로젝트 보기`}
+      className="group bg-white rounded-xl overflow-hidden border border-slate-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 hover:-translate-y-1"
     >
       {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden bg-orange-50">
@@ -77,15 +89,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           )}
         </div>
 
-        {/* Link button on hover */}
+        {/* Link button on hover - 44px touch target */}
         {primaryUrl && (
           <a
             href={primaryUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-50 hover:scale-110"
-            title="바로가기"
+            onKeyDown={(e) => e.stopPropagation()}
+            aria-label={`${project.title} 바로가기`}
+            className="absolute top-2 right-2 bg-white w-10 h-10 flex items-center justify-center rounded-full shadow-sm opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-all hover:bg-orange-50 hover:scale-110 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-orange-400 active:scale-95"
           >
             <ArrowUpRight className="w-4 h-4 text-slate-600" />
           </a>

@@ -107,27 +107,30 @@ const Dashboard: React.FC = () => {
         {/* Search & Filter */}
         <div className="sticky top-20 z-20 py-4 bg-white/95 backdrop-blur-sm -mx-6 px-6 mb-8">
           <div className="flex flex-col sm:flex-row gap-4 items-center max-w-4xl mx-auto">
-            {/* Search */}
+            {/* Search - 44px minimum height */}
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm placeholder-slate-400 focus:outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full pl-11 pr-4 py-3 min-h-[44px] bg-white border border-slate-200 rounded-full text-sm placeholder-slate-400 focus:outline-none focus-visible:border-orange-300 focus-visible:ring-2 focus-visible:ring-orange-100 transition-all"
                 placeholder="메뉴 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="메뉴 검색"
               />
             </div>
 
-            {/* Filter Chips */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Filter Chips - 44px touch targets */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="플랫폼 필터">
               {/* 전체 필터 */}
               <button
                 onClick={() => setActiveFilter('ALL')}
-                className={`px-4 py-2 text-sm font-medium rounded-full border transition-all whitespace-nowrap ${
+                role="tab"
+                aria-selected={activeFilter === 'ALL'}
+                className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all duration-200 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                   activeFilter === 'ALL'
                     ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600 hover:-translate-y-0.5 active:translate-y-0'
                 }`}
               >
                 전체
@@ -137,10 +140,12 @@ const Dashboard: React.FC = () => {
                 <button
                   key={opt.value}
                   onClick={() => setActiveFilter(opt.value)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full border transition-all whitespace-nowrap ${
+                  role="tab"
+                  aria-selected={activeFilter === opt.value}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all duration-200 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
                     activeFilter === opt.value
                       ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600 hover:-translate-y-0.5 active:translate-y-0'
                   }`}
                 >
                   <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
@@ -183,7 +188,7 @@ const Dashboard: React.FC = () => {
                 <button
                   onClick={handleLoadMore}
                   disabled={isLoading}
-                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 min-h-[44px] text-sm font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
                 >
                   {isLoading ? (
                     <>
@@ -198,7 +203,7 @@ const Dashboard: React.FC = () => {
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
               <FolderOpen className="w-8 h-8 text-slate-400" />
             </div>
@@ -211,7 +216,7 @@ const Dashboard: React.FC = () => {
                 setSearchTerm('')
                 setActiveFilter('ALL')
               }}
-              className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-5 py-3 min-h-[44px] text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               전체 보기
             </button>
