@@ -49,6 +49,9 @@ const TermsOfServicePage: React.FC = () => {
                 <strong>&quot;회원&quot;</strong>이란 이 약관에 동의하고 회사와 서비스 이용계약을 체결한 자를 의미합니다.
               </li>
               <li>
+                <strong>&quot;비회원&quot;</strong>이란 회원으로 가입하지 않고 서비스를 이용하는 자를 의미합니다.
+              </li>
+              <li>
                 <strong>&quot;프로젝트&quot;</strong>란 회원이 서비스 내에 등록하는 사이드 프로젝트 정보
                 (제목, 설명, 이미지, 링크 등)를 의미합니다.
               </li>
@@ -65,6 +68,9 @@ const TermsOfServicePage: React.FC = () => {
               </li>
               <li>
                 <strong>&quot;다이너(Diner)&quot;</strong>란 프로젝트를 열람하는 회원을 의미합니다.
+              </li>
+              <li>
+                <strong>&quot;유료 서비스&quot;</strong>란 회사가 별도의 요금을 받고 제공하는 서비스를 의미합니다.
               </li>
             </ol>
 
@@ -165,6 +171,15 @@ const TermsOfServicePage: React.FC = () => {
                 </ul>
               </li>
               <li>
+                회사가 회원자격을 제한·정지하고자 하는 경우에는 그 사유, 일시 및 기간을 정하여 전자우편 등의
+                방법으로 해당 회원에게 통지합니다. 다만, 긴급하게 이용을 정지할 필요가 있다고 인정하는 경우에는
+                사후에 통지할 수 있습니다.
+              </li>
+              <li>
+                회원은 본 조에 따른 이용제한에 대해 회사가 정한 절차에 따라 이의신청을 할 수 있습니다.
+                회사는 이의가 정당하다고 인정하는 경우 즉시 서비스 이용을 재개합니다.
+              </li>
+              <li>
                 탈퇴 후 30일 이내에는 동일한 소셜 계정으로 재가입이 제한될 수 있습니다.
               </li>
             </ol>
@@ -204,7 +219,12 @@ const TermsOfServicePage: React.FC = () => {
               </li>
               <li>
                 서비스의 내용, 이용방법, 이용시간에 대하여 변경이 있는 경우에는 변경사유, 변경될 서비스의 내용 및
-                제공일자 등을 그 변경 전에 서비스 내 공지사항에 게시합니다.
+                제공일자 등을 그 변경 전 7일 이상 서비스 내 공지사항에 게시합니다. 다만, 회원에게 불리한 변경의 경우에는
+                30일 전에 공지하며, 전자우편 등으로 개별 통지합니다.
+              </li>
+              <li>
+                회사가 서비스를 종료하고자 하는 경우에는 서비스 종료일로부터 30일 전에 서비스 내 공지사항에 게시하고,
+                전자우편 등으로 회원에게 개별 통지합니다.
               </li>
             </ol>
 
@@ -235,7 +255,44 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제12조 (정보의 제공 및 광고의 게재)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제12조 (유료 서비스)</h3>
+            <ol className="list-decimal pl-6 mt-2 space-y-2">
+              <li>
+                회사는 일부 서비스를 유료로 제공할 수 있으며, 유료 서비스를 이용하려는 회원은 해당 서비스에서
+                정한 요금을 지불해야 합니다.
+              </li>
+              <li>
+                유료 서비스의 종류, 이용요금, 이용기간, 결제방법 등은 해당 서비스 화면에 별도로 게시합니다.
+              </li>
+              <li>
+                유료 서비스 이용 요금의 결제와 관련하여 회원이 입력한 정보 및 그 정보와 관련하여 발생한 책임과
+                불이익은 전적으로 회원이 부담합니다.
+              </li>
+            </ol>
+
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제13조 (청약철회 및 환불)</h3>
+            <ol className="list-decimal pl-6 mt-2 space-y-2">
+              <li>
+                유료 서비스를 이용하는 회원은 「전자상거래 등에서의 소비자보호에 관한 법률」 등 관련 법령에 따라
+                서비스 구매일 또는 이용가능일로부터 7일 이내에 청약을 철회할 수 있습니다.
+              </li>
+              <li>
+                다음 각 호에 해당하는 경우에는 청약철회가 제한될 수 있습니다.
+                <ul className="list-disc pl-6 mt-2">
+                  <li>회원에게 책임이 있는 사유로 서비스 이용이 불가능하게 된 경우</li>
+                  <li>서비스의 전부 또는 일부를 이용한 경우 (단, 일부 이용의 경우 이용한 부분에 해당하는 금액은 환불에서 제외)</li>
+                  <li>디지털 콘텐츠의 경우 다운로드 또는 스트리밍이 시작된 경우</li>
+                </ul>
+              </li>
+              <li>
+                환불은 원칙적으로 결제수단과 동일한 방법으로 진행되며, 결제수단에 따라 3~7 영업일이 소요될 수 있습니다.
+              </li>
+              <li>
+                회사는 환불 신청을 접수한 날로부터 3 영업일 이내에 환불 처리를 완료합니다.
+              </li>
+            </ol>
+
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제14조 (정보의 제공 및 광고의 게재)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회사는 서비스 이용 중 필요하다고 인정되는 다양한 정보를 공지사항이나 전자우편 등의 방법으로
@@ -251,7 +308,7 @@ const TermsOfServicePage: React.FC = () => {
           <section className="mt-12">
             <h2 className="text-2xl font-bold text-slate-900 border-b pb-2">제4장 콘텐츠 및 권리</h2>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제13조 (콘텐츠의 등록)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제15조 (콘텐츠의 등록)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회원은 서비스 내에 프로젝트, 댓글, 귓속말 등의 콘텐츠를 등록할 수 있습니다.
@@ -272,7 +329,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제14조 (콘텐츠의 관리)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제16조 (콘텐츠의 관리)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회원이 등록한 콘텐츠가 다음 각 호에 해당하는 경우, 회사는 해당 콘텐츠를 삭제하거나 게시를 거부할 수 있으며,
@@ -292,7 +349,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제15조 (저작권의 귀속)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제17조 (저작권의 귀속)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 서비스 자체에 대한 저작권 및 지적재산권은 회사에 귀속됩니다.
@@ -312,7 +369,7 @@ const TermsOfServicePage: React.FC = () => {
           <section className="mt-12">
             <h2 className="text-2xl font-bold text-slate-900 border-b pb-2">제5장 의무</h2>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제16조 (회사의 의무)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제18조 (회사의 의무)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회사는 관련 법령과 이 약관이 금지하거나 미풍양속에 반하는 행위를 하지 않으며, 계속적이고 안정적으로
@@ -327,7 +384,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제17조 (회원의 의무)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제19조 (회원의 의무)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회원은 다음 각 호의 행위를 하여서는 안 됩니다.
@@ -349,7 +406,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제18조 (회원의 계정 관리)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제20조 (회원의 계정 관리)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회원은 소셜 로그인(Google, GitHub) 계정을 통해 서비스에 접속하며, 해당 소셜 계정의 보안은
@@ -368,7 +425,7 @@ const TermsOfServicePage: React.FC = () => {
           <section className="mt-12">
             <h2 className="text-2xl font-bold text-slate-900 border-b pb-2">제6장 손해배상 및 면책</h2>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제19조 (손해배상)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제21조 (손해배상)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회사가 회원에게 손해를 입힌 경우 회사는 그 손해를 배상합니다. 다만, 회사가 고의 또는 과실이 없음을
@@ -379,7 +436,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제20조 (회사의 면책)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제22조 (회사의 면책)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회사는 천재지변, 전쟁, 기간통신사업자의 서비스 중지, 제3자가 제공하는 오픈 API 장애, 기타 불가항력으로
@@ -408,7 +465,7 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제21조 (분쟁해결)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제23조 (분쟁해결)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 회사는 회원이 제기하는 정당한 의견이나 불만을 반영하고 그 피해를 보상 처리하기 위하여 고충처리팀을
@@ -418,9 +475,32 @@ const TermsOfServicePage: React.FC = () => {
                 회사는 회원으로부터 제출되는 불만사항 및 의견을 우선적으로 처리합니다. 다만, 신속한 처리가 곤란한 경우에는
                 회원에게 그 사유와 처리일정을 통보해 드립니다.
               </li>
+              <li>
+                회사와 회원 간에 발생한 분쟁은 다음의 절차에 따라 해결합니다.
+                <ul className="list-disc pl-6 mt-2">
+                  <li><strong>1단계 (당사자 협의)</strong>: 회사와 회원은 분쟁 발생 시 상호 협의하여 해결합니다.</li>
+                  <li><strong>2단계 (외부 조정)</strong>: 협의가 이루어지지 않는 경우, 「전자상거래 등에서의 소비자보호에 관한 법률」에 따른
+                  공정거래위원회 또는 시·도지사가 의뢰하는 분쟁조정기관의 조정에 따를 수 있습니다.</li>
+                  <li><strong>3단계 (법원 소송)</strong>: 조정으로 해결되지 않는 경우, 관할법원에 소송을 제기할 수 있습니다.</li>
+                </ul>
+              </li>
             </ol>
 
-            <h3 className="text-xl font-bold text-slate-900 mt-6">제22조 (재판권 및 준거법)</h3>
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제24조 (분쟁조정기관 안내)</h3>
+            <p>회원은 서비스 이용과 관련하여 발생한 분쟁에 대해 다음의 기관에 분쟁 조정을 신청할 수 있습니다.</p>
+            <ul className="list-disc pl-6 mt-2 space-y-2">
+              <li>
+                <strong>한국소비자원</strong>: 전화 1372, 홈페이지 www.kca.go.kr
+              </li>
+              <li>
+                <strong>전자거래분쟁조정위원회</strong>: 전화 1661-5714, 홈페이지 www.ecmc.or.kr
+              </li>
+              <li>
+                <strong>개인정보분쟁조정위원회</strong>: 전화 1833-6972, 홈페이지 www.kopico.go.kr
+              </li>
+            </ul>
+
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제25조 (재판권 및 준거법)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>
                 이 약관의 해석 및 회사와 회원 간의 분쟁에 대하여는 대한민국의 법령을 적용합니다.
