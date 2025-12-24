@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Flag, BookOpen, Plus, Trash2, Loader2, ChevronDown } from 'lucide-react'
+import { Flag, BookOpen, Plus, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import SafeMarkdown from './SafeMarkdown'
 import Button from './Button'
@@ -15,6 +15,9 @@ interface ProjectUpdateTimelineProps {
   projectId: string
   projectAuthorId: string
 }
+
+// 콘텐츠가 접힐 수 있는 최소 길이 (글자 수)
+const COLLAPSE_THRESHOLD = 200
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -75,8 +78,23 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
   const [showModal, setShowModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [filter, setFilter] = useState<ProjectUpdateType | 'all'>('all')
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const isOwner = isAuthenticated && user?.id === projectAuthorId
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const isContentLong = (content: string) => content.length > COLLAPSE_THRESHOLD
 
   const loadUpdates = async (cursor?: string) => {
     try {
@@ -153,7 +171,7 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold text-slate-900">개발 여정</h3>
           <span className="text-sm text-slate-500">({updates.length})</span>
@@ -161,12 +179,12 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
             <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
           {/* Filter */}
-          <div className="flex bg-slate-100 rounded-lg p-0.5">
+          <div className="flex bg-slate-100 rounded-lg p-0.5 shrink-0">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 filter === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
@@ -176,25 +194,25 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
             </button>
             <button
               onClick={() => setFilter('milestone')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap ${
                 filter === 'milestone'
                   ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <Flag className="w-3 h-3" />
-              마일스톤
+              <span className="hidden xs:inline sm:inline">마일스톤</span>
             </button>
             <button
               onClick={() => setFilter('devlog')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${
+              className={`px-2 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 whitespace-nowrap ${
                 filter === 'devlog'
                   ? 'bg-white text-slate-700 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <BookOpen className="w-3 h-3" />
-              개발로그
+              <span className="hidden xs:inline sm:inline">개발로그</span>
             </button>
           </div>
           {/* Add Button (Owner Only) */}
@@ -202,10 +220,10 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
             <Button
               variant="primary"
               onClick={() => setShowModal(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 text-sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-2.5 sm:px-3 py-1.5 text-sm shrink-0"
             >
-              <Plus className="w-4 h-4 mr-1" />
-              기록 추가
+              <Plus className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">기록 추가</span>
             </Button>
           )}
         </div>
@@ -224,43 +242,49 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
       ) : (
         <div className="relative">
           {/* Timeline Line */}
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-200 via-slate-200 to-transparent" />
+          <div className="absolute left-[11px] sm:left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-200 via-slate-200 to-transparent" />
 
           {/* Updates */}
           <div className="space-y-4">
             {updates.map((update, index) => {
               const typeInfo = getTypeInfo(update.type, update.emoji)
+              const isLong = isContentLong(update.content)
+              const isExpanded = expandedIds.has(update.id)
+
               return (
                 <div
                   key={update.id}
-                  className={`relative pl-10 animate-in fade-in slide-in-from-left-2 duration-300`}
+                  className={`relative pl-8 sm:pl-10 animate-in fade-in slide-in-from-left-2 duration-300`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {/* Timeline Dot */}
                   <div
-                    className={`absolute left-2.5 top-4 w-3 h-3 rounded-full ${typeInfo.dotColor} ring-4 ring-white`}
+                    className={`absolute left-1.5 sm:left-2.5 top-4 w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full ${typeInfo.dotColor} ring-2 sm:ring-4 ring-white`}
                   />
 
                   {/* Card */}
                   <div
-                    className={`${typeInfo.bgColor} border ${typeInfo.borderColor} rounded-xl p-4 hover:shadow-md transition-shadow`}
+                    className={`${typeInfo.bgColor} border ${typeInfo.borderColor} rounded-xl p-3 sm:p-4 hover:shadow-md transition-shadow`}
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{typeInfo.icon}</span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-slate-900">
+                    {/* Header - 클릭 시 펼침/접힘 */}
+                    <div
+                      className={`flex items-start justify-between mb-2 ${isLong ? 'cursor-pointer' : ''}`}
+                      onClick={() => isLong && toggleExpanded(update.id)}
+                    >
+                      <div className="flex items-start sm:items-center gap-2 min-w-0 flex-1">
+                        <span className="text-base sm:text-lg shrink-0">{typeInfo.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                            <h4 className="font-bold text-slate-900 text-sm sm:text-base truncate">
                               {update.title}
                             </h4>
                             {update.version && (
-                              <span className="px-2 py-0.5 bg-white/80 border border-indigo-200 rounded-full text-xs font-medium text-indigo-600">
+                              <span className="px-1.5 sm:px-2 py-0.5 bg-white/80 border border-indigo-200 rounded-full text-[10px] sm:text-xs font-medium text-indigo-600 shrink-0">
                                 {update.version}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-500 mt-0.5">
                             <span className={`${typeInfo.textColor} font-medium`}>
                               {typeInfo.label}
                             </span>
@@ -270,21 +294,75 @@ const ProjectUpdateTimeline: React.FC<ProjectUpdateTimelineProps> = ({
                         </div>
                       </div>
 
-                      {/* Delete Button (Owner Only) */}
-                      {isOwner && (
-                        <button
-                          onClick={() => setDeleteTarget(update.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {/* Expand/Collapse 표시 */}
+                        {isLong && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(update.id)
+                            }}
+                            className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            aria-label={isExpanded ? '접기' : '펼치기'}
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            )}
+                          </button>
+                        )}
+                        {/* Delete Button (Owner Only) */}
+                        {isOwner && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeleteTarget(update.id)
+                            }}
+                            className="p-1 sm:p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content - 접힘/펼침 애니메이션 */}
+                    <div
+                      className={`prose prose-sm prose-slate max-w-none transition-all duration-300 overflow-hidden ${
+                        isLong && !isExpanded
+                          ? 'max-h-24 sm:max-h-28 relative'
+                          : ''
+                      }`}
+                    >
+                      <SafeMarkdown>{update.content}</SafeMarkdown>
+                      {/* 그라데이션 페이드 아웃 */}
+                      {isLong && !isExpanded && (
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-inherit to-transparent pointer-events-none"
+                          style={{ background: `linear-gradient(to top, ${update.type === 'milestone' ? 'rgb(238 242 255)' : 'rgb(248 250 252)'}, transparent)` }}
+                        />
                       )}
                     </div>
 
-                    {/* Content */}
-                    <div className="prose prose-sm prose-slate max-w-none">
-                      <SafeMarkdown>{update.content}</SafeMarkdown>
-                    </div>
+                    {/* 더보기/접기 버튼 (하단) */}
+                    {isLong && (
+                      <button
+                        onClick={() => toggleExpanded(update.id)}
+                        className="mt-2 text-xs font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-3.5 h-3.5" />
+                            접기
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                            더 보기
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               )

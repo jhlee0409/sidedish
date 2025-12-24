@@ -25,7 +25,7 @@ import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
 import WithdrawalModal from '@/components/WithdrawalModal'
-import { PLATFORM_ICONS } from '@/lib/platform-config'
+import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
 
 type TabType = 'menus' | 'likes' | 'whispers'
 
@@ -326,77 +326,85 @@ function MyPageContent() {
 
               {myProjects.length > 0 ? (
                 <div className="space-y-3 sm:space-y-4">
-                  {myProjects.map(project => (
-                    <div
-                      key={project.id}
-                      className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/menu/${project.id}`)}
-                    >
-                      <div className="flex">
-                        <div className="relative w-28 sm:w-40 h-24 sm:h-28 flex-shrink-0">
-                          <Image
-                            src={project.imageUrl}
-                            alt={project.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 p-3 sm:p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                                <span className="text-slate-400">{PLATFORM_ICONS[project.platform]}</span>
-                                <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">{project.title}</h3>
+                  {myProjects.map(project => {
+                    const platformOption = getPlatformOption(project.platform || 'OTHER')
+                    return (
+                      <div
+                        key={project.id}
+                        className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/menu/${project.id}`)}
+                      >
+                        <div className="flex">
+                          <div className="relative w-24 sm:w-40 h-24 sm:h-28 flex-shrink-0">
+                            <Image
+                              src={project.imageUrl}
+                              alt={project.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0 p-2.5 sm:p-4">
+                            {/* 상단: 카테고리 뱃지 + 액션 버튼 */}
+                            <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                              <div className="flex items-center gap-1 text-slate-500">
+                                <span className="text-slate-400 [&>svg]:w-3 [&>svg]:h-3 sm:[&>svg]:w-4 sm:[&>svg]:h-4">
+                                  {PLATFORM_ICONS[project.platform]}
+                                </span>
+                                <span className="text-[10px] sm:text-xs font-medium">{platformOption?.shortLabel}</span>
                               </div>
-                              <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">{project.shortDescription}</p>
-                              <div className="flex items-center gap-3 sm:gap-4 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-slate-400">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                  {new Date(project.createdAt).toLocaleDateString()}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                  {project.likes}
-                                </span>
+                              <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <Link href={`/menu/edit/${project.id}`}>
+                                  <button className="p-1 sm:p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors">
+                                    <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                  </button>
+                                </Link>
+                                {deleteConfirmId === project.id ? (
+                                  <div className="flex items-center gap-0.5">
+                                    <button
+                                      onClick={() => handleDeleteProject(project.id)}
+                                      className="p-1 text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors"
+                                      title="삭제 확인"
+                                    >
+                                      <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirmId(null)}
+                                      className="p-1 text-slate-400 hover:bg-slate-100 rounded-md transition-colors"
+                                      title="취소"
+                                    >
+                                      <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setDeleteConfirmId(project.id)}
+                                    className="p-1 sm:p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                  </button>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 ml-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                              <Link href={`/menu/edit/${project.id}`}>
-                                <button className="p-1.5 sm:p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
-                                  <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                </button>
-                              </Link>
-                              {deleteConfirmId === project.id ? (
-                                <div className="flex items-center gap-0.5 sm:gap-1">
-                                  <button
-                                    onClick={() => handleDeleteProject(project.id)}
-                                    className="p-1 sm:p-1.5 text-white bg-red-500 hover:bg-red-600 rounded-md sm:rounded-lg transition-colors"
-                                    title="삭제 확인"
-                                  >
-                                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => setDeleteConfirmId(null)}
-                                    className="p-1 sm:p-1.5 text-slate-400 hover:bg-slate-100 rounded-md sm:rounded-lg transition-colors"
-                                    title="취소"
-                                  >
-                                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setDeleteConfirmId(project.id)}
-                                  className="p-1.5 sm:p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                </button>
-                              )}
+                            {/* 제목 */}
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate mb-0.5 sm:mb-1">{project.title}</h3>
+                            {/* 설명 */}
+                            <p className="text-[11px] sm:text-sm text-slate-500 line-clamp-1 sm:line-clamp-2">{project.shortDescription}</p>
+                            {/* 메타 정보 */}
+                            <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-[10px] sm:text-xs text-slate-400">
+                              <span className="flex items-center gap-0.5 sm:gap-1">
+                                <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                {new Date(project.createdAt).toLocaleDateString()}
+                              </span>
+                              <span className="flex items-center gap-0.5 sm:gap-1">
+                                <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                {project.likes}
+                              </span>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <EmptyState
@@ -422,37 +430,45 @@ function MyPageContent() {
 
               {likedProjects.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  {likedProjects.map(project => (
-                    <div
-                      key={project.id}
-                      className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => router.push(`/menu/${project.id}`)}
-                    >
-                      <div className="relative h-24 sm:h-28">
-                        <Image
-                          src={project.imageUrl}
-                          alt={project.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-white/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center gap-1 text-[10px] sm:text-xs font-medium text-red-500">
-                          <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
-                          {project.likes}
+                  {likedProjects.map(project => {
+                    const platformOption = getPlatformOption(project.platform || 'OTHER')
+                    return (
+                      <div
+                        key={project.id}
+                        className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/menu/${project.id}`)}
+                      >
+                        <div className="relative h-24 sm:h-28">
+                          <Image
+                            src={project.imageUrl}
+                            alt={project.title}
+                            fill
+                            className="object-cover"
+                          />
+                          {/* 플랫폼 뱃지 (좌상단) */}
+                          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-white/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1 text-[10px] sm:text-xs font-medium text-slate-600">
+                            <span className="text-slate-400 [&>svg]:w-2.5 [&>svg]:h-2.5 sm:[&>svg]:w-3 sm:[&>svg]:h-3">
+                              {PLATFORM_ICONS[project.platform]}
+                            </span>
+                            <span>{platformOption?.shortLabel}</span>
+                          </div>
+                          {/* 좋아요 뱃지 (우상단) */}
+                          <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-white/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1 text-[10px] sm:text-xs font-medium text-red-500">
+                            <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-current" />
+                            {project.likes}
+                          </div>
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate mb-0.5 sm:mb-1">{project.title}</h3>
+                          <p className="text-xs sm:text-sm text-slate-500 line-clamp-1">{project.shortDescription}</p>
+                          <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-slate-400">
+                            <ChefHat className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="truncate">{project.authorName}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="p-3 sm:p-4">
-                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-                          <span className="text-slate-400">{PLATFORM_ICONS[project.platform]}</span>
-                          <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">{project.title}</h3>
-                        </div>
-                        <p className="text-xs sm:text-sm text-slate-500 line-clamp-1">{project.shortDescription}</p>
-                        <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-slate-400">
-                          <ChefHat className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                          <span>{project.authorName}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <EmptyState
