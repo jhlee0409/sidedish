@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, Package } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Button from './Button'
 import UserMenu from './UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
@@ -69,15 +69,6 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
                 </>
               ) : (
                 <>
-                  <Link href="/lunchbox">
-                    <Button
-                      variant="ghost"
-                      className="h-9 px-4 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                      <Package className="w-4 h-4 mr-1.5" />
-                      도시락
-                    </Button>
-                  </Link>
                   {isAuthenticated && (
                     <Link href="/menu/register">
                       <Button className="h-9 px-4 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors">

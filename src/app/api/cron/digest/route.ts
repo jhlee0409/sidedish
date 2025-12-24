@@ -1,3 +1,7 @@
+/**
+ * @deprecated 도시락(Digest) 기능은 UI에서 제거되었습니다. 크론잡도 비활성화됨.
+ * vercel.json의 crons 배열이 비어있어 실행되지 않습니다.
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { DigestDoc, DigestSubscriptionDoc, UserLocation } from '@/lib/digest-types'
