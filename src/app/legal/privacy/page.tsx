@@ -334,10 +334,10 @@ const PrivacyPolicyPage: React.FC = () => {
             <p>회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의
             불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
 
-              <div className="bg-slate-100 p-4 rounded-lg mt-4">
+            <div className="bg-slate-100 p-4 rounded-lg mt-4">
               <p className="font-semibold">개인정보 보호책임자</p>
               <ul className="mt-2 space-y-1">
-                <li>담당자: SideDish 운영팀</li>
+                <li>담당자: SideDish 운영자</li>
                 <li>이메일: contact@sidedish.me</li>
               </ul>
             </div>
