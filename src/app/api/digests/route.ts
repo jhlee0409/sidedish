@@ -1,3 +1,6 @@
+/**
+ * @deprecated 도시락(Digest) 기능은 UI에서 제거되었습니다. 레거시 코드로 유지됩니다.
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'

@@ -1258,6 +1258,7 @@ export function invalidateAiUsageCache(draftId: string): void {
 }
 
 // ============ Digests (도시락) API ============
+// @deprecated 도시락 기능은 UI에서 제거되었습니다. 레거시 코드로 유지됩니다.
 // Daily digest subscription system. Users subscribe to receive daily email briefings.
 
 /**
