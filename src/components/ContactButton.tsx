@@ -28,9 +28,8 @@ export default function ContactButton() {
   const handleClick = () => {
     if (window.Tally) {
       window.Tally.openPopup(FORM_ID, {
-        layout: 'modal',
-        width: 400,
-        overlay: true,
+        layout: 'default',
+        width: 320,
         autoClose: 3000,
       })
     }
