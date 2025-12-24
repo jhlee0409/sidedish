@@ -2,39 +2,53 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Archive } from 'lucide-react'
 
-const TermsOfServicePage: React.FC = () => {
+const TermsArchivePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link
-            href="/"
+            href="/legal/history"
             className="p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-slate-600" />
           </Link>
           <h1 className="text-xl font-bold text-slate-900">서비스 이용약관</h1>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+            <Archive className="w-3 h-3" />
+            아카이브 v1.0
+          </span>
         </div>
       </header>
+
+      {/* Archive Notice */}
+      <div className="max-w-4xl mx-auto px-4 pt-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+          <Archive className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">아카이브된 버전입니다</p>
+            <p className="text-sm text-amber-700 mt-1">
+              이 문서는 2025년 12월 25일에 시행된 버전입니다.
+              현재 적용 중인 약관은{' '}
+              <Link href="/legal/terms" className="underline font-medium">
+                여기
+              </Link>
+              에서 확인하세요.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <article className="prose prose-slate max-w-none">
-          {/* 시행일 및 버전 */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-            <p className="text-slate-500">
-              버전: v1.0 | 시행일: 2025년 12월 25일
-            </p>
-            <Link
-              href="/legal/history"
-              className="text-indigo-600 hover:text-indigo-700 hover:underline"
-            >
-              이전 버전 보기 →
-            </Link>
-          </div>
+          {/* 시행일 */}
+          <p className="text-slate-500 text-sm">
+            버전: v1.0 | 시행일: 2025년 12월 25일
+          </p>
 
           {/* 제1장 총칙 */}
           <section className="mt-8">
@@ -531,12 +545,6 @@ const TermsOfServicePage: React.FC = () => {
               <ul className="mt-2 space-y-1 text-sm">
                 <li>2025년 12월 25일: 최초 제정</li>
               </ul>
-              <Link
-                href="/legal/history"
-                className="inline-block mt-3 text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
-              >
-                전체 버전 히스토리 보기 →
-              </Link>
             </div>
           </section>
         </article>
@@ -547,9 +555,9 @@ const TermsOfServicePage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 text-center text-sm text-slate-500">
           <p>© 2025 SideDish. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-2">
-            <Link href="/legal/terms" className="text-indigo-600">서비스 이용약관</Link>
+            <Link href="/legal/terms" className="hover:text-indigo-600">현재 서비스 이용약관</Link>
             <span>|</span>
-            <Link href="/legal/privacy" className="hover:text-indigo-600">개인정보 처리방침</Link>
+            <Link href="/legal/history" className="hover:text-indigo-600">버전 히스토리</Link>
           </div>
         </div>
       </footer>
@@ -557,4 +565,4 @@ const TermsOfServicePage: React.FC = () => {
   )
 }
 
-export default TermsOfServicePage
+export default TermsArchivePage
