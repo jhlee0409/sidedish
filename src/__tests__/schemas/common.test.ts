@@ -77,11 +77,11 @@ describe('optionalUrlSchema', () => {
     }
   })
 
-  it('should transform undefined to empty string', () => {
-    const result = optionalUrlSchema.safeParse(undefined)
+  it('should trim whitespace URLs', () => {
+    const result = optionalUrlSchema.safeParse('  https://example.com  ')
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toBe('')
+      expect(result.data).toBe('https://example.com')
     }
   })
 
@@ -223,7 +223,7 @@ describe('projectLinkSchema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('should accept link with optional label', () => {
+  it('should accept link with label', () => {
     const validLink = {
       id: 'link-2',
       storeType: 'GITHUB',
@@ -235,6 +235,20 @@ describe('projectLinkSchema', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.label).toBe('GitHub Repository')
+    }
+  })
+
+  it('should default label to empty string when not provided', () => {
+    const validLink = {
+      id: 'link-3',
+      storeType: 'WEB',
+      url: 'https://example.com',
+      isPrimary: false,
+    }
+    const result = projectLinkSchema.safeParse(validLink)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.label).toBe('')
     }
   })
 

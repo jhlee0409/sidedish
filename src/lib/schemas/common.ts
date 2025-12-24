@@ -26,15 +26,17 @@ export const nicknameSchema = z
   )
 
 /**
- * URL 스키마 (선택적)
+ * URL 스키마 (선택적) - 빈 문자열 허용
  */
 export const optionalUrlSchema = z
   .string()
-  .url('올바른 URL 형식이 아닙니다.')
-  .max(CONTENT_LIMITS.URL_MAX, 'URL이 너무 깁니다.')
-  .or(z.literal(''))
-  .optional()
-  .transform(val => val || '')
+  .transform(val => val?.trim() || '')
+  .pipe(
+    z.union([
+      z.string().url('올바른 URL 형식이 아닙니다.').max(CONTENT_LIMITS.URL_MAX, 'URL이 너무 깁니다.'),
+      z.literal('')
+    ])
+  )
 
 /**
  * URL 스키마 (필수)
@@ -46,15 +48,17 @@ export const requiredUrlSchema = z
   .max(CONTENT_LIMITS.URL_MAX, 'URL이 너무 깁니다.')
 
 /**
- * 이미지 URL 스키마 (선택적)
+ * 이미지 URL 스키마 (선택적) - 빈 문자열 허용
  */
 export const imageUrlSchema = z
   .string()
-  .url('올바른 이미지 URL 형식이 아닙니다.')
-  .max(CONTENT_LIMITS.URL_MAX, 'URL이 너무 깁니다.')
-  .or(z.literal(''))
-  .optional()
-  .transform(val => val || '')
+  .transform(val => val?.trim() || '')
+  .pipe(
+    z.union([
+      z.string().url('올바른 이미지 URL 형식이 아닙니다.').max(CONTENT_LIMITS.URL_MAX, 'URL이 너무 깁니다.'),
+      z.literal('')
+    ])
+  )
 
 // ============ 플랫폼/타입 스키마 ============
 
@@ -108,8 +112,8 @@ export const projectLinkSchema = z.object({
   label: z
     .string()
     .max(CONTENT_LIMITS.PROJECT_LINK_LABEL_MAX, `라벨은 ${CONTENT_LIMITS.PROJECT_LINK_LABEL_MAX}자 이하여야 합니다.`)
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    .transform(val => val?.trim() || '')
+    .default(''),
   isPrimary: z.boolean().default(false),
 })
 
@@ -163,14 +167,14 @@ export const imageTypeSchema = z.enum(FILE_CONSTRAINTS.ALLOWED_TYPES, {
 // ============ 일반 텍스트 스키마 ============
 
 /**
- * 일반 텍스트 (선택적, 최대 길이만 제한)
+ * 일반 텍스트 (선택적, 최대 길이만 제한) - 빈 문자열 허용
  */
 export const optionalTextSchema = (maxLength: number, fieldName: string = '텍스트') =>
   z
     .string()
     .max(maxLength, `${fieldName}은(는) ${maxLength}자 이하여야 합니다.`)
-    .optional()
     .transform(val => val?.trim() || '')
+    .default('')
 
 /**
  * 필수 텍스트
