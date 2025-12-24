@@ -135,12 +135,13 @@ const Dashboard: React.FC = () => {
           {/* Filter row */}
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Platform filters - horizontal scroll */}
-              <div
-                className="flex items-center gap-2 overflow-x-scroll pb-1 -mx-6 px-6 sm:mx-0 sm:px-0 sm:overflow-visible scrollbar-hide"
-                role="tablist"
-                aria-label="플랫폼 필터"
-              >
+              {/* Platform filters - scroll wrapper */}
+              <div className="overflow-hidden -mx-6 sm:mx-0 flex-1 min-w-0">
+                <div
+                  className="flex items-center gap-2 overflow-x-auto px-6 sm:px-0 pb-1 scrollbar-hide"
+                  role="tablist"
+                  aria-label="플랫폼 필터"
+                >
                 <button
                   onClick={() => setActiveFilter('ALL')}
                   role="tab"
@@ -169,6 +170,7 @@ const Dashboard: React.FC = () => {
                     {opt.shortLabel}
                   </button>
                 ))}
+                </div>
               </div>
 
               {/* Sort options */}
