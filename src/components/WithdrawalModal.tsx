@@ -164,7 +164,7 @@ export default function WithdrawalModal({
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-red-400 rounded-full" />
-                    좋아요 및 리액션 기록
+                    찜 및 리액션 기록
                   </li>
                 </ul>
               </div>

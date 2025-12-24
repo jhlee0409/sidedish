@@ -104,7 +104,7 @@ const LandingPage: React.FC = () => {
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <MessageSquare className="w-4 h-4 text-orange-500" />
                     </div>
-                    <span>비밀 귓속말</span>
+                    <span>귓속말</span>
                   </div>
                 </div>
               </div>
@@ -244,7 +244,7 @@ const LandingPage: React.FC = () => {
                 </h2>
                 <p className="text-lg text-slate-600 leading-relaxed">
                   &ldquo;아직 부족한데...&rdquo; 싶어도 일단 올려보세요.
-                  비밀 귓속말로 솔직한 시식평을 받아볼 수 있어요.
+                  귓속말로 솔직한 시식평을 받아볼 수 있어요.
                 </p>
               </div>
             </div>
