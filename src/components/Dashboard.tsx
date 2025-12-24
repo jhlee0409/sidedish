@@ -135,13 +135,13 @@ const Dashboard: React.FC = () => {
           {/* Filter row */}
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Platform filters - scroll wrapper */}
-              <div className="overflow-hidden -mx-6 sm:mx-0 flex-1 min-w-0">
-                <div
-                  className="flex items-center gap-2 overflow-x-auto px-6 sm:px-0 pb-1 scrollbar-hide"
-                  role="tablist"
-                  aria-label="플랫폼 필터"
-                >
+              {/* Platform filters - scrollable */}
+              <div
+                className="flex-1 min-w-0 overflow-x-auto pb-1 scrollbar-hide"
+                role="tablist"
+                aria-label="플랫폼 필터"
+              >
+                <div className="flex items-center gap-2 w-max">
                 <button
                   onClick={() => setActiveFilter('ALL')}
                   role="tab"
