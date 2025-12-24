@@ -383,6 +383,36 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
               <span>{likeCount}명이 찜</span>
             </div>
           </div>
+
+          {/* Mobile: Quick Actions (Edit button + Primary links) - Only on mobile */}
+          <div className="lg:hidden space-y-3">
+            {/* Edit Button for Owner - Mobile */}
+            {isOwnProject && (
+              <Link href={`/menu/edit/${project.id}`} className="block">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-3 text-white shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-white/20 p-1.5 rounded-lg">
+                        <Pencil className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">메뉴 수정하기</p>
+                        <p className="text-[11px] text-white/70">내용을 수정하거나 업데이트하세요</p>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* Primary Links Section - Mobile */}
+            {project.links && project.links.length > 0 && (
+              <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
+                <LinkList links={project.links} compact />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Main Content Layout */}
@@ -713,34 +743,6 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Mobile: Sidebar Content (shown below main content) */}
         <div className="lg:hidden space-y-4 mt-6">
-          {/* Edit Button for Owner - Mobile */}
-          {isOwnProject && (
-            <Link href={`/menu/edit/${project.id}`} className="block">
-              <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-3 text-white shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="bg-white/20 p-1.5 rounded-lg">
-                      <Pencil className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">메뉴 수정하기</p>
-                      <p className="text-[11px] text-white/70">내용을 수정하거나 업데이트하세요</p>
-                    </div>
-                  </div>
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {/* Links Section - Mobile */}
-          {project.links && project.links.length > 0 && (
-            <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">다운로드 & 접속</h3>
-              <LinkList links={project.links} compact />
-            </div>
-          )}
-
           {/* Secret Feedback Box - Mobile */}
           <div className="bg-gradient-to-b from-purple-50 to-white rounded-xl p-4 border border-purple-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">

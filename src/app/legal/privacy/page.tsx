@@ -30,7 +30,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 서문 */}
           <section className="mt-8">
             <p>
-              SideDish(이하 &quot;회사&quot;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고
+              SideDish(이하 &quot;운영자&quot;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고
               이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을
               수립·공개합니다.
             </p>
@@ -39,7 +39,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 1. 개인정보의 처리 목적 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">1. 개인정보의 처리 목적</h2>
-            <p>회사는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 「개인정보 보호법」 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.</p>
+            <p>운영자는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 「개인정보 보호법」 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">가. 회원 가입 및 관리</h3>
             <p>회원 가입의사 확인, 회원제 서비스 제공에 따른 본인 식별·인증, 회원자격 유지·관리, 서비스 부정이용 방지, 각종 고지·통지 목적으로 개인정보를 처리합니다.</p>
@@ -57,7 +57,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 2. 개인정보의 처리 및 보유기간 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">2. 개인정보의 처리 및 보유기간</h2>
-            <p>회사는 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터 개인정보를 수집 시에 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리·보유합니다.</p>
+            <p>운영자는 법령에 따른 개인정보 보유·이용기간 또는 정보주체로부터 개인정보를 수집 시에 동의받은 개인정보 보유·이용기간 내에서 개인정보를 처리·보유합니다.</p>
 
             <div className="overflow-x-auto mt-4">
               <table className="min-w-full border-collapse border border-slate-300">
@@ -159,14 +159,14 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 4. 개인정보의 제3자 제공 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">4. 개인정보의 제3자 제공</h2>
-            <p>회사는 정보주체의 개인정보를 제1조(개인정보의 처리 목적)에서 명시한 범위 내에서만 처리하며, 정보주체의 동의, 법률의 특별한 규정 등 「개인정보 보호법」 제17조 및 제18조에 해당하는 경우에만 개인정보를 제3자에게 제공합니다.</p>
-            <p className="mt-2">현재 회사는 정보주체의 개인정보를 제3자에게 제공하고 있지 않습니다.</p>
+            <p>운영자는 정보주체의 개인정보를 제1조(개인정보의 처리 목적)에서 명시한 범위 내에서만 처리하며, 정보주체의 동의, 법률의 특별한 규정 등 「개인정보 보호법」 제17조 및 제18조에 해당하는 경우에만 개인정보를 제3자에게 제공합니다.</p>
+            <p className="mt-2">현재 운영자는 정보주체의 개인정보를 제3자에게 제공하고 있지 않습니다.</p>
           </section>
 
           {/* 5. 개인정보 처리의 위탁 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">5. 개인정보 처리의 위탁</h2>
-            <p>회사는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리업무를 위탁하고 있습니다.</p>
+            <p>운영자는 원활한 서비스 제공을 위해 다음과 같이 개인정보 처리업무를 위탁하고 있습니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">가. 국내 위탁</h3>
             <p className="text-slate-600 text-sm">해당 없음</p>
@@ -210,7 +210,7 @@ const PrivacyPolicyPage: React.FC = () => {
             </div>
 
             <p className="mt-4">
-              위 수탁업체들은 개인정보 보호에 관한 적절한 안전장치를 갖추고 있으며, 회사는 위탁계약 체결 시
+              위 수탁업체들은 개인정보 보호에 관한 적절한 안전장치를 갖추고 있으며, 운영자는 위탁계약 체결 시
               「개인정보 보호법」 제26조에 따라 위탁업무 수행목적 외 개인정보 처리금지, 기술적·관리적 보호조치,
               재위탁 제한, 수탁자에 대한 관리·감독, 손해배상 등 책임에 관한 사항을 계약서 등 문서에 명시하고 있습니다.
             </p>
@@ -223,7 +223,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 6. 개인정보의 파기절차 및 방법 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">6. 개인정보의 파기절차 및 방법</h2>
-            <p>회사는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.</p>
+            <p>운영자는 개인정보 보유기간의 경과, 처리목적 달성 등 개인정보가 불필요하게 되었을 때에는 지체없이 해당 개인정보를 파기합니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">가. 파기절차</h3>
             <p>불필요한 개인정보 및 개인정보파일은 개인정보보호책임자의 승인을 받아 파기합니다.</p>
@@ -243,7 +243,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 7. 정보주체의 권리·의무 및 행사방법 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">7. 정보주체의 권리·의무 및 행사방법</h2>
-            <p>정보주체는 회사에 대해 언제든지 다음 각 호의 개인정보 보호 관련 권리를 행사할 수 있습니다.</p>
+            <p>정보주체는 운영자에 대해 언제든지 다음 각 호의 개인정보 보호 관련 권리를 행사할 수 있습니다.</p>
 
             <ol className="list-decimal pl-6 mt-4 space-y-2">
               <li>개인정보 열람요구</li>
@@ -253,10 +253,10 @@ const PrivacyPolicyPage: React.FC = () => {
             </ol>
 
             <h3 className="text-lg font-semibold mt-4">가. 권리 행사 방법</h3>
-            <p>권리 행사는 서면, 전자우편 등을 통하여 하실 수 있으며, 회사는 이에 대해 지체없이 조치하겠습니다.</p>
+            <p>권리 행사는 서면, 전자우편 등을 통하여 하실 수 있으며, 운영자는 이에 대해 지체없이 조치하겠습니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">나. 대리인을 통한 행사</h3>
-            <p>정보주체가 개인정보의 오류 등에 대한 정정 또는 삭제를 요구한 경우에는 회사는 정정 또는 삭제를
+            <p>정보주체가 개인정보의 오류 등에 대한 정정 또는 삭제를 요구한 경우에는 운영자는 정정 또는 삭제를
             완료할 때까지 당해 개인정보를 이용하거나 제공하지 않습니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">다. 법정대리인의 권리</h3>
@@ -267,7 +267,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 8. 개인정보의 안전성 확보조치 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">8. 개인정보의 안전성 확보조치</h2>
-            <p>회사는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.</p>
+            <p>운영자는 개인정보의 안전성 확보를 위해 다음과 같은 조치를 취하고 있습니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">가. 관리적 조치</h3>
             <ul className="list-disc pl-6 mt-2">
@@ -294,7 +294,7 @@ const PrivacyPolicyPage: React.FC = () => {
             <h2 className="text-xl font-bold text-slate-900">9. 자동 수집 장치의 설치·운영 및 거부</h2>
 
             <h3 className="text-lg font-semibold mt-4">가. 쿠키의 사용 목적</h3>
-            <p>회사는 이용자에게 더 나은 서비스를 제공하기 위하여 쿠키를 운영합니다. 쿠키란 웹사이트를 운영하는데
+            <p>운영자는 이용자에게 더 나은 서비스를 제공하기 위하여 쿠키를 운영합니다. 쿠키란 웹사이트를 운영하는데
             이용되는 서버가 이용자의 컴퓨터 브라우저에게 보내는 소량의 정보이며, 이용자 PC의 하드디스크에 저장됩니다.</p>
             <ul className="list-disc pl-6 mt-2">
               <li>로그인 상태 유지</li>
@@ -310,13 +310,13 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 10. 행태정보의 수집·이용 및 거부 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">10. 행태정보의 수집·이용 및 거부</h2>
-            <p>회사는 현재 맞춤형 광고 제공을 위한 행태정보를 수집하고 있지 않습니다.</p>
+            <p>운영자는 현재 맞춤형 광고 제공을 위한 행태정보를 수집하고 있지 않습니다.</p>
           </section>
 
           {/* 11. AI 서비스 관련 개인정보 처리 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">11. AI 서비스 관련 개인정보 처리</h2>
-            <p>회사는 프로젝트 설명 생성을 위해 Google Gemini AI 서비스를 활용합니다.</p>
+            <p>운영자는 프로젝트 설명 생성을 위해 Google Gemini AI 서비스를 활용합니다.</p>
 
             <h3 className="text-lg font-semibold mt-4">가. AI 학습 데이터 미사용</h3>
             <p>이용자가 입력한 프로젝트 초안 텍스트는 AI 모델 학습에 사용되지 않습니다.
@@ -330,7 +330,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 12. 개인정보 보호책임자 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">12. 개인정보 보호책임자</h2>
-            <p>회사는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의
+            <p>운영자는 개인정보 처리에 관한 업무를 총괄해서 책임지고, 개인정보 처리와 관련한 정보주체의
             불만처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
 
             <div className="bg-slate-100 p-4 rounded-lg mt-4">
@@ -341,8 +341,8 @@ const PrivacyPolicyPage: React.FC = () => {
               </ul>
             </div>
 
-            <p className="mt-4">정보주체께서는 회사의 서비스를 이용하시면서 발생한 모든 개인정보 보호 관련 문의, 불만처리,
-            피해구제 등에 관한 사항을 개인정보 보호책임자에게 문의하실 수 있습니다. 회사는 정보주체의 문의에 대해
+            <p className="mt-4">정보주체께서는 본 서비스를 이용하시면서 발생한 모든 개인정보 보호 관련 문의, 불만처리,
+            피해구제 등에 관한 사항을 개인정보 보호책임자에게 문의하실 수 있습니다. 운영자는 정보주체의 문의에 대해
             지체없이 답변 및 처리해드릴 것입니다.</p>
           </section>
 

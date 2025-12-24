@@ -8,6 +8,11 @@
 import { z } from 'zod'
 import { CONTENT_LIMITS, ALLOWED_PLATFORMS, ALLOWED_STORE_TYPES } from '@/lib/security-utils'
 import { PROJECT_CONSTRAINTS, FILE_CONSTRAINTS } from '@/lib/form-constants'
+import {
+  containsAdminKeyword,
+  containsProfanity,
+  matchesInappropriatePattern,
+} from '@/lib/nickname-validation'
 
 // ============ 기본 문자열 스키마 ============
 
@@ -15,6 +20,8 @@ import { PROJECT_CONSTRAINTS, FILE_CONSTRAINTS } from '@/lib/form-constants'
  * 닉네임 스키마
  * - 2-20자
  * - 한글, 영문, 숫자, 밑줄(_), 공백만 허용
+ * - 운영진 사칭 방지
+ * - 욕설/비속어 필터링
  */
 export const nicknameSchema = z
   .string()
@@ -23,6 +30,18 @@ export const nicknameSchema = z
   .regex(
     /^[가-힣a-zA-Z0-9_\s]+$/,
     '닉네임에 특수문자는 사용할 수 없습니다.'
+  )
+  .refine(
+    (val) => !containsAdminKeyword(val),
+    '운영진으로 오인될 수 있는 닉네임은 사용할 수 없습니다.'
+  )
+  .refine(
+    (val) => !containsProfanity(val),
+    '부적절한 단어가 포함된 닉네임은 사용할 수 없습니다.'
+  )
+  .refine(
+    (val) => !matchesInappropriatePattern(val),
+    '부적절한 패턴의 닉네임은 사용할 수 없습니다.'
   )
 
 /**
