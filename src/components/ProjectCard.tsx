@@ -1,10 +1,10 @@
 'use client'
 
-import { Heart, ArrowUpRight, Smartphone, Globe, Gamepad2, Palette, Box, FlaskConical } from 'lucide-react'
+import { Heart, ArrowUpRight, FlaskConical } from 'lucide-react'
 import Image from 'next/image'
-import { ProjectPlatform } from '@/lib/types'
 import { ProjectResponse } from '@/lib/db-types'
 import { getProjectThumbnail } from '@/lib/og-utils'
+import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -12,15 +12,18 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
-  const getPlatformIcon = (platform: ProjectPlatform) => {
-    switch (platform) {
-      case 'APP': return <Smartphone className="w-3.5 h-3.5" />
-      case 'GAME': return <Gamepad2 className="w-3.5 h-3.5" />
-      case 'DESIGN': return <Palette className="w-3.5 h-3.5" />
-      case 'WEB': return <Globe className="w-3.5 h-3.5" />
-      default: return <Box className="w-3.5 h-3.5" />
+  const platformOption = getPlatformOption(project.platform || 'OTHER')
+
+  // 대표 링크 가져오기 (links 배열 우선, 없으면 deprecated link 필드)
+  const getPrimaryUrl = () => {
+    if (project.links && project.links.length > 0) {
+      const primaryLink = project.links.find(l => l.isPrimary) || project.links[0]
+      return primaryLink.url
     }
+    return project.link
   }
+
+  const primaryUrl = getPrimaryUrl()
 
   return (
     <article
@@ -39,8 +42,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         {/* Platform badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
           <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-            {getPlatformIcon(project.platform || 'WEB')}
-            <span>{project.platform || 'WEB'}</span>
+            <span className="text-slate-400 [&>svg]:w-3.5 [&>svg]:h-3.5">{PLATFORM_ICONS[project.platform || 'OTHER']}</span>
+            <span>{platformOption.shortLabel}</span>
           </div>
           {project.isBeta && (
             <div className="bg-amber-500/95 backdrop-blur-sm px-2 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-1 shadow-sm">
@@ -51,16 +54,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
         </div>
 
         {/* Link button on hover */}
-        <a
-          href={project.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-50 hover:scale-110"
-          title="바로가기"
-        >
-          <ArrowUpRight className="w-4 h-4 text-slate-600" />
-        </a>
+        {primaryUrl && (
+          <a
+            href={primaryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-3 right-3 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-50 hover:scale-110"
+            title="바로가기"
+          >
+            <ArrowUpRight className="w-4 h-4 text-slate-600" />
+          </a>
+        )}
       </div>
 
       {/* Content */}

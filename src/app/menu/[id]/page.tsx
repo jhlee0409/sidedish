@@ -7,10 +7,12 @@ import Link from 'next/link'
 import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
-  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical
+  Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
+  Puzzle, Package
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
+import { LinkList, PrimaryLinkButton } from '@/components/StoreBadges'
 import { sanitizePlainText } from '@/lib/sanitize-utils'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -279,14 +281,18 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
   const getCTAContent = (platform: string) => {
     switch (platform) {
       case 'APP':
-        return { icon: <Smartphone className="w-4 h-4" />, label: '앱 맛보기 (다운로드)' }
+        return { icon: <Smartphone className="w-4 h-4" />, label: '설치하기' }
       case 'GAME':
-        return { icon: <Gamepad2 className="w-4 h-4" />, label: '게임 한 판 하기' }
+        return { icon: <Gamepad2 className="w-4 h-4" />, label: '플레이' }
+      case 'EXTENSION':
+        return { icon: <Puzzle className="w-4 h-4" />, label: '추가하기' }
+      case 'LIBRARY':
+        return { icon: <Package className="w-4 h-4" />, label: '시작하기' }
       case 'DESIGN':
-        return { icon: <Palette className="w-4 h-4" />, label: '작품 감상하기' }
+        return { icon: <Palette className="w-4 h-4" />, label: '살펴보기' }
       case 'WEB':
       default:
-        return { icon: <Globe className="w-4 h-4" />, label: '웹사이트 방문하기' }
+        return { icon: <Globe className="w-4 h-4" />, label: '바로가기' }
     }
   }
 
@@ -563,21 +569,28 @@ export default function MenuDetailPage({ params }: { params: Promise<{ id: strin
                 <p className="text-slate-500 text-sm mb-6">직접 맛보러 가기</p>
 
                 <div className="space-y-3">
-                  {project.link && (
-                    <a href={project.link} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button variant="primary" className="w-full py-4 rounded-xl text-base shadow-lg shadow-orange-500/20 group bg-orange-600 hover:bg-orange-700 border-orange-600">
-                        <span className="mr-2">{cta.label}</span>
-                        <span className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">{cta.icon}</span>
-                      </Button>
-                    </a>
-                  )}
-                  {project.githubUrl && (
-                    <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button variant="outline" className="w-full py-4 rounded-xl text-base group bg-slate-800 text-white border-slate-800 hover:bg-slate-900 hover:border-slate-900 hover:text-white">
-                        <span className="mr-2">레시피(코드) 보기</span>
-                        <Github className="w-4 h-4" />
-                      </Button>
-                    </a>
+                  {/* 멀티 스토어 링크 표시 */}
+                  {project.links && project.links.length > 0 ? (
+                    <LinkList links={project.links} />
+                  ) : (
+                    <>
+                      {project.link && (
+                        <a href={project.link} target="_blank" rel="noopener noreferrer" className="block">
+                          <Button variant="primary" className="w-full py-4 rounded-xl text-base shadow-lg shadow-orange-500/20 group bg-orange-600 hover:bg-orange-700 border-orange-600">
+                            <span className="mr-2">{cta.label}</span>
+                            <span className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">{cta.icon}</span>
+                          </Button>
+                        </a>
+                      )}
+                      {project.githubUrl && (
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="block">
+                          <Button variant="outline" className="w-full py-4 rounded-xl text-base group bg-slate-800 text-white border-slate-800 hover:bg-slate-900 hover:border-slate-900 hover:text-white">
+                            <span className="mr-2">레시피(코드) 보기</span>
+                            <Github className="w-4 h-4" />
+                          </Button>
+                        </a>
+                      )}
+                    </>
                   )}
 
                   <div className="grid grid-cols-2 gap-3 mt-3">

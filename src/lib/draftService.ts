@@ -87,6 +87,7 @@ export const createDraft = (userId: string): DraftData => {
     imageUrl: '',
     link: '',
     githubUrl: '',
+    links: [],
     platform: 'WEB',
     isBeta: false,
     aiCandidates: [],

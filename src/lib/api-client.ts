@@ -47,6 +47,7 @@ import {
   UserResponse,
   PaginatedResponse,
   ProjectPlatform,
+  ProjectLinkDoc,
   Reactions,
   ProjectUpdateResponse,
   ProjectUpdateType,
@@ -474,10 +475,12 @@ export interface CreateProjectData {
   tags: string[]
   /** URL to project thumbnail image */
   imageUrl: string
-  /** URL to live project or demo */
-  link: string
-  /** Optional URL to GitHub repository */
+  /** @deprecated Use links array instead. URL to live project or demo */
+  link?: string
+  /** @deprecated Use links array instead. Optional URL to GitHub repository */
   githubUrl?: string
+  /** Multi-store links (max 8) */
+  links?: ProjectLinkDoc[]
   /** Project platform type */
   platform: ProjectPlatform
   /** Beta/development status flag */

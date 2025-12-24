@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
-  Globe, Smartphone, Gamepad2, Palette, Box, Loader2, Package, MapPin
+  Loader2, MapPin, Package, Globe
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -31,16 +31,9 @@ import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
 import WithdrawalModal from '@/components/WithdrawalModal'
 import LocationPicker from '@/components/lunchbox/LocationPicker'
+import { PLATFORM_ICONS } from '@/lib/platform-config'
 
 type TabType = 'menus' | 'likes' | 'whispers' | 'lunchbox'
-
-const platformIcons = {
-  WEB: <Globe className="w-4 h-4" />,
-  APP: <Smartphone className="w-4 h-4" />,
-  GAME: <Gamepad2 className="w-4 h-4" />,
-  DESIGN: <Palette className="w-4 h-4" />,
-  OTHER: <Box className="w-4 h-4" />,
-}
 
 export default function MyPage() {
   return (
@@ -406,7 +399,7 @@ function MyPageContent() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-slate-400">{platformIcons[project.platform]}</span>
+                                <span className="text-slate-400">{PLATFORM_ICONS[project.platform]}</span>
                                 <h3 className="font-bold text-slate-900">{project.title}</h3>
                               </div>
                               <p className="text-sm text-slate-500 line-clamp-2">{project.shortDescription}</p>
@@ -501,7 +494,7 @@ function MyPageContent() {
                       </div>
                       <div className="p-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-slate-400">{platformIcons[project.platform]}</span>
+                          <span className="text-slate-400">{PLATFORM_ICONS[project.platform]}</span>
                           <h3 className="font-bold text-slate-900 truncate">{project.title}</h3>
                         </div>
                         <p className="text-sm text-slate-500 line-clamp-1">{project.shortDescription}</p>

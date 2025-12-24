@@ -14,8 +14,25 @@ export const ALLOWED_REACTION_KEYS = ['fire', 'clap', 'party', 'idea', 'love'] a
 export type ReactionKey = typeof ALLOWED_REACTION_KEYS[number]
 
 // Allowed platform types
-export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'GAME', 'DESIGN', 'OTHER'] as const
+export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'GAME', 'EXTENSION', 'LIBRARY', 'DESIGN', 'OTHER'] as const
 export type PlatformType = typeof ALLOWED_PLATFORMS[number]
+
+// Allowed store types
+export const ALLOWED_STORE_TYPES = [
+  // 모바일
+  'APP_STORE', 'PLAY_STORE', 'GALAXY_STORE',
+  // 데스크탑
+  'MAC_APP_STORE', 'WINDOWS_STORE', 'DIRECT_DOWNLOAD',
+  // 게임
+  'STEAM', 'EPIC_GAMES', 'ITCH_IO', 'GOG',
+  // 확장
+  'CHROME_WEB_STORE', 'FIREFOX_ADDONS', 'EDGE_ADDONS', 'VS_CODE',
+  // 패키지
+  'NPM', 'PYPI',
+  // 일반
+  'WEBSITE', 'GITHUB', 'FIGMA', 'NOTION', 'OTHER',
+] as const
+export type StoreTypeValidation = typeof ALLOWED_STORE_TYPES[number]
 
 // Content length limits (in characters)
 export const CONTENT_LIMITS = {
@@ -29,6 +46,11 @@ export const CONTENT_LIMITS = {
   PROJECT_DESC_MAX: 10000,
   PROJECT_TAGS_MAX_COUNT: 10,
   PROJECT_TAG_MAX_LENGTH: 30,
+
+  // Project Links
+  PROJECT_LINKS_MAX_COUNT: 8,
+  PROJECT_LINK_LABEL_MAX: 50,
+  PROJECT_LINK_ID_MAX: 50,
 
   // Comment
   COMMENT_MAX: 1000,
@@ -66,6 +88,114 @@ export function isValidReactionKey(emoji: unknown): emoji is ReactionKey {
  */
 export function isValidPlatform(platform: unknown): platform is PlatformType {
   return typeof platform === 'string' && ALLOWED_PLATFORMS.includes(platform as PlatformType)
+}
+
+/**
+ * Validates that a store type is in the whitelist
+ */
+export function isValidStoreType(storeType: unknown): storeType is StoreTypeValidation {
+  return typeof storeType === 'string' && ALLOWED_STORE_TYPES.includes(storeType as StoreTypeValidation)
+}
+
+/**
+ * ProjectLink 타입 (검증용)
+ */
+export interface ProjectLinkInput {
+  id: string
+  storeType: string
+  url: string
+  label?: string
+  isPrimary?: boolean
+}
+
+/**
+ * Validates an array of project links
+ */
+export function validateProjectLinks(
+  value: unknown,
+  fieldName: string = '링크'
+): { valid: true; value: ProjectLinkInput[] } | { valid: false; error: string } {
+  // 빈 값 허용
+  if (!value) {
+    return { valid: true, value: [] }
+  }
+
+  if (!Array.isArray(value)) {
+    return { valid: false, error: `${fieldName}은(는) 배열이어야 합니다.` }
+  }
+
+  if (value.length > CONTENT_LIMITS.PROJECT_LINKS_MAX_COUNT) {
+    return { valid: false, error: `${fieldName}은(는) ${CONTENT_LIMITS.PROJECT_LINKS_MAX_COUNT}개 이하여야 합니다.` }
+  }
+
+  const sanitizedLinks: ProjectLinkInput[] = []
+  const seenIds = new Set<string>()
+  let primaryCount = 0
+
+  for (let i = 0; i < value.length; i++) {
+    const link = value[i]
+
+    // 객체 타입 체크
+    if (!link || typeof link !== 'object') {
+      return { valid: false, error: `${fieldName}[${i}]이(가) 유효하지 않습니다.` }
+    }
+
+    const { id, storeType, url, label, isPrimary } = link as Record<string, unknown>
+
+    // id 검증
+    if (!id || typeof id !== 'string') {
+      return { valid: false, error: `${fieldName}[${i}].id가 필요합니다.` }
+    }
+    if (id.length > CONTENT_LIMITS.PROJECT_LINK_ID_MAX) {
+      return { valid: false, error: `${fieldName}[${i}].id가 너무 깁니다.` }
+    }
+    if (seenIds.has(id)) {
+      return { valid: false, error: `${fieldName}에 중복된 id가 있습니다.` }
+    }
+    seenIds.add(id)
+
+    // storeType 검증
+    if (!isValidStoreType(storeType)) {
+      return { valid: false, error: `${fieldName}[${i}].storeType이(가) 유효하지 않습니다.` }
+    }
+
+    // url 검증
+    const urlResult = validateUrl(url, `${fieldName}[${i}].url`, { required: true })
+    if (!urlResult.valid) {
+      return { valid: false, error: urlResult.error }
+    }
+
+    // label 검증 (선택)
+    let sanitizedLabel: string | undefined
+    if (label !== undefined && label !== null && label !== '') {
+      if (typeof label !== 'string') {
+        return { valid: false, error: `${fieldName}[${i}].label은(는) 문자열이어야 합니다.` }
+      }
+      const trimmedLabel = label.trim()
+      if (trimmedLabel.length > CONTENT_LIMITS.PROJECT_LINK_LABEL_MAX) {
+        return { valid: false, error: `${fieldName}[${i}].label은(는) ${CONTENT_LIMITS.PROJECT_LINK_LABEL_MAX}자 이하여야 합니다.` }
+      }
+      sanitizedLabel = trimmedLabel || undefined
+    }
+
+    // isPrimary 검증
+    if (isPrimary === true) {
+      primaryCount++
+      if (primaryCount > 1) {
+        return { valid: false, error: `${fieldName}에서 대표 링크는 하나만 지정할 수 있습니다.` }
+      }
+    }
+
+    sanitizedLinks.push({
+      id: id.trim(),
+      storeType: storeType as StoreTypeValidation,
+      url: urlResult.value,
+      ...(sanitizedLabel && { label: sanitizedLabel }),
+      isPrimary: isPrimary === true,
+    })
+  }
+
+  return { valid: true, value: sanitizedLinks }
 }
 
 /**

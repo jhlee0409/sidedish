@@ -10,24 +10,12 @@ import {
   Calendar,
   Heart,
   Utensils,
-  Globe,
-  Smartphone,
-  Gamepad2,
-  Palette,
-  Box,
   Loader2,
 } from 'lucide-react'
 import { getUser, getProjects } from '@/lib/api-client'
 import { UserResponse, ProjectResponse } from '@/lib/db-types'
 import { useAuth } from '@/contexts/AuthContext'
-
-const platformIcons = {
-  WEB: <Globe className="w-4 h-4" />,
-  APP: <Smartphone className="w-4 h-4" />,
-  GAME: <Gamepad2 className="w-4 h-4" />,
-  DESIGN: <Palette className="w-4 h-4" />,
-  OTHER: <Box className="w-4 h-4" />,
-}
+import { PLATFORM_ICONS } from '@/lib/platform-config'
 
 export default function ProfilePage() {
   return (
@@ -241,7 +229,7 @@ function ProfilePageContent() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-slate-400">
-                              {platformIcons[project.platform]}
+                              {PLATFORM_ICONS[project.platform]}
                             </span>
                             <h3 className="font-bold text-slate-900">
                               {project.title}

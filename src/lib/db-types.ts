@@ -5,7 +5,57 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 import { UserRole } from './admin-constants'
 
-export type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
+// 프로젝트 메뉴 유형
+export type ProjectPlatform =
+  | 'WEB'        // 웹 서비스/웹앱
+  | 'APP'        // 모바일/데스크탑 앱
+  | 'GAME'       // 게임
+  | 'EXTENSION'  // 확장 프로그램 (브라우저, IDE, 에디터)
+  | 'LIBRARY'    // 라이브러리/패키지/CLI 도구
+  | 'DESIGN'     // 디자인/템플릿/리소스
+  | 'OTHER'      // 기타
+
+// 스토어/플랫폼 타입 (다중 링크용)
+export type StoreType =
+  // 모바일 앱 스토어
+  | 'APP_STORE'         // iOS App Store
+  | 'PLAY_STORE'        // Google Play Store
+  | 'GALAXY_STORE'      // Samsung Galaxy Store
+  // 데스크탑 앱 스토어
+  | 'MAC_APP_STORE'     // Mac App Store
+  | 'WINDOWS_STORE'     // Microsoft Store
+  | 'DIRECT_DOWNLOAD'   // 직접 다운로드 (.exe, .dmg, .zip)
+  // 게임 스토어
+  | 'STEAM'             // Steam
+  | 'EPIC_GAMES'        // Epic Games Store
+  | 'ITCH_IO'           // itch.io
+  | 'GOG'               // GOG.com
+  // 브라우저/에디터 확장
+  | 'CHROME_WEB_STORE'  // Chrome Web Store
+  | 'FIREFOX_ADDONS'    // Firefox Add-ons
+  | 'EDGE_ADDONS'       // Edge Add-ons
+  | 'VS_CODE'           // VS Code Marketplace
+  // 패키지 저장소
+  | 'NPM'               // npm
+  | 'PYPI'              // PyPI
+  // 일반 링크
+  | 'WEBSITE'           // 웹사이트
+  | 'GITHUB'            // GitHub
+  | 'FIGMA'             // Figma 커뮤니티
+  | 'NOTION'            // Notion
+  | 'OTHER'             // 기타
+
+// 프로젝트 링크 구조 (Firestore 저장용)
+export interface ProjectLinkDoc {
+  id: string            // 고유 ID
+  storeType: StoreType  // 스토어 타입
+  url: string           // URL
+  label?: string        // 커스텀 라벨 (선택)
+  isPrimary?: boolean   // 대표 링크 여부
+}
+
+// 링크 최대 개수
+export const MAX_PROJECT_LINKS = 8
 
 // Reaction types - strongly typed reaction keys
 export type ReactionKey = 'fire' | 'clap' | 'party' | 'idea' | 'love'
@@ -25,8 +75,12 @@ export interface ProjectDoc {
   authorName: string
   likes: number
   reactions: Reactions
+  /** @deprecated 하위 호환용 - links 배열 사용 권장 */
   link: string
+  /** @deprecated 하위 호환용 - links 배열에 GITHUB 타입으로 추가 권장 */
   githubUrl?: string
+  /** 다중 스토어 링크 (최대 8개) */
+  links?: ProjectLinkDoc[]
   platform: ProjectPlatform
   isBeta?: boolean // 베타/개발중 표시
   createdAt: Timestamp
@@ -108,8 +162,12 @@ export interface CreateProjectInput {
   imageUrl: string
   authorId: string
   authorName: string
-  link: string
+  /** @deprecated 하위 호환용 - links 배열 사용 권장 */
+  link?: string
+  /** @deprecated 하위 호환용 - links 배열에 GITHUB 타입으로 추가 권장 */
   githubUrl?: string
+  /** 다중 스토어 링크 (최대 8개) */
+  links?: ProjectLinkDoc[]
   platform: ProjectPlatform
   isBeta?: boolean
 }
@@ -120,8 +178,12 @@ export interface UpdateProjectInput {
   shortDescription?: string
   tags?: string[]
   imageUrl?: string
+  /** @deprecated 하위 호환용 - links 배열 사용 권장 */
   link?: string
+  /** @deprecated 하위 호환용 - links 배열에 GITHUB 타입으로 추가 권장 */
   githubUrl?: string
+  /** 다중 스토어 링크 (최대 8개) */
+  links?: ProjectLinkDoc[]
   platform?: ProjectPlatform
   isBeta?: boolean
 }
@@ -187,6 +249,15 @@ export interface UpdateUserInput {
   isProfileComplete?: boolean
 }
 
+// 프로젝트 링크 응답 구조
+export interface ProjectLinkResponse {
+  id: string
+  storeType: StoreType
+  url: string
+  label?: string
+  isPrimary?: boolean
+}
+
 // API Response types (serialized for JSON)
 export interface ProjectResponse {
   id: string
@@ -199,8 +270,12 @@ export interface ProjectResponse {
   authorName: string
   likes: number
   reactions: Reactions
+  /** @deprecated 하위 호환용 - links 배열 사용 권장 */
   link: string
+  /** @deprecated 하위 호환용 - links 배열에 GITHUB 타입으로 추가 권장 */
   githubUrl?: string
+  /** 다중 스토어 링크 (최대 8개) */
+  links?: ProjectLinkResponse[]
   platform: ProjectPlatform
   isBeta?: boolean
   createdAt: string

@@ -11,7 +11,8 @@ import {
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
-import { ProjectPlatform, AiGenerationCandidate } from '@/lib/types'
+import MultiLinkInput from '@/components/MultiLinkInput'
+import { ProjectPlatform, AiGenerationCandidate, ProjectLink } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
@@ -19,7 +20,7 @@ import LoginModal from '@/components/LoginModal'
 
 // 리팩토링된 상수 및 설정
 import { AI_CONSTRAINTS, FORM_ERROR_MESSAGES } from '@/lib/form-constants'
-import { PLATFORM_OPTIONS, getLinkConfig } from '@/lib/platform-config'
+import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 
 // Helper functions for managing AI candidates in localStorage (per project)
 const AI_CANDIDATES_KEY = 'sidedish_edit_ai_candidates'
@@ -57,6 +58,7 @@ interface FormData {
   imageUrl: string
   link: string
   githubUrl: string
+  links: ProjectLink[]
   platform: ProjectPlatform
   isBeta: boolean
 }
@@ -75,6 +77,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     imageUrl: '',
     link: '',
     githubUrl: '',
+    links: [],
     platform: 'WEB',
     isBeta: false
   })
@@ -123,6 +126,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             imageUrl: found.imageUrl,
             link: found.link,
             githubUrl: found.githubUrl || '',
+            links: found.links || [],
             platform: found.platform,
             isBeta: found.isBeta ?? false
           })
@@ -384,6 +388,10 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         }
       }
 
+      // links에서 대표 링크를 link 필드로 설정 (하위 호환성)
+      const primaryLink = formData.links.find(l => l.isPrimary) || formData.links[0]
+      const githubLink = formData.links.find(l => l.storeType === 'GITHUB')
+
       // Update project via API
       await updateProject(project.id, {
         title: formData.title,
@@ -391,8 +399,9 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         shortDescription: formData.shortDescription,
         tags: formData.tags,
         imageUrl: imageUrl,
-        link: formData.link,
-        githubUrl: formData.githubUrl,
+        link: primaryLink?.url || formData.link,
+        githubUrl: githubLink?.url || formData.githubUrl,
+        links: formData.links,
         platform: formData.platform,
         isBeta: formData.isBeta,
       })
@@ -405,8 +414,6 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       setIsSubmitting(false)
     }
   }
-
-  const linkConfig = getLinkConfig(formData.platform)
 
   if (authLoading || isLoading) {
     return (
@@ -527,21 +534,26 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-bold text-slate-700">메뉴 유형 <span className="text-orange-500">*</span></label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {PLATFORM_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, platform: opt.value }))}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.platform === opt.value
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${formData.platform === opt.value
                       ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
-                      : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                       }`}
                   >
-                    <div className="mb-1">{opt.icon}</div>
-                    <span className="text-xs font-semibold">{opt.label}</span>
+                    <div className={`shrink-0 ${formData.platform === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
+                      {opt.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{opt.label}</div>
+                      <div className="text-xs text-slate-400 truncate">{opt.description}</div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -745,36 +757,11 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">{linkConfig.label} (선택)</label>
-                <input
-                  type="url"
-                  name="link"
-                  value={formData.link}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                  placeholder={linkConfig.placeholder}
-                />
-                <p className="text-xs text-slate-500 px-1">{linkConfig.desc}</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
-                  GitHub 링크 <span className="text-xs font-normal text-slate-400">(선택)</span>
-                </label>
-                <div className="relative">
-                  <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="url"
-                    name="githubUrl"
-                    value={formData.githubUrl}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                    placeholder="소스코드가 있다면 공유해주세요"
-                  />
-                </div>
-              </div>
-            </div>
+            {/* 멀티 스토어 링크 입력 */}
+            <MultiLinkInput
+              links={formData.links}
+              onChange={(links) => setFormData(prev => ({ ...prev, links }))}
+            />
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
               <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
