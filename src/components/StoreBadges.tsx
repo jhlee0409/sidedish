@@ -191,12 +191,15 @@ interface LinkListProps {
   className?: string
   /** 칩+팝오버 UI를 사용할 최소 링크 수 (기본: 4) */
   chipThreshold?: number
+  /** 컴팩트 모드 (사이드바용) */
+  compact?: boolean
 }
 
 export const LinkList: React.FC<LinkListProps> = ({
   links,
   className = '',
   chipThreshold = 4,
+  compact = false,
 }) => {
   const [openCategory, setOpenCategory] = useState<StoreConfig['category'] | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -254,22 +257,22 @@ export const LinkList: React.FC<LinkListProps> = ({
   const useChipPattern = sortedCategories.length >= 3 || otherLinks.length >= chipThreshold
 
   return (
-    <div ref={containerRef} className={`space-y-3 ${className}`}>
+    <div ref={containerRef} className={`${compact ? 'space-y-2' : 'space-y-3'} ${className}`}>
       {/* 대표 링크 (항상 표시) */}
       {primaryLink && (
-        <LinkItem link={primaryLink} isPrimary />
+        <LinkItem link={primaryLink} isPrimary compact={compact} />
       )}
 
       {/* 링크가 적으면 단순 리스트 */}
       {!useChipPattern ? (
-        <div className="space-y-2">
+        <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
           {otherLinks.map(link => (
-            <LinkItem key={link.id} link={link} />
+            <LinkItem key={link.id} link={link} compact={compact} />
           ))}
         </div>
       ) : (
         /* 칩 + 팝오버 UI */
-        <div className="space-y-2">
+        <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
           {sortedCategories.map(category => {
             const meta = CATEGORY_META[category]
             const categoryLinks = groupedLinks[category]
@@ -281,44 +284,45 @@ export const LinkList: React.FC<LinkListProps> = ({
                 <button
                   onClick={() => setOpenCategory(isOpen ? null : category)}
                   className={`
-                    w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all
+                    w-full flex items-center justify-between gap-2 rounded-xl border font-medium transition-all
+                    ${compact ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'}
                     ${isOpen
                       ? 'ring-2 ring-offset-1 ring-orange-400 ' + meta.chipColor
                       : meta.chipColor
                     }
                   `}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {meta.icon}
                     <span>{meta.shortLabel}</span>
                     <span className="text-xs opacity-60">({categoryLinks.length})</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* 팝오버 */}
                 {isOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className={`absolute left-0 right-0 top-full mt-1.5 z-50 bg-white shadow-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-150 ${compact ? 'rounded-lg' : 'rounded-xl'}`}>
                     {/* 팝오버 헤더 */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className={`p-1.5 rounded-lg ${meta.color}`}>
+                    <div className={`flex items-center justify-between border-b border-slate-100 ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`rounded-md ${meta.color} ${compact ? 'p-1' : 'p-1.5'}`}>
                           {meta.icon}
                         </span>
-                        <span className="font-semibold text-slate-800">{meta.label}</span>
+                        <span className={`font-semibold text-slate-800 ${compact ? 'text-xs' : 'text-sm'}`}>{meta.label}</span>
                       </div>
                       <button
                         onClick={() => setOpenCategory(null)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                       >
-                        <X className="w-4 h-4" />
+                        <X className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                       </button>
                     </div>
 
                     {/* 팝오버 링크 리스트 */}
-                    <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                    <div className={`space-y-0.5 max-h-[240px] overflow-y-auto ${compact ? 'p-1.5' : 'p-2'}`}>
                       {categoryLinks.map(link => (
-                        <PopoverLinkItem key={link.id} link={link} />
+                        <PopoverLinkItem key={link.id} link={link} compact={compact} />
                       ))}
                     </div>
                   </div>
@@ -335,9 +339,10 @@ export const LinkList: React.FC<LinkListProps> = ({
 // 팝오버 내부 링크 아이템
 interface PopoverLinkItemProps {
   link: ProjectLink
+  compact?: boolean
 }
 
-const PopoverLinkItem: React.FC<PopoverLinkItemProps> = ({ link }) => {
+const PopoverLinkItem: React.FC<PopoverLinkItemProps> = ({ link, compact = false }) => {
   const config = getStoreConfig(link.storeType)
 
   return (
@@ -345,15 +350,15 @@ const PopoverLinkItem: React.FC<PopoverLinkItemProps> = ({ link }) => {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 p-2.5 rounded-lg transition-colors hover:bg-slate-50"
+      className={`flex items-center gap-2 rounded-lg transition-colors hover:bg-slate-50 ${compact ? 'p-2' : 'p-2.5'}`}
     >
-      <span className="p-1.5 rounded-lg bg-slate-100 text-slate-600 flex-shrink-0">
+      <span className={`rounded-md bg-slate-100 text-slate-600 flex-shrink-0 ${compact ? 'p-1' : 'p-1.5'}`}>
         {config.icon}
       </span>
-      <span className="flex-1 text-sm font-medium text-slate-700 truncate">
+      <span className={`flex-1 font-medium text-slate-700 truncate ${compact ? 'text-xs' : 'text-sm'}`}>
         {link.label || config.label}
       </span>
-      <ExternalLink className="w-4 h-4 text-slate-400 flex-shrink-0" />
+      <ExternalLink className={`text-slate-400 flex-shrink-0 ${compact ? 'w-3 h-3' : 'w-4 h-4'}`} />
     </a>
   )
 }
@@ -374,18 +379,18 @@ const LinkItem: React.FC<LinkItemProps> = ({ link, isPrimary = false, compact = 
         href={link.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all"
+        className={`flex items-center bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20 hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all ${compact ? 'gap-2 p-2.5 rounded-lg' : 'gap-3 p-4 rounded-xl'}`}
       >
-        <span className="p-2 rounded-lg bg-white/20 flex-shrink-0">
+        <span className={`rounded-md bg-white/20 flex-shrink-0 ${compact ? 'p-1.5' : 'p-2'}`}>
           {config.icon}
         </span>
-        <span className="flex-1 font-semibold truncate">
+        <span className={`flex-1 font-semibold truncate ${compact ? 'text-sm' : ''}`}>
           {link.label || config.label}
         </span>
-        <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-white/20 rounded-full">
+        <span className={`flex-shrink-0 font-medium bg-white/20 rounded-full ${compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs'}`}>
           대표
         </span>
-        <ExternalLink className="w-5 h-5 opacity-80 flex-shrink-0" />
+        <ExternalLink className={`opacity-80 flex-shrink-0 ${compact ? 'w-3.5 h-3.5' : 'w-5 h-5'}`} />
       </a>
     )
   }
@@ -395,21 +400,15 @@ const LinkItem: React.FC<LinkItemProps> = ({ link, isPrimary = false, compact = 
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`
-        flex items-center gap-3 rounded-xl transition-colors border border-slate-200 hover:border-slate-300 hover:bg-slate-50
-        ${compact ? 'p-2.5' : 'p-3'}
-      `}
+      className={`flex items-center transition-colors border border-slate-200 hover:border-slate-300 hover:bg-slate-50 ${compact ? 'gap-2 p-2 rounded-lg' : 'gap-3 p-3 rounded-xl'}`}
     >
-      <span className={`
-        rounded-lg flex-shrink-0 bg-white text-slate-600 border border-slate-100
-        ${compact ? 'p-1.5' : 'p-2'}
-      `}>
+      <span className={`rounded-md flex-shrink-0 bg-white text-slate-600 border border-slate-100 ${compact ? 'p-1' : 'p-2'}`}>
         {config.icon}
       </span>
-      <span className={`flex-1 font-medium text-slate-700 truncate ${compact ? 'text-sm' : ''}`}>
+      <span className={`flex-1 font-medium text-slate-700 truncate ${compact ? 'text-xs' : 'text-sm'}`}>
         {link.label || config.label}
       </span>
-      <ExternalLink className={`text-slate-400 flex-shrink-0 ${compact ? 'w-4 h-4' : 'w-5 h-5'}`} />
+      <ExternalLink className={`text-slate-400 flex-shrink-0 ${compact ? 'w-3.5 h-3.5' : 'w-5 h-5'}`} />
     </a>
   )
 }
