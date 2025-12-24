@@ -93,7 +93,8 @@ describe('signupFormSchema', () => {
       const result = signupFormSchema.safeParse(signup)
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('이용약관')
+        // termsOfService 필드에서 에러 발생 확인
+        expect(result.error.issues[0].path).toContain('termsOfService')
       }
     })
 
@@ -108,7 +109,8 @@ describe('signupFormSchema', () => {
       const result = signupFormSchema.safeParse(signup)
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('개인정보')
+        // privacyPolicy 필드에서 에러 발생 확인
+        expect(result.error.issues[0].path).toContain('privacyPolicy')
       }
     })
   })

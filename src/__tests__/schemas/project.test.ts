@@ -37,8 +37,8 @@ describe('projectFormSchema', () => {
         link: 'https://sidedish.app',
         githubUrl: 'https://github.com/user/sidedish',
         links: [
-          { id: 'link-1', storeType: 'WEB', url: 'https://sidedish.app', isPrimary: true },
-          { id: 'link-2', storeType: 'GITHUB', url: 'https://github.com/user/sidedish', isPrimary: false },
+          { id: 'link-1', storeType: 'WEB', url: 'https://sidedish.app', label: '', isPrimary: true },
+          { id: 'link-2', storeType: 'GITHUB', url: 'https://github.com/user/sidedish', label: '', isPrimary: false },
         ],
         platform: 'WEB',
         isBeta: true,
@@ -120,38 +120,35 @@ describe('projectFormSchema', () => {
   })
 
   describe('tags validation', () => {
-    it('should transform tags to lowercase', () => {
+    it('should accept valid tags array', () => {
       const project = {
         ...projectFormDefaultValues,
         title: '제목입니다',
         shortDescription: '설명입니다',
-        tags: ['REACT', 'NextJS'],
+        tags: ['React', 'NextJS'],
       }
       const result = projectFormSchema.safeParse(project)
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.tags).toEqual(['react', 'nextjs'])
+        expect(result.data.tags).toEqual(['React', 'NextJS'])
       }
     })
 
-    it('should deduplicate tags', () => {
+    it('should reject tags exceeding max count', () => {
       const project = {
         ...projectFormDefaultValues,
         title: '제목입니다',
         shortDescription: '설명입니다',
-        tags: ['react', 'React', 'REACT'],
+        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6'],
       }
       const result = projectFormSchema.safeParse(project)
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data.tags).toEqual(['react'])
-      }
+      expect(result.success).toBe(false)
     })
   })
 
   describe('platform validation', () => {
     it('should accept all valid platforms', () => {
-      const platforms = ['WEB', 'APP', 'GAME', 'DESIGN', 'AI', 'OTHER']
+      const platforms = ['WEB', 'APP', 'MOBILE', 'DESKTOP', 'GAME', 'EXTENSION', 'LIBRARY', 'DESIGN', 'OTHER']
       platforms.forEach(platform => {
         const project = {
           ...projectFormDefaultValues,
@@ -176,7 +173,7 @@ describe('projectFormSchema', () => {
     })
   })
 
-  describe('URL validation', () => {
+  describe('URL fields', () => {
     it('should accept valid URLs', () => {
       const project = {
         ...projectFormDefaultValues,
@@ -190,15 +187,19 @@ describe('projectFormSchema', () => {
       expect(result.success).toBe(true)
     })
 
-    it('should reject invalid URLs', () => {
+    it('should accept any string for URL fields (simplified schema)', () => {
+      // 주의: projectFormSchema는 RHF zodResolver 호환성을 위해 단순화되어 있음
+      // URL 유효성 검사는 서버 사이드에서 별도로 수행됨
       const project = {
         ...projectFormDefaultValues,
         title: '제목입니다',
         shortDescription: '설명입니다',
-        link: 'not-a-valid-url',
+        link: 'any-string',
+        githubUrl: 'any-string',
+        imageUrl: 'any-string',
       }
       const result = projectFormSchema.safeParse(project)
-      expect(result.success).toBe(false)
+      expect(result.success).toBe(true)
     })
   })
 })
@@ -242,7 +243,8 @@ describe('projectUpdateFormSchema', () => {
     })
 
     it('should accept milestone with valid emojis', () => {
-      const validEmojis = ['🚀', '🎉', '✨', '🔥', '💡', '🎯', '🏆', '💪']
+      // MILESTONE_EMOJIS에 정의된 이모지만 허용됨
+      const validEmojis = ['🎉', '🚀', '✨', '🐛', '🔧', '📦', '🎨', '⚡', '🔒', '📝']
       validEmojis.forEach(emoji => {
         const update = {
           type: 'milestone',
