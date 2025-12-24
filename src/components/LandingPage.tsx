@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowRight, Sparkles, MessageSquare, Heart, ExternalLink } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 import Button from './Button'
 
@@ -188,8 +187,8 @@ const LandingPage: React.FC = () => {
       <section className="py-24 bg-white">
         <div className="container mx-auto px-6 max-w-5xl">
           {/* Feature 1 */}
-          <div className="mb-32">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="mb-16 sm:mb-24 lg:mb-32">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">재료만 던져주세요</span>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
@@ -217,8 +216,8 @@ const LandingPage: React.FC = () => {
           </div>
 
           {/* Feature 2 */}
-          <div className="mb-32">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="mb-16 sm:mb-24 lg:mb-32">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div className="order-2 lg:order-1">
                 <div className="bg-orange-50 rounded-2xl p-6">
                   <div className="flex items-start gap-3 mb-4">
@@ -252,7 +251,7 @@ const LandingPage: React.FC = () => {
 
           {/* Feature 3 */}
           <div>
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">단골손님을 만나요</span>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
@@ -267,25 +266,20 @@ const LandingPage: React.FC = () => {
               <div className="relative">
                 <div className="flex flex-col gap-3">
                   {[
-                    { name: 'jiwon_dev', comment: '와 이거 딱 필요했는데', likes: 24 },
-                    { name: '성민', comment: 'UI 진짜 깔끔하다 👏', likes: 18 },
-                    { name: 'hyejin.k', comment: '어떻게 만드신 거예요?', likes: 12 },
+                    { emoji: '👨‍💻', bg: 'from-blue-400 to-indigo-500', comment: '와 이거 딱 필요했는데', likes: 24 },
+                    { emoji: '🧑‍🍳', bg: 'from-orange-400 to-rose-500', comment: 'UI 진짜 깔끔하다 👏', likes: 18 },
+                    { emoji: '🦊', bg: 'from-amber-400 to-orange-500', comment: '어떻게 만드신 거예요?', likes: 12 },
                   ].map((item, idx) => (
                     <div
                       key={idx}
                       className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center gap-4"
                       style={{ transform: `translateX(${idx * 12}px)` }}
                     >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 overflow-hidden relative shrink-0">
-                        <Image
-                          src={`https://picsum.photos/seed/${idx * 77}/100/100`}
-                          alt=""
-                          fill
-                          className="object-cover"
-                        />
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${item.bg} flex items-center justify-center shrink-0`}>
+                        <span className="text-lg">{item.emoji}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">{item.name}</p>
+                        <p className="text-sm font-medium text-slate-900">익명의 손님</p>
                         <p className="text-sm text-slate-500 truncate">{item.comment}</p>
                       </div>
                       <div className="flex items-center gap-1 text-rose-500 text-sm shrink-0">
