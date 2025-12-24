@@ -137,13 +137,17 @@ export function getPlatformIcon(platform: ProjectPlatform): React.ReactNode {
 
 // 헬퍼 함수: 플랫폼 라벨 가져오기
 export function getPlatformLabel(platform: ProjectPlatform): string {
-  const option = PLATFORM_OPTIONS.find(opt => opt.value === platform)
+  // @deprecated 'APP' 타입은 MOBILE로 매핑 (하위 호환)
+  const normalizedPlatform = platform === 'APP' ? 'MOBILE' : platform
+  const option = PLATFORM_OPTIONS.find(opt => opt.value === normalizedPlatform)
   return option?.label || '기타'
 }
 
 // 헬퍼 함수: 플랫폼 옵션 가져오기
 export function getPlatformOption(platform: ProjectPlatform) {
-  return PLATFORM_OPTIONS.find(opt => opt.value === platform) || PLATFORM_OPTIONS.find(opt => opt.value === 'OTHER')!
+  // @deprecated 'APP' 타입은 MOBILE로 매핑 (하위 호환)
+  const normalizedPlatform = platform === 'APP' ? 'MOBILE' : platform
+  return PLATFORM_OPTIONS.find(opt => opt.value === normalizedPlatform) || PLATFORM_OPTIONS.find(opt => opt.value === 'OTHER')!
 }
 
 // 헬퍼 함수: 플랫폼별 추천 스토어 가져오기

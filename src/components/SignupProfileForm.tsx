@@ -3,7 +3,6 @@
 import React, { useState, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import {
   ChefHat,
   Camera,
@@ -14,22 +13,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import Link from 'next/link'
-
-// ==================== Zod Schema ====================
-
-const signupFormSchema = z.object({
-  name: z
-    .string()
-    .min(2, '닉네임은 2자 이상이어야 합니다.')
-    .max(20, '닉네임은 20자 이하여야 합니다.')
-    .regex(/^[가-힣a-zA-Z0-9_\s]+$/, '닉네임에 특수문자는 사용할 수 없습니다.'),
-  avatarUrl: z.string().optional(),
-  termsOfService: z.literal(true, '서비스 이용약관에 동의해주세요.'),
-  privacyPolicy: z.literal(true, '개인정보 처리방침에 동의해주세요.'),
-  marketing: z.boolean(),
-})
-
-type SignupFormData = z.infer<typeof signupFormSchema>
+import { signupFormSchema, signupFormDefaultValues, type SignupFormData } from '@/lib/schemas'
 
 // ==================== Types ====================
 
@@ -73,13 +57,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
     formState: { isValid },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupFormSchema),
-    defaultValues: {
-      name: '',
-      avatarUrl: '',
-      termsOfService: false as unknown as true,
-      privacyPolicy: false as unknown as true,
-      marketing: false,
-    },
+    defaultValues: signupFormDefaultValues,
     mode: 'onChange',
   })
 

@@ -34,10 +34,10 @@ const Hero: React.FC<HeroProps> = ({ onExploreClick }) => {
           >
             메뉴판 보기
           </Button>
-          <Link href="/menu/register">
+          <Link href="/menu/register" className="w-full sm:w-auto">
             <Button
               variant="outline"
-              className="w-full sm:w-auto h-9 sm:h-10 px-4 sm:px-5 text-xs sm:text-sm font-semibold rounded-full border-slate-200 hover:border-slate-300 hover:bg-white transition-colors"
+              className="w-full h-9 sm:h-10 px-4 sm:px-5 text-xs sm:text-sm font-semibold rounded-full border-slate-200 hover:border-slate-300 hover:bg-white transition-colors"
             >
               내 요리 등록
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />

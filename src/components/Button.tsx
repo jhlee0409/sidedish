@@ -55,13 +55,20 @@ const Button: React.FC<ButtonProps> = ({
 
   // Size presets with minimum 44px touch target for accessibility
   const sizes = {
-    sm: 'px-3 py-2 text-sm min-h-[36px]',
-    md: 'px-5 py-2.5 text-sm min-h-[44px]',  // 44px minimum touch target
-    lg: 'px-6 py-3 text-base min-h-[48px]'
+    sm: { px: 'px-3', py: 'py-2', text: 'text-sm', minH: 'min-h-[36px]' },
+    md: { px: 'px-5', py: 'py-2.5', text: 'text-sm', minH: 'min-h-[44px]' },  // 44px minimum touch target
+    lg: { px: 'px-6', py: 'py-3', text: 'text-base', minH: 'min-h-[48px]' }
   }
 
   const defaultRounded = className.includes('rounded-') ? '' : 'rounded-xl'
-  const sizeStyles = className.includes('p-') || className.includes('px-') ? '' : sizes[size]
+  // 개별 스타일 오버라이드 허용 (px만 변경해도 py, text, minH는 유지)
+  const sizeConfig = sizes[size]
+  const sizeStyles = [
+    className.includes('px-') ? '' : sizeConfig.px,
+    className.includes('py-') ? '' : sizeConfig.py,
+    className.includes('text-') ? '' : sizeConfig.text,
+    className.includes('min-h-') ? '' : sizeConfig.minH,
+  ].filter(Boolean).join(' ')
 
   return (
     <button
