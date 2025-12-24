@@ -128,8 +128,16 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             description: found.description,
             tags: found.tags,
             imageUrl: found.imageUrl,
-            links: found.links || [],
-            platform: found.platform,
+            link: found.link || '',
+            githubUrl: found.githubUrl || '',
+            links: (found.links || []).map(l => ({
+              id: l.id,
+              storeType: l.storeType,
+              url: l.url,
+              label: l.label || '',
+              isPrimary: l.isPrimary,
+            })),
+            platform: found.platform as 'WEB' | 'APP' | 'GAME' | 'EXTENSION' | 'LIBRARY' | 'DESIGN' | 'OTHER',
             isBeta: found.isBeta ?? false
           })
 
