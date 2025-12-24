@@ -1,11 +1,21 @@
 'use client'
 
-import { Heart, ArrowUpRight, FlaskConical } from 'lucide-react'
+import { Heart, ArrowUpRight, FlaskConical, Smartphone, Monitor, Gamepad2, Puzzle, Package, Globe } from 'lucide-react'
 import Image from 'next/image'
 import { ProjectResponse } from '@/lib/db-types'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
-import { getStoreConfig } from '@/lib/store-config'
+import { getStoreConfig, StoreConfig } from '@/lib/store-config'
+
+// 카테고리별 뱃지 메타데이터
+const CATEGORY_BADGE: Record<StoreConfig['category'], { icon: React.ReactNode; label: string }> = {
+  mobile: { icon: <Smartphone className="w-3.5 h-3.5" />, label: '모바일' },
+  desktop: { icon: <Monitor className="w-3.5 h-3.5" />, label: '데스크탑' },
+  game: { icon: <Gamepad2 className="w-3.5 h-3.5" />, label: '게임' },
+  extension: { icon: <Puzzle className="w-3.5 h-3.5" />, label: '확장' },
+  package: { icon: <Package className="w-3.5 h-3.5" />, label: '패키지' },
+  general: { icon: <Globe className="w-3.5 h-3.5" />, label: '웹' },
+}
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -16,13 +26,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   // 대표 링크 가져오기
   const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
 
-  // 뱃지 정보 결정: 대표 링크가 있으면 스토어 타입, 없으면 플랫폼
+  // 뱃지 정보 결정: 대표 링크의 카테고리 기준, 없으면 플랫폼
   const getBadgeInfo = () => {
     if (primaryLink) {
       const storeConfig = getStoreConfig(primaryLink.storeType)
+      const categoryBadge = CATEGORY_BADGE[storeConfig.category]
       return {
-        icon: storeConfig.icon,
-        label: storeConfig.shortLabel,
+        icon: categoryBadge.icon,
+        label: categoryBadge.label,
       }
     }
     // fallback: 플랫폼 기준
