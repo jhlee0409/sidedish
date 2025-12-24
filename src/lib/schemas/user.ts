@@ -21,7 +21,7 @@ export const signupFormSchema = z.object({
   privacyPolicy: z.literal(true, {
     message: '개인정보 처리방침에 동의해주세요.',
   }),
-  marketing: z.boolean().default(false),
+  marketing: z.boolean(),
 })
 
 export type SignupFormData = z.infer<typeof signupFormSchema>
