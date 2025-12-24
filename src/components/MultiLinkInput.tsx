@@ -23,9 +23,18 @@ import { ProjectLink, StoreType, MAX_PROJECT_LINKS } from '@/lib/types'
 import { STORE_CONFIGS, STORE_GROUPS, getStoreConfig, inferStoreType } from '@/lib/store-config'
 import ConfirmModal from './ConfirmModal'
 
+// RHF 폼에서 넘어오는 링크 타입 (storeType이 string일 수 있음)
+type FormLink = {
+  id: string
+  storeType: string
+  url: string
+  label?: string
+  isPrimary: boolean
+}
+
 interface MultiLinkInputProps {
-  links: ProjectLink[]
-  onChange: (links: ProjectLink[]) => void
+  links: FormLink[]
+  onChange: (links: FormLink[]) => void
   maxLinks?: number
   className?: string
   showValidation?: boolean
@@ -81,7 +90,7 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
   const handleAddLink = useCallback(() => {
     if (links.length >= maxLinks) return
 
-    const newLink: ProjectLink = {
+    const newLink: FormLink = {
       id: generateId(),
       storeType: 'WEBSITE',
       url: '',
@@ -92,7 +101,7 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
   }, [links, maxLinks, onChange])
 
   // 링크에 텍스트 콘텐츠가 있는지 확인 (URL 또는 라벨)
-  const hasTextContent = useCallback((link: ProjectLink) => {
+  const hasTextContent = useCallback((link: FormLink) => {
     return (link.url && link.url.trim().length > 0) || (link.label && link.label.trim().length > 0)
   }, [])
 
@@ -292,13 +301,13 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
 
 // Sortable 개별 링크 아이템 컴포넌트
 interface SortableLinkItemProps {
-  link: ProjectLink
+  link: FormLink
   index: number
   isOnlyLink: boolean
   isDropdownOpen: boolean
   onToggleDropdown: () => void
   onCloseDropdown: () => void
-  onUpdate: (id: string, field: keyof ProjectLink, value: string | boolean) => void
+  onUpdate: (id: string, field: keyof FormLink, value: string | boolean) => void
   onUrlChange: (id: string, url: string) => void
   onTogglePrimary: (id: string) => void
   onRemove: (id: string) => void
@@ -331,7 +340,7 @@ const SortableLinkItem: React.FC<SortableLinkItemProps> = ({
     opacity: isDragging ? 0.9 : 1,
   }
 
-  const storeConfig = getStoreConfig(link.storeType)
+  const storeConfig = getStoreConfig(link.storeType as StoreType)
 
   // 유일한 링크이고 대표 링크인 경우 토글 비활성화
   const isPrimaryLocked = isOnlyLink && link.isPrimary

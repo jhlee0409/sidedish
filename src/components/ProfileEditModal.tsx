@@ -1,11 +1,16 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { X, Camera, RotateCcw, Loader2, User } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/contexts/AuthContext'
 import { updateUser, uploadImage, invalidateCache } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { profileEditFormSchema, type ProfileEditFormData } from '@/lib/schemas'
+import { FormField, CharacterCount } from '@/components/form'
+import { CONTENT_LIMITS } from '@/lib/security-utils'
 
 interface ProfileEditModalProps {
   isOpen: boolean
@@ -19,14 +24,39 @@ export default function ProfileEditModal({
   onSuccess,
 }: ProfileEditModalProps) {
   const { user, updateProfile } = useAuth()
-  const [name, setName] = useState(user?.name || '')
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<ProfileEditFormData>({
+    resolver: zodResolver(profileEditFormSchema),
+    defaultValues: {
+      name: user?.name || '',
+      avatarUrl: user?.avatarUrl || '',
+    },
+    mode: 'onChange',
+  })
+
+  // 모달 열릴 때 사용자 정보로 폼 리셋
+  useEffect(() => {
+    if (isOpen && user) {
+      reset({
+        name: user.name || '',
+        avatarUrl: user.avatarUrl || '',
+      })
+    }
+  }, [isOpen, user, reset])
+
+  const watchName = watch('name')
+  const watchAvatarUrl = watch('avatarUrl')
+
   const isCustomAvatar =
-    avatarUrl && avatarUrl.includes('public.blob.vercel-storage.com')
+    watchAvatarUrl && watchAvatarUrl.includes('public.blob.vercel-storage.com')
   const originalAvatarUrl = user?.originalAvatarUrl || ''
 
   const handleImageUpload = useCallback(
@@ -46,57 +76,43 @@ export default function ProfileEditModal({
         return
       }
 
-      setIsUploading(true)
       try {
         const { url } = await uploadImage(file)
-        setAvatarUrl(url)
+        setValue('avatarUrl', url, { shouldValidate: true })
         toast.success('이미지가 업로드되었습니다.')
       } catch (error) {
         console.error('Image upload failed:', error)
         toast.error('이미지 업로드에 실패했습니다.')
       } finally {
-        setIsUploading(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
       }
     },
-    []
+    [setValue]
   )
 
   const handleResetToOriginal = useCallback(() => {
     if (originalAvatarUrl) {
-      setAvatarUrl(originalAvatarUrl)
+      setValue('avatarUrl', originalAvatarUrl, { shouldValidate: true })
       toast.success('기본 프로필 사진으로 변경되었습니다.')
     }
-  }, [originalAvatarUrl])
+  }, [originalAvatarUrl, setValue])
 
-  const handleSave = async () => {
+  const onSubmit = async (data: ProfileEditFormData) => {
     if (!user) return
 
-    const trimmedName = name.trim()
-    if (!trimmedName) {
-      toast.error('닉네임을 입력해주세요.')
-      return
-    }
-
-    if (trimmedName.length > 30) {
-      toast.error('닉네임은 30자 이하로 입력해주세요.')
-      return
-    }
-
-    setIsLoading(true)
     try {
       // 서버에 업데이트 요청
       await updateUser(user.id, {
-        name: trimmedName,
-        avatarUrl,
+        name: data.name.trim(),
+        avatarUrl: data.avatarUrl,
       })
 
       // 로컬 상태 업데이트
       updateProfile({
-        name: trimmedName,
-        avatarUrl,
+        name: data.name.trim(),
+        avatarUrl: data.avatarUrl,
       })
 
       // 캐시 무효화
@@ -108,8 +124,6 @@ export default function ProfileEditModal({
     } catch (error) {
       console.error('Profile update failed:', error)
       toast.error('프로필 수정에 실패했습니다.')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -144,15 +158,15 @@ export default function ProfileEditModal({
         </div>
 
         {/* Content */}
-        <div className="p-8 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
           {/* Avatar Section */}
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-lg">
-                {avatarUrl ? (
+                {watchAvatarUrl ? (
                   <Image
-                    src={avatarUrl}
-                    alt={name}
+                    src={watchAvatarUrl}
+                    alt={watchName}
                     fill
                     className="object-cover"
                   />
@@ -161,18 +175,13 @@ export default function ProfileEditModal({
                     <User className="w-12 h-12" />
                   </div>
                 )}
-                {isUploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-white animate-spin" />
-                  </div>
-                )}
               </div>
 
               {/* Upload Button */}
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="absolute bottom-0 right-0 p-2 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                className="absolute bottom-0 right-0 p-2 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition-colors"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -188,6 +197,7 @@ export default function ProfileEditModal({
             {/* Reset to Original Button */}
             {isCustomAvatar && originalAvatarUrl && (
               <button
+                type="button"
                 onClick={handleResetToOriginal}
                 className="mt-3 text-sm text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
               >
@@ -198,42 +208,54 @@ export default function ProfileEditModal({
           </div>
 
           {/* Name Input */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-slate-700 mb-2"
-            >
-              닉네임
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="닉네임을 입력하세요"
-              maxLength={30}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-            <p className="mt-1 text-xs text-slate-400 text-right">
-              {name.length}/30
-            </p>
-          </div>
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="닉네임"
+                htmlFor="name"
+                required
+                error={errors.name}
+              >
+                <input
+                  {...field}
+                  id="name"
+                  type="text"
+                  placeholder="닉네임을 입력하세요"
+                  maxLength={CONTENT_LIMITS.USER_NAME_MAX}
+                  className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors.name
+                      ? 'border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-200 focus:ring-orange-500 focus:border-orange-500'
+                  }`}
+                />
+                <div className="flex justify-end mt-1">
+                  <CharacterCount
+                    current={field.value?.length || 0}
+                    max={CONTENT_LIMITS.USER_NAME_MAX}
+                  />
+                </div>
+              </FormField>
+            )}
+          />
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
             <button
+              type="button"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
             >
               취소
             </button>
             <button
-              onClick={handleSave}
-              disabled={isLoading || isUploading}
+              type="submit"
+              disabled={isSubmitting || !isValid}
               className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   저장 중...
@@ -243,7 +265,7 @@ export default function ProfileEditModal({
               )}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )

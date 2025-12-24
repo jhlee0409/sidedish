@@ -14,7 +14,7 @@ export const ALLOWED_REACTION_KEYS = ['fire', 'clap', 'party', 'idea', 'love'] a
 export type ReactionKey = typeof ALLOWED_REACTION_KEYS[number]
 
 // Allowed platform types
-export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'GAME', 'EXTENSION', 'LIBRARY', 'DESIGN', 'OTHER'] as const
+export const ALLOWED_PLATFORMS = ['WEB', 'APP', 'MOBILE', 'DESKTOP', 'GAME', 'EXTENSION', 'LIBRARY', 'DESIGN', 'OTHER'] as const
 export type PlatformType = typeof ALLOWED_PLATFORMS[number]
 
 // Allowed store types
