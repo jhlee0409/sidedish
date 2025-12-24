@@ -4,22 +4,25 @@ import { useState, useRef, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
-  Github, Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle, FlaskConical
+  Wand2, ChefHat, Utensils, X, Loader2, Clock, AlertCircle, FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import MultiLinkInput from '@/components/MultiLinkInput'
-import { ProjectPlatform, AiGenerationCandidate, ProjectLink } from '@/lib/types'
+import { AiGenerationCandidate } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
 import LoginModal from '@/components/LoginModal'
+import { projectFormSchema, type ProjectFormData } from '@/lib/schemas'
 
 // 리팩토링된 상수 및 설정
-import { AI_CONSTRAINTS, FORM_ERROR_MESSAGES } from '@/lib/form-constants'
+import { AI_CONSTRAINTS } from '@/lib/form-constants'
 import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 
 // Helper functions for managing AI candidates in localStorage (per project)
@@ -50,37 +53,12 @@ const generateCandidateId = (): string => {
   return `candidate_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
-interface FormData {
-  title: string
-  shortDescription: string
-  description: string
-  tags: string[]
-  imageUrl: string
-  link: string
-  githubUrl: string
-  links: ProjectLink[]
-  platform: ProjectPlatform
-  isBeta: boolean
-}
-
 export default function MenuEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const [project, setProject] = useState<ProjectResponse | null>(null)
-  const [formData, setFormData] = useState<FormData>({
-    title: '',
-    shortDescription: '',
-    description: '',
-    tags: [],
-    imageUrl: '',
-    link: '',
-    githubUrl: '',
-    links: [],
-    platform: 'WEB',
-    isBeta: false
-  })
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -88,6 +66,32 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
+
+  // React Hook Form setup
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors }
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectFormSchema),
+    mode: 'onChange',
+    defaultValues: {
+      title: '',
+      shortDescription: '',
+      description: '',
+      tags: [],
+      imageUrl: '',
+      links: [],
+      platform: 'WEB',
+      isBeta: false
+    }
+  })
+
+  // Watch form values
+  const watchedValues = watch()
 
   // AI limit state (fetched from server)
   const [aiLimitInfo, setAiLimitInfo] = useState<{
@@ -118,14 +122,12 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         const found = await getProject(id)
         if (found) {
           setProject(found)
-          setFormData({
+          reset({
             title: found.title,
             shortDescription: found.shortDescription,
             description: found.description,
             tags: found.tags,
             imageUrl: found.imageUrl,
-            link: found.link,
-            githubUrl: found.githubUrl || '',
             links: found.links || [],
             platform: found.platform,
             isBeta: found.isBeta ?? false
@@ -145,7 +147,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       }
     }
     loadProject()
-  }, [id])
+  }, [id, reset])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -195,11 +197,6 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     }
   }, [aiLimitInfo.cooldownRemaining])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -222,15 +219,17 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
-      if (!formData.tags.includes(tagInput.trim()) && formData.tags.length < 5) {
-        setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
+      const currentTags = watchedValues.tags || []
+      if (!currentTags.includes(tagInput.trim()) && currentTags.length < 5) {
+        setValue('tags', [...currentTags, tagInput.trim()], { shouldValidate: true })
       }
       setTagInput('')
     }
   }
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }))
+    const currentTags = watchedValues.tags || []
+    setValue('tags', currentTags.filter(tag => tag !== tagToRemove), { shouldValidate: true })
   }
 
   const handleAiGenerate = async () => {
@@ -239,8 +238,8 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     setAiError(null)
 
     // Validate minimum description length
-    if (formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH) {
-      setAiError(`최소 ${AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
+    if (watchedValues.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH) {
+      setAiError(`최소 ${AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${watchedValues.description.length}자)`)
       return
     }
 
@@ -258,7 +257,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     setIsAiLoading(true)
     try {
       // Use project ID as draft ID for edit page
-      const result = await generateAiContent(project.id, formData.description)
+      const result = await generateAiContent(project.id, watchedValues.description)
 
       // Create new candidate
       const newCandidate: AiGenerationCandidate = {
@@ -286,12 +285,9 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         selectedCandidateId: newCandidate.id,
       })
 
-      setFormData(prev => ({
-        ...prev,
-        shortDescription: result.shortDescription,
-        description: result.description,
-        tags: result.tags
-      }))
+      setValue('shortDescription', result.shortDescription, { shouldValidate: true })
+      setValue('description', result.description, { shouldValidate: true })
+      setValue('tags', result.tags, { shouldValidate: true })
 
       // Update limit info from server response
       setAiLimitInfo(prev => ({
@@ -348,24 +344,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     })
 
     // Apply selected candidate's content to form
-    setFormData(prev => ({
-      ...prev,
-      shortDescription: candidate.content.shortDescription,
-      description: candidate.content.description,
-      tags: candidate.content.tags,
-    }))
+    setValue('shortDescription', candidate.content.shortDescription, { shouldValidate: true })
+    setValue('description', candidate.content.description, { shouldValidate: true })
+    setValue('tags', candidate.content.tags, { shouldValidate: true })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (data: ProjectFormData) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
-      return
-    }
-
-    if (!formData.title || !formData.shortDescription) {
-      toast.error('필수 항목을 입력해주세요.')
       return
     }
 
@@ -373,7 +359,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
     setIsSubmitting(true)
     try {
-      let imageUrl = formData.imageUrl
+      let imageUrl = data.imageUrl
 
       // Upload image if a new file was selected
       if (selectedFile) {
@@ -389,21 +375,21 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       }
 
       // links에서 대표 링크를 link 필드로 설정 (하위 호환성)
-      const primaryLink = formData.links.find(l => l.isPrimary) || formData.links[0]
-      const githubLink = formData.links.find(l => l.storeType === 'GITHUB')
+      const primaryLink = data.links.find(l => l.isPrimary) || data.links[0]
+      const githubLink = data.links.find(l => l.storeType === 'GITHUB')
 
       // Update project via API
       await updateProject(project.id, {
-        title: formData.title,
-        description: formData.description,
-        shortDescription: formData.shortDescription,
-        tags: formData.tags,
+        title: data.title,
+        description: data.description,
+        shortDescription: data.shortDescription,
+        tags: data.tags,
         imageUrl: imageUrl,
-        link: primaryLink?.url || formData.link,
-        githubUrl: githubLink?.url || formData.githubUrl,
-        links: formData.links,
-        platform: formData.platform,
-        isBeta: formData.isBeta,
+        link: primaryLink?.url || '',
+        githubUrl: githubLink?.url || '',
+        links: data.links,
+        platform: data.platform,
+        isBeta: data.isBeta,
       })
 
       router.push('/mypage')
@@ -509,19 +495,23 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-bold text-slate-700">메뉴 이름 (프로젝트명) <span className="text-orange-500">*</span></label>
-                <input
-                  type="text"
+                <Controller
                   name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm sm:text-base"
-                  placeholder="예: 제주도 감성 여행 가이드"
-                  required
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm sm:text-base"
+                      placeholder="예: 제주도 감성 여행 가이드"
+                    />
+                  )}
                 />
+                {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>}
               </div>
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1">
@@ -536,38 +526,50 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
             <div className="space-y-2 sm:space-y-3">
               <label className="text-xs sm:text-sm font-bold text-slate-700">메뉴 유형 <span className="text-orange-500">*</span></label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
-                {PLATFORM_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, platform: opt.value }))}
-                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all text-left ${formData.platform === opt.value
-                      ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                      }`}
-                  >
-                    <div className={`shrink-0 ${formData.platform === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
-                      {opt.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs sm:text-sm font-semibold truncate">{opt.label}</div>
-                      <div className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">{opt.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <Controller
+                name="platform"
+                control={control}
+                render={({ field }) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
+                    {PLATFORM_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => field.onChange(opt.value)}
+                        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all text-left ${field.value === opt.value
+                          ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                          }`}
+                      >
+                        <div className={`shrink-0 ${field.value === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
+                          {opt.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-semibold truncate">{opt.label}</div>
+                          <div className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">{opt.description}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              />
             </div>
 
             {/* Beta 체크박스 */}
             <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl">
               <div className="flex items-center h-4 sm:h-5">
-                <input
-                  type="checkbox"
-                  id="isBeta"
-                  checked={formData.isBeta}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isBeta: e.target.checked }))}
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+                <Controller
+                  name="isBeta"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="checkbox"
+                      id="isBeta"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
+                    />
+                  )}
                 />
               </div>
               <div className="flex-1">
@@ -588,9 +590,9 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {(previewUrl || formData.imageUrl) ? (
+                  {(previewUrl || watchedValues.imageUrl) ? (
                     <>
-                      <Image src={previewUrl || formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
+                      <Image src={previewUrl || watchedValues.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
                           <Upload className="w-4 h-4 text-slate-700" />
@@ -614,13 +616,17 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
                 <div className="flex-1 flex flex-col justify-center space-y-3">
                   <div className="space-y-1">
-                    <input
-                      type="text"
+                    <Controller
                       name="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
-                      placeholder="또는 이미지 URL을 직접 입력하세요"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          type="text"
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
+                          placeholder="또는 이미지 URL을 직접 입력하세요"
+                        />
+                      )}
                     />
                   </div>
                   <div className="text-xs text-slate-500 space-y-1 pl-1">
@@ -657,7 +663,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                     type="button"
                     onClick={handleAiGenerate}
                     disabled={
-                      formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH ||
+                      watchedValues.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH ||
                       isAiLoading ||
                       aiLimitInfo.remainingForDraft === 0 ||
                       aiLimitInfo.cooldownRemaining > 0
@@ -688,19 +694,23 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
               )}
 
               <div className="relative group">
-                <textarea
+                <Controller
                   name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={6}
-                  className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
-                  placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요."
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      rows={6}
+                      className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
+                      placeholder="이 메뉴의 특별한 맛과 특징을 자유롭게 적어주세요."
+                    />
+                  )}
                 />
 
                 {/* Character count */}
-                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= AI_CONSTRAINTS.MIN_DESC_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
-                  {formData.description.length}자
-                  {formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH && (
+                <div className={`absolute bottom-3 left-3 text-xs ${watchedValues.description.length >= AI_CONSTRAINTS.MIN_DESC_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
+                  {watchedValues.description.length}자
+                  {watchedValues.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH && (
                     <span className="text-slate-400"> / 최소 {AI_CONSTRAINTS.MIN_DESC_LENGTH}자</span>
                   )}
                 </div>
@@ -719,15 +729,19 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">한 줄 소개 <span className="text-orange-500">*</span></label>
-              <input
-                type="text"
+              <Controller
                 name="shortDescription"
-                value={formData.shortDescription}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="위의 AI 버튼을 누르면 자동으로 생성됩니다."
-                required
+                control={control}
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    type="text"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
+                    placeholder="위의 AI 버튼을 누르면 자동으로 생성됩니다."
+                  />
+                )}
               />
+              {errors.shortDescription && <p className="text-xs text-red-500 mt-1">{errors.shortDescription.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -736,7 +750,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                 <span className="text-xs font-normal text-slate-400 ml-1">(최대 5개)</span>
               </label>
               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[52px] focus-within:ring-2 focus-within:ring-orange-100 focus-within:border-orange-500 transition-all bg-white">
-                {formData.tags.map((tag, index) => (
+                {(watchedValues.tags || []).map((tag, index) => (
                   <span key={index} className="bg-white border border-slate-200 text-slate-700 text-sm px-3 py-1 rounded-lg flex items-center shadow-sm animate-in zoom-in duration-200">
                     <Hash className="w-3 h-3 mr-1 text-slate-400" />
                     {tag}
@@ -751,15 +765,21 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
                   className="flex-1 outline-none min-w-[120px] bg-transparent text-sm py-1 placeholder:text-slate-400"
-                  placeholder={formData.tags.length === 0 ? "태그 입력 후 Enter" : "재료 추가..."}
+                  placeholder={(watchedValues.tags || []).length === 0 ? "태그 입력 후 Enter" : "재료 추가..."}
                 />
               </div>
             </div>
 
             {/* 멀티 스토어 링크 입력 */}
-            <MultiLinkInput
-              links={formData.links}
-              onChange={(links) => setFormData(prev => ({ ...prev, links }))}
+            <Controller
+              name="links"
+              control={control}
+              render={({ field }) => (
+                <MultiLinkInput
+                  links={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
 
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">

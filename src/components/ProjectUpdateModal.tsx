@@ -1,11 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { X, Flag, BookOpen, Loader2 } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import Button from './Button'
-import { ProjectUpdateResponse, ProjectUpdateType } from '@/lib/db-types'
+import { FormField, CharacterCount } from '@/components/form'
+import { ProjectUpdateResponse } from '@/lib/db-types'
 import { createProjectUpdate, ApiError } from '@/lib/api-client'
+import {
+  projectUpdateFormSchema,
+  projectUpdateFormDefaultValues,
+  type ProjectUpdateFormData,
+  type ProjectUpdateType,
+} from '@/lib/schemas'
+import { MILESTONE_EMOJIS } from '@/lib/form-constants'
 
 interface ProjectUpdateModalProps {
   projectId: string
@@ -13,53 +23,35 @@ interface ProjectUpdateModalProps {
   onSuccess: (update: ProjectUpdateResponse) => void
 }
 
-const MILESTONE_EMOJIS = [
-  { emoji: '🎉', label: '축하' },
-  { emoji: '🚀', label: '출시' },
-  { emoji: '✨', label: '새기능' },
-  { emoji: '🐛', label: '버그수정' },
-  { emoji: '🔧', label: '개선' },
-  { emoji: '📦', label: '배포' },
-  { emoji: '🎨', label: '디자인' },
-  { emoji: '⚡', label: '성능' },
-  { emoji: '🔒', label: '보안' },
-  { emoji: '📝', label: '문서' },
-  { emoji: '🌟', label: '성과' },
-  { emoji: '💡', label: '아이디어' },
-]
-
 const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
   projectId,
   onClose,
   onSuccess,
 }) => {
-  const [type, setType] = useState<ProjectUpdateType>('devlog')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
-  const [version, setVersion] = useState('')
-  const [emoji, setEmoji] = useState('🚀')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<ProjectUpdateFormData>({
+    resolver: zodResolver(projectUpdateFormSchema),
+    defaultValues: projectUpdateFormDefaultValues,
+    mode: 'onChange',
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const watchType = watch('type')
+  const watchContent = watch('content')
+  const watchEmoji = watch('emoji')
 
-    if (!title.trim()) {
-      toast.error('제목을 입력해주세요.')
-      return
-    }
-    if (!content.trim()) {
-      toast.error('내용을 입력해주세요.')
-      return
-    }
-
-    setIsSubmitting(true)
+  const onSubmit = async (data: ProjectUpdateFormData) => {
     try {
       const update = await createProjectUpdate(projectId, {
-        type,
-        title: title.trim(),
-        content: content.trim(),
-        version: type === 'milestone' && version.trim() ? version.trim() : undefined,
-        emoji: type === 'milestone' ? emoji : undefined,
+        type: data.type,
+        title: data.title.trim(),
+        content: data.content.trim(),
+        version: data.type === 'milestone' && data.version ? data.version.trim() : undefined,
+        emoji: data.type === 'milestone' ? data.emoji : undefined,
       })
       onSuccess(update)
     } catch (error) {
@@ -69,8 +61,6 @@ const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
       } else {
         toast.error('업데이트 작성에 실패했습니다.')
       }
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -96,132 +86,173 @@ const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Type Selector */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">기록 유형</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setType('milestone')}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                  type === 'milestone'
-                    ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${type === 'milestone' ? 'bg-indigo-100' : 'bg-slate-100'}`}>
-                  <Flag className={`w-5 h-5 ${type === 'milestone' ? 'text-indigo-600' : 'text-slate-500'}`} />
+          <Controller
+            name="type"
+            control={control}
+            render={({ field }) => (
+              <FormField label="기록 유형" error={errors.type}>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('milestone')}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                      field.value === 'milestone'
+                        ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${field.value === 'milestone' ? 'bg-indigo-100' : 'bg-slate-100'}`}>
+                      <Flag className={`w-5 h-5 ${field.value === 'milestone' ? 'text-indigo-600' : 'text-slate-500'}`} />
+                    </div>
+                    <div className="text-left">
+                      <div className={`font-bold ${field.value === 'milestone' ? 'text-indigo-900' : 'text-slate-700'}`}>
+                        마일스톤
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        버전 출시, 목표 달성
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => field.onChange('devlog')}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                      field.value === 'devlog'
+                        ? 'border-slate-500 bg-slate-50 ring-1 ring-slate-500'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${field.value === 'devlog' ? 'bg-slate-200' : 'bg-slate-100'}`}>
+                      <BookOpen className={`w-5 h-5 ${field.value === 'devlog' ? 'text-slate-700' : 'text-slate-500'}`} />
+                    </div>
+                    <div className="text-left">
+                      <div className={`font-bold ${field.value === 'devlog' ? 'text-slate-900' : 'text-slate-700'}`}>
+                        개발로그
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        개발 과정, 일상 기록
+                      </div>
+                    </div>
+                  </button>
                 </div>
-                <div className="text-left">
-                  <div className={`font-bold ${type === 'milestone' ? 'text-indigo-900' : 'text-slate-700'}`}>
-                    마일스톤
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    버전 출시, 목표 달성
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('devlog')}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                  type === 'devlog'
-                    ? 'border-slate-500 bg-slate-50 ring-1 ring-slate-500'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${type === 'devlog' ? 'bg-slate-200' : 'bg-slate-100'}`}>
-                  <BookOpen className={`w-5 h-5 ${type === 'devlog' ? 'text-slate-700' : 'text-slate-500'}`} />
-                </div>
-                <div className="text-left">
-                  <div className={`font-bold ${type === 'devlog' ? 'text-slate-900' : 'text-slate-700'}`}>
-                    개발로그
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    개발 과정, 일상 기록
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
+              </FormField>
+            )}
+          />
 
           {/* Milestone Options */}
-          {type === 'milestone' && (
+          {watchType === 'milestone' && (
             <>
               {/* Emoji Selector */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">아이콘</label>
-                <div className="flex flex-wrap gap-2">
-                  {MILESTONE_EMOJIS.map((item) => (
-                    <button
-                      key={item.emoji}
-                      type="button"
-                      onClick={() => setEmoji(item.emoji)}
-                      className={`p-2 text-xl rounded-lg transition-all ${
-                        emoji === item.emoji
-                          ? 'bg-indigo-100 ring-2 ring-indigo-500 scale-110'
-                          : 'bg-slate-50 hover:bg-slate-100'
-                      }`}
-                      title={item.label}
-                    >
-                      {item.emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <Controller
+                name="emoji"
+                control={control}
+                render={({ field }) => (
+                  <FormField label="아이콘" error={errors.emoji}>
+                    <div className="flex flex-wrap gap-2">
+                      {MILESTONE_EMOJIS.map((item) => (
+                        <button
+                          key={item.emoji}
+                          type="button"
+                          onClick={() => field.onChange(item.emoji)}
+                          className={`p-2 text-xl rounded-lg transition-all ${
+                            field.value === item.emoji
+                              ? 'bg-indigo-100 ring-2 ring-indigo-500 scale-110'
+                              : 'bg-slate-50 hover:bg-slate-100'
+                          }`}
+                          title={item.label}
+                        >
+                          {item.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </FormField>
+                )}
+              />
 
               {/* Version */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">
-                  버전 <span className="font-normal text-slate-400">(선택)</span>
-                </label>
-                <input
-                  type="text"
-                  value={version}
-                  onChange={(e) => setVersion(e.target.value)}
-                  placeholder="예: v1.0.0, Beta 2"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
-                  maxLength={20}
-                />
-              </div>
+              <Controller
+                name="version"
+                control={control}
+                render={({ field }) => (
+                  <FormField
+                    label="버전"
+                    htmlFor="version"
+                    hint="선택사항"
+                    error={errors.version}
+                  >
+                    <input
+                      {...field}
+                      id="version"
+                      type="text"
+                      placeholder="예: v1.0.0, Beta 2"
+                      maxLength={20}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all"
+                    />
+                  </FormField>
+                )}
+              />
             </>
           )}
 
           {/* Title */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">제목</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={type === 'milestone' ? '예: 정식 버전 출시!' : '예: 로그인 기능 구현 중'}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all"
-              maxLength={100}
-              required
-            />
-          </div>
+          <Controller
+            name="title"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="제목"
+                htmlFor="title"
+                required
+                error={errors.title}
+              >
+                <input
+                  {...field}
+                  id="title"
+                  type="text"
+                  placeholder={watchType === 'milestone' ? '예: 정식 버전 출시!' : '예: 로그인 기능 구현 중'}
+                  maxLength={100}
+                  className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all ${
+                    errors.title ? 'border-red-500' : 'border-slate-200'
+                  }`}
+                />
+              </FormField>
+            )}
+          />
 
           {/* Content */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">내용</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={
-                type === 'milestone'
-                  ? '이번 마일스톤에서 달성한 내용을 적어주세요...'
-                  : '오늘의 개발 과정을 자유롭게 기록해주세요...'
-              }
-              rows={5}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none"
-              maxLength={5000}
-              required
-            />
-            <p className="text-xs text-slate-400 text-right">
-              {content.length}/5000 (마크다운 지원)
-            </p>
-          </div>
+          <Controller
+            name="content"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="내용"
+                htmlFor="content"
+                required
+                error={errors.content}
+              >
+                <textarea
+                  {...field}
+                  id="content"
+                  placeholder={
+                    watchType === 'milestone'
+                      ? '이번 마일스톤에서 달성한 내용을 적어주세요...'
+                      : '오늘의 개발 과정을 자유롭게 기록해주세요...'
+                  }
+                  rows={5}
+                  maxLength={5000}
+                  className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none ${
+                    errors.content ? 'border-red-500' : 'border-slate-200'
+                  }`}
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-slate-400">마크다운 지원</span>
+                  <CharacterCount current={watchContent?.length || 0} max={5000} />
+                </div>
+              </FormField>
+            )}
+          />
 
           {/* Submit */}
           <div className="flex gap-3 pt-2">
@@ -238,7 +269,7 @@ const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
               type="submit"
               variant="primary"
               className="flex-1 bg-orange-500 hover:bg-orange-600"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isValid}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">

@@ -3,16 +3,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
-  Github, Wand2, ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical
+  Wand2, ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import MultiLinkInput from '@/components/MultiLinkInput'
-import { ProjectPlatform, DraftData, ProjectLink } from '@/lib/types'
+import { FormField, CharacterCount } from '@/components/form'
+import { DraftData } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
@@ -26,51 +28,45 @@ import {
   addAiCandidate,
   selectCandidate,
 } from '@/lib/draftService'
-
-// 리팩토링된 상수 및 설정
-import { AI_CONSTRAINTS, FORM_ERROR_MESSAGES, FORM_TIMING } from '@/lib/form-constants'
+import { projectFormSchema, projectFormDefaultValues, type ProjectFormData } from '@/lib/schemas'
+import { AI_CONSTRAINTS, PROJECT_CONSTRAINTS } from '@/lib/form-constants'
 import { PLATFORM_OPTIONS } from '@/lib/platform-config'
-
-// 리팩토링된 훅
-import { useImageUpload, useTagInput, useAiGeneration } from '@/hooks'
 
 export default function MenuRegisterPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  // RHF Form
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: projectFormDefaultValues,
+    mode: 'onChange',
+  })
+
+  // Watch form values
+  const formValues = watch()
 
   // Draft state
   const [draft, setDraft] = useState<DraftData | null>(null)
   const [lastSaved, setLastSaved] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Form state (synced with draft)
-  const [formData, setFormData] = useState({
-    title: '',
-    shortDescription: '',
-    description: '',
-    tags: [] as string[],
-    imageUrl: '',
-    link: '',
-    githubUrl: '',
-    links: [] as ProjectLink[],
-    platform: 'WEB' as ProjectPlatform,
-    isBeta: false
-  })
+  // Other state
   const [tagInput, setTagInput] = useState('')
   const [isAiLoading, setIsAiLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
-  // AI limit state (fetched from server)
-  const [aiLimitInfo, setAiLimitInfo] = useState<{
-    remainingForDraft: number
-    remainingForDay: number
-    maxPerDraft: number
-    maxPerDay: number
-    cooldownRemaining: number
-  }>({
+  // AI limit state
+  const [aiLimitInfo, setAiLimitInfo] = useState({
     remainingForDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
     remainingForDay: AI_CONSTRAINTS.MAX_PER_DAY,
     maxPerDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
@@ -89,7 +85,7 @@ export default function MenuRegisterPage() {
       setDraft(existingDraft)
 
       // Load form data from draft
-      setFormData({
+      reset({
         title: existingDraft.title,
         shortDescription: existingDraft.shortDescription,
         description: existingDraft.description,
@@ -108,18 +104,15 @@ export default function MenuRegisterPage() {
           c => c.id === existingDraft.selectedCandidateId
         )
         if (selectedCandidate) {
-          setFormData(prev => ({
-            ...prev,
-            shortDescription: selectedCandidate.content.shortDescription,
-            description: selectedCandidate.content.description,
-            tags: selectedCandidate.content.tags,
-          }))
+          setValue('shortDescription', selectedCandidate.content.shortDescription)
+          setValue('description', selectedCandidate.content.description)
+          setValue('tags', selectedCandidate.content.tags)
         }
       }
 
       setLastSaved(formatLastSaved(existingDraft.lastSavedAt))
 
-      // Fetch AI usage info from server
+      // Fetch AI usage info
       getAiUsageInfo(existingDraft.id)
         .then(usage => {
           setAiLimitInfo(prev => ({
@@ -130,12 +123,9 @@ export default function MenuRegisterPage() {
             maxPerDay: usage.maxPerDay,
           }))
         })
-        .catch(err => {
-          console.error('Failed to fetch AI usage info:', err)
-          // Keep default values on error
-        })
+        .catch(err => console.error('Failed to fetch AI usage info:', err))
     }
-  }, [authLoading, user?.id])
+  }, [authLoading, user?.id, reset, setValue])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -156,16 +146,7 @@ export default function MenuRegisterPage() {
     autoSaveTimerRef.current = setTimeout(() => {
       const updatedDraft: DraftData = {
         ...draft,
-        title: formData.title,
-        shortDescription: formData.shortDescription,
-        description: formData.description,
-        tags: formData.tags,
-        imageUrl: formData.imageUrl,
-        link: formData.link,
-        githubUrl: formData.githubUrl,
-        links: formData.links,
-        platform: formData.platform,
-        isBeta: formData.isBeta,
+        ...formValues,
       }
 
       saveDraft(updatedDraft)
@@ -173,15 +154,14 @@ export default function MenuRegisterPage() {
       setLastSaved(formatLastSaved(Date.now()))
       setIsSaving(false)
     }, 1000)
-  }, [draft, formData, user?.id])
+  }, [draft, formValues, user?.id])
 
   // Trigger auto-save on form data change
   useEffect(() => {
     if (draft) {
       autoSaveDraft()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData])
+  }, [formValues, autoSaveDraft, draft])
 
   // Cooldown timer
   useEffect(() => {
@@ -204,7 +184,6 @@ export default function MenuRegisterPage() {
         e.returnValue = ''
       }
     }
-
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [draft])
@@ -218,11 +197,6 @@ export default function MenuRegisterPage() {
     }
   }, [])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -230,14 +204,9 @@ export default function MenuRegisterPage() {
         toast.error("파일 크기는 5MB 이하여야 합니다.")
         return
       }
-
       setSelectedFile(file)
-
-      // Create preview URL
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string)
-      }
+      reader.onloadend = () => setPreviewUrl(reader.result as string)
       reader.readAsDataURL(file)
     }
   }
@@ -245,19 +214,21 @@ export default function MenuRegisterPage() {
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
-      if (formData.tags.length >= 5) {
+      const currentTags = formValues.tags || []
+      if (currentTags.length >= 5) {
         toast.error('태그는 최대 5개까지 추가할 수 있습니다.')
         return
       }
-      if (!formData.tags.includes(tagInput.trim())) {
-        setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }))
+      const newTag = tagInput.trim().toLowerCase()
+      if (!currentTags.includes(newTag)) {
+        setValue('tags', [...currentTags, newTag], { shouldValidate: true })
       }
       setTagInput('')
     }
   }
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== tagToRemove) }))
+    setValue('tags', formValues.tags.filter(tag => tag !== tagToRemove), { shouldValidate: true })
   }
 
   const handleAiGenerate = async () => {
@@ -265,13 +236,11 @@ export default function MenuRegisterPage() {
 
     setAiError(null)
 
-    // Validate minimum description length (client-side pre-check)
-    if (formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH) {
-      setAiError(`최소 ${AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formData.description.length}자)`)
+    if (formValues.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH) {
+      setAiError(`최소 ${AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상의 설명을 입력해주세요. (현재 ${formValues.description.length}자)`)
       return
     }
 
-    // Pre-check limits (client-side, for UX - server will validate again)
     if (aiLimitInfo.remainingForDraft <= 0) {
       setAiError(`이 프로젝트는 이미 ${aiLimitInfo.maxPerDraft}번 AI 생성을 사용했습니다.`)
       return
@@ -284,10 +253,8 @@ export default function MenuRegisterPage() {
 
     setIsAiLoading(true)
     try {
-      // Call server API (validates limits server-side)
-      const result = await generateAiContent(draft.id, formData.description)
+      const result = await generateAiContent(draft.id, formValues.description)
 
-      // Add as candidate to local draft storage
       const candidate = addAiCandidate(draft.id, {
         shortDescription: result.shortDescription,
         description: result.description,
@@ -295,7 +262,6 @@ export default function MenuRegisterPage() {
         generatedAt: result.generatedAt,
       })
 
-      // Update draft state with new candidate
       const updatedDraft = {
         ...draft,
         aiCandidates: [...draft.aiCandidates, candidate],
@@ -304,30 +270,23 @@ export default function MenuRegisterPage() {
       }
       setDraft(updatedDraft)
 
-      // Apply generated content to form
-      setFormData(prev => ({
-        ...prev,
-        shortDescription: result.shortDescription,
-        description: result.description,
-        tags: result.tags
-      }))
+      setValue('shortDescription', result.shortDescription)
+      setValue('description', result.description)
+      setValue('tags', result.tags)
 
-      // Update limit info from server response
       setAiLimitInfo(prev => ({
         ...prev,
         remainingForDraft: result.usage.remainingForDraft,
         remainingForDay: result.usage.remainingForDay,
         maxPerDraft: result.usage.maxPerDraft,
         maxPerDay: result.usage.maxPerDay,
-        cooldownRemaining: 5, // Set cooldown for UI
+        cooldownRemaining: 5,
       }))
     } catch (error) {
       console.error(error)
       if (error instanceof ApiError) {
         setAiError(error.message)
-        // Update limit info if available in error response
         if (error.status === 429) {
-          // Rate limit error - refresh usage info
           getAiUsageInfo(draft.id)
             .then(usage => {
               setAiLimitInfo(prev => ({
@@ -353,14 +312,10 @@ export default function MenuRegisterPage() {
 
     const selectedCandidate = draft.aiCandidates.find(c => c.id === candidateId)
     if (selectedCandidate) {
-      setFormData(prev => ({
-        ...prev,
-        shortDescription: selectedCandidate.content.shortDescription,
-        description: selectedCandidate.content.description,
-        tags: selectedCandidate.content.tags,
-      }))
+      setValue('shortDescription', selectedCandidate.content.shortDescription)
+      setValue('description', selectedCandidate.content.description)
+      setValue('tags', selectedCandidate.content.tags)
 
-      // Update draft state
       const updatedDraft: DraftData = {
         ...draft,
         selectedCandidateId: candidateId,
@@ -373,24 +328,15 @@ export default function MenuRegisterPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const onSubmit = async (data: ProjectFormData) => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
     }
 
-    if (!formData.title || !formData.shortDescription) {
-      toast.error('필수 항목을 입력해주세요.')
-      return
-    }
-
-    setIsSubmitting(true)
     try {
-      let imageUrl = formData.imageUrl
+      let imageUrl = data.imageUrl
 
-      // Upload image if a file was selected
       if (selectedFile) {
         try {
           const uploadResult = await uploadImage(selectedFile)
@@ -398,42 +344,35 @@ export default function MenuRegisterPage() {
         } catch (error) {
           console.error('Image upload failed:', error)
           toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
-          setIsSubmitting(false)
           return
         }
       }
 
-      // links에서 대표 링크를 link 필드로 설정 (하위 호환성)
-      const primaryLink = formData.links.find(l => l.isPrimary) || formData.links[0]
-      const githubLink = formData.links.find(l => l.storeType === 'GITHUB')
+      const primaryLink = data.links.find(l => l.isPrimary) || data.links[0]
+      const githubLink = data.links.find(l => l.storeType === 'GITHUB')
 
-      // Create project via API
       const project = await createProject({
-        title: formData.title,
-        description: formData.description,
-        shortDescription: formData.shortDescription,
-        tags: formData.tags,
+        title: data.title,
+        description: data.description,
+        shortDescription: data.shortDescription,
+        tags: data.tags,
         imageUrl: imageUrl || `https://picsum.photos/seed/${Date.now()}/600/400`,
-        link: primaryLink?.url || formData.link,
-        githubUrl: githubLink?.url || formData.githubUrl,
-        links: formData.links,
-        platform: formData.platform,
-        isBeta: formData.isBeta,
+        link: primaryLink?.url || data.link,
+        githubUrl: githubLink?.url || data.githubUrl,
+        links: data.links,
+        platform: data.platform,
+        isBeta: data.isBeta,
       })
 
-      // Clear the draft after successful submission
       if (draft) {
         deleteDraft(draft.id)
         clearCurrentDraftId()
       }
 
-      // Navigate to the new project's detail page
       router.push(`/menu/${project.id}`)
     } catch (error) {
       console.error('Failed to create project:', error)
       toast.error('메뉴 등록에 실패했습니다. 다시 시도해주세요.')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -454,7 +393,6 @@ export default function MenuRegisterPage() {
               <Utensils className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
               <span className="font-bold text-slate-900 text-sm sm:text-base">새로운 메뉴 등록</span>
             </div>
-            {/* Auto-save indicator */}
             <div className="w-16 sm:w-24 flex items-center justify-end gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-slate-500">
               {isSaving ? (
                 <>
@@ -493,129 +431,151 @@ export default function MenuRegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-bold text-slate-700">메뉴 이름 (프로젝트명) <span className="text-orange-500">*</span></label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm sm:text-base"
-                  placeholder="예: 제주도 감성 여행 가이드"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5 sm:space-y-2">
-                <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1">
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <FormField
+                    label="메뉴 이름 (프로젝트명)"
+                    htmlFor="title"
+                    required
+                    error={errors.title}
+                  >
+                    <input
+                      {...field}
+                      id="title"
+                      type="text"
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border rounded-lg sm:rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm sm:text-base ${
+                        errors.title ? 'border-red-500' : 'border-slate-200'
+                      }`}
+                      placeholder="예: 제주도 감성 여행 가이드"
+                    />
+                  </FormField>
+                )}
+              />
+              <FormField label="총괄 셰프 (작성자)">
+                <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-100 border border-slate-200 rounded-lg sm:rounded-xl text-slate-600 text-sm sm:text-base flex items-center gap-1">
                   <ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
-                  총괄 셰프 (작성자)
-                </label>
-                <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-100 border border-slate-200 rounded-lg sm:rounded-xl text-slate-600 text-sm sm:text-base">
                   {user?.name || '로그인이 필요합니다'}
                 </div>
-              </div>
+              </FormField>
             </div>
 
-            <div className="space-y-2 sm:space-y-3">
-              <label className="text-xs sm:text-sm font-bold text-slate-700">메뉴 유형 <span className="text-orange-500">*</span></label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
-                {PLATFORM_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, platform: opt.value }))}
-                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all text-left ${formData.platform === opt.value
-                      ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                      }`}
-                  >
-                    <div className={`shrink-0 ${formData.platform === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
-                      {opt.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs sm:text-sm font-semibold truncate">{opt.label}</div>
-                      <div className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">{opt.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Beta 체크박스 */}
-            <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl">
-              <div className="flex items-center h-4 sm:h-5">
-                <input
-                  type="checkbox"
-                  id="isBeta"
-                  checked={formData.isBeta}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isBeta: e.target.checked }))}
-                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="isBeta" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-amber-800 cursor-pointer">
-                  <FlaskConical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  Beta / 개발 중인 프로젝트
-                </label>
-                <p className="text-[10px] sm:text-xs text-amber-700 mt-0.5 sm:mt-1 leading-relaxed">
-                  아직 완성되지 않았거나 개선 중인 프로젝트라면 체크해주세요.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">메뉴 사진 (썸네일)</label>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div
-                  className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {(previewUrl || formData.imageUrl) ? (
-                    <>
-                      <Image src={previewUrl || formData.imageUrl} alt="Thumbnail preview" fill className="object-cover" />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
-                          <Upload className="w-4 h-4 text-slate-700" />
+            {/* Platform Selection */}
+            <Controller
+              name="platform"
+              control={control}
+              render={({ field }) => (
+                <FormField label="메뉴 유형" required error={errors.platform}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2">
+                    {PLATFORM_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => field.onChange(opt.value)}
+                        className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border transition-all text-left ${
+                          field.value === opt.value
+                            ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className={`shrink-0 ${field.value === opt.value ? 'text-orange-500' : 'text-slate-400'}`}>
+                          {opt.icon}
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-400">
-                      <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                      <span className="text-xs font-medium">사진 업로드</span>
-                    </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </div>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-semibold truncate">{opt.label}</div>
+                          <div className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">{opt.description}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+              )}
+            />
 
-                <div className="flex-1 flex flex-col justify-center space-y-3">
-                  <div className="space-y-1">
+            {/* Beta Checkbox */}
+            <Controller
+              name="isBeta"
+              control={control}
+              render={({ field }) => (
+                <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl">
+                  <div className="flex items-center h-4 sm:h-5">
                     <input
-                      type="text"
-                      name="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
-                      placeholder="또는 이미지 URL을 직접 입력하세요"
+                      type="checkbox"
+                      id="isBeta"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 bg-white border-amber-300 rounded focus:ring-amber-500 focus:ring-2 cursor-pointer"
                     />
                   </div>
-                  <div className="text-xs text-slate-500 space-y-1 pl-1">
-                    <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 16:9 비율의 썸네일을 권장합니다</p>
-                    <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 5MB 이하의 JPG, PNG 파일을 업로드해주세요.</p>
+                  <div className="flex-1">
+                    <label htmlFor="isBeta" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-amber-800 cursor-pointer">
+                      <FlaskConical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Beta / 개발 중인 프로젝트
+                    </label>
+                    <p className="text-[10px] sm:text-xs text-amber-700 mt-0.5 sm:mt-1 leading-relaxed">
+                      아직 완성되지 않았거나 개선 중인 프로젝트라면 체크해주세요.
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
+              )}
+            />
 
-            {/* AI Candidate Selector - Always show 3 buttons below thumbnail */}
+            {/* Image Upload */}
+            <Controller
+              name="imageUrl"
+              control={control}
+              render={({ field }) => (
+                <FormField label="메뉴 사진 (썸네일)" error={errors.imageUrl}>
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div
+                      className="relative w-full md:w-48 aspect-video rounded-xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-200 hover:border-orange-300 group cursor-pointer transition-all flex items-center justify-center"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {(previewUrl || field.value) ? (
+                        <>
+                          <Image src={previewUrl || field.value} alt="Thumbnail preview" fill className="object-cover" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <div className="bg-white/90 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm transform scale-90 group-hover:scale-100">
+                              <Upload className="w-4 h-4 text-slate-700" />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-400">
+                          <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
+                          <span className="text-xs font-medium">사진 업로드</span>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center space-y-3">
+                      <input
+                        type="text"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 text-sm"
+                        placeholder="또는 이미지 URL을 직접 입력하세요"
+                      />
+                      <div className="text-xs text-slate-500 space-y-1 pl-1">
+                        <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 16:9 비율의 썸네일을 권장합니다</p>
+                        <p className="flex items-center gap-1.5"><span className="w-1 h-1 bg-slate-400 rounded-full"></span> 5MB 이하의 JPG, PNG 파일을 업로드해주세요.</p>
+                      </div>
+                    </div>
+                  </div>
+                </FormField>
+              )}
+            />
+
+            {/* AI Candidate Selector */}
             {draft && (
               <AiCandidateSelector
                 candidates={draft.aiCandidates}
@@ -625,7 +585,7 @@ export default function MenuRegisterPage() {
               />
             )}
 
-            {/* AI Generation Section integrated with Description */}
+            {/* Description with AI */}
             <div className="space-y-4">
               <div className="flex justify-between items-end mb-1">
                 <div>
@@ -635,7 +595,6 @@ export default function MenuRegisterPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* AI usage info */}
                   <div className="text-xs text-slate-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     <span>오늘 {aiLimitInfo.remainingForDay}회 남음</span>
@@ -644,7 +603,7 @@ export default function MenuRegisterPage() {
                     type="button"
                     onClick={handleAiGenerate}
                     disabled={
-                      formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH ||
+                      formValues.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH ||
                       isAiLoading ||
                       aiLimitInfo.remainingForDraft === 0 ||
                       aiLimitInfo.cooldownRemaining > 0
@@ -666,7 +625,6 @@ export default function MenuRegisterPage() {
                 </div>
               </div>
 
-              {/* AI Error Message */}
               {aiError && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -674,60 +632,73 @@ export default function MenuRegisterPage() {
                 </div>
               )}
 
-              <div className="relative group">
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={6}
-                  className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
-                  placeholder="프로젝트에 대해 자유롭게 적어주세요. (예: 리액트로 만든 모바일 친화적인 투두리스트예요. 귀여운 고양이 테마가 포인트입니다.)"
-                />
-
-                {/* Character count */}
-                <div className={`absolute bottom-3 left-3 text-xs ${formData.description.length >= AI_CONSTRAINTS.MIN_DESC_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
-                  {formData.description.length}자
-                  {formData.description.length < AI_CONSTRAINTS.MIN_DESC_LENGTH && (
-                    <span className="text-slate-400"> / 최소 {AI_CONSTRAINTS.MIN_DESC_LENGTH}자</span>
-                  )}
-                </div>
-
-                <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
-                  간단히 적고 AI 버튼을 눌러보세요!
-                </div>
-
-                {isAiLoading && (
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
-                    <div className="bg-white p-4 rounded-2xl shadow-xl border border-orange-50 flex flex-col items-center animate-in zoom-in duration-300">
-                      <Sparkles className="w-8 h-8 text-orange-500 animate-pulse mb-2" />
-                      <span className="text-sm font-bold text-slate-800">AI가 작성 중...</span>
-                      <span className="text-xs text-slate-500 mt-1">소개글과 태그를 생성하고 있어요.</span>
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <div className="relative group">
+                    <textarea
+                      {...field}
+                      rows={6}
+                      className="w-full px-4 py-3 pb-10 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 leading-relaxed"
+                      placeholder="프로젝트에 대해 자유롭게 적어주세요. (예: 리액트로 만든 모바일 친화적인 투두리스트예요. 귀여운 고양이 테마가 포인트입니다.)"
+                    />
+                    <div className={`absolute bottom-3 left-3 text-xs ${field.value.length >= AI_CONSTRAINTS.MIN_DESC_LENGTH ? 'text-green-600' : 'text-slate-400'}`}>
+                      <CharacterCount
+                        current={field.value.length}
+                        max={PROJECT_CONSTRAINTS.DESC_MAX_LENGTH}
+                        min={AI_CONSTRAINTS.MIN_DESC_LENGTH}
+                      />
                     </div>
+                    <div className="absolute bottom-3 right-3 z-10 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-md border border-orange-100">
+                      간단히 적고 AI 버튼을 눌러보세요!
+                    </div>
+                    {isAiLoading && (
+                      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-20">
+                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-orange-50 flex flex-col items-center animate-in zoom-in duration-300">
+                          <Sparkles className="w-8 h-8 text-orange-500 animate-pulse mb-2" />
+                          <span className="text-sm font-bold text-slate-800">AI가 작성 중...</span>
+                          <span className="text-xs text-slate-500 mt-1">소개글과 태그를 생성하고 있어요.</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">한 줄 소개 <span className="text-orange-500">*</span></label>
-              <input
-                type="text"
-                name="shortDescription"
-                value={formData.shortDescription}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                placeholder="위의 AI 버튼을 누르면 자동으로 생성됩니다."
-                required
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-1">
-                주요 재료 (키워드/카테고리)
-                <span className="text-xs font-normal text-slate-400 ml-1">(최대 5개)</span>
-              </label>
+            {/* Short Description */}
+            <Controller
+              name="shortDescription"
+              control={control}
+              render={({ field }) => (
+                <FormField
+                  label="한 줄 소개"
+                  htmlFor="shortDescription"
+                  required
+                  error={errors.shortDescription}
+                >
+                  <input
+                    {...field}
+                    id="shortDescription"
+                    type="text"
+                    className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 ${
+                      errors.shortDescription ? 'border-red-500' : 'border-slate-200'
+                    }`}
+                    placeholder="위의 AI 버튼을 누르면 자동으로 생성됩니다."
+                  />
+                </FormField>
+              )}
+            />
+
+            {/* Tags */}
+            <FormField
+              label="주요 재료 (키워드/카테고리)"
+              hint={`최대 ${PROJECT_CONSTRAINTS.MAX_TAGS}개`}
+              error={errors.tags}
+            >
               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[52px] focus-within:ring-2 focus-within:ring-orange-100 focus-within:border-orange-500 transition-all bg-white">
-                {formData.tags.map((tag, index) => (
+                {formValues.tags.map((tag, index) => (
                   <span key={index} className="bg-white border border-slate-200 text-slate-700 text-sm px-3 py-1 rounded-lg flex items-center shadow-sm animate-in zoom-in duration-200">
                     <Hash className="w-3 h-3 mr-1 text-slate-400" />
                     {tag}
@@ -742,18 +713,25 @@ export default function MenuRegisterPage() {
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
                   className="flex-1 outline-none min-w-[120px] bg-transparent text-sm py-1 placeholder:text-slate-400"
-                  placeholder={formData.tags.length === 0 ? "AI 버튼으로 자동 생성하거나 직접 입력" : "태그 추가..."}
-                  disabled={formData.tags.length >= 5}
+                  placeholder={formValues.tags.length === 0 ? "AI 버튼으로 자동 생성하거나 직접 입력" : "태그 추가..."}
+                  disabled={formValues.tags.length >= 5}
                 />
               </div>
-            </div>
+            </FormField>
 
-            {/* 멀티 스토어 링크 입력 */}
-            <MultiLinkInput
-              links={formData.links}
-              onChange={(links) => setFormData(prev => ({ ...prev, links }))}
+            {/* Multi Link Input */}
+            <Controller
+              name="links"
+              control={control}
+              render={({ field }) => (
+                <MultiLinkInput
+                  links={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
 
+            {/* Submit */}
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
               <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
               <Button
@@ -776,7 +754,6 @@ export default function MenuRegisterPage() {
         </div>
       </div>
 
-      {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}

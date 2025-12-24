@@ -2,6 +2,17 @@
 
 import { useState } from 'react'
 import { X, AlertTriangle, Loader2, ChevronDown, ChevronUp, ChefHat } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  withdrawalFullFormSchema,
+  withdrawalFormDefaultValues,
+  WITHDRAWAL_REASONS,
+  INCONVENIENCE_OPTIONS,
+  type WithdrawalFullFormData,
+  type WithdrawalReason,
+  type InconvenienceOption,
+} from '@/lib/schemas'
 
 interface WithdrawalModalProps {
   isOpen: boolean
@@ -10,27 +21,7 @@ interface WithdrawalModalProps {
   userName: string
 }
 
-// 실제 서비스들의 탈퇴 사유 참고 (포스타입, 더팀스, 토스 등)
-const WITHDRAWAL_REASONS = [
-  '사이드 프로젝트 활동을 종료했어요',
-  '사용 빈도가 낮아요',
-  '다른 플랫폼을 이용 중이에요',
-  '원하는 기능이 없어요',
-  '이용이 불편하고 장애가 많아요',
-  '개인정보 보호 목적이에요',
-  '기타',
-]
-
-const INCONVENIENCE_OPTIONS = [
-  '프로젝트 등록 과정이 복잡해요',
-  '원하는 기능이 부족해요',
-  'AI 생성 결과가 만족스럽지 않아요',
-  '다른 유저를 찾기 어려워요',
-  '로딩이 느리거나 버그가 있어요',
-  '디자인이 마음에 안 들어요',
-  '특별히 불편한 점은 없었어요',
-  '직접 입력',
-]
+type Step = 'notice' | 'reason' | 'feedback' | 'confirm'
 
 export default function WithdrawalModal({
   isOpen,
@@ -38,36 +29,47 @@ export default function WithdrawalModal({
   onConfirm,
   userName,
 }: WithdrawalModalProps) {
-  const [step, setStep] = useState<'notice' | 'reason' | 'feedback' | 'confirm'>('notice')
-  const [selectedReason, setSelectedReason] = useState('')
-  const [customReason, setCustomReason] = useState('')
-  const [selectedFeedback, setSelectedFeedback] = useState<string[]>([])
-  const [customFeedback, setCustomFeedback] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [step, setStep] = useState<Step>('notice')
   const [showDataRetention, setShowDataRetention] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const {
+    control,
+    watch,
+    setValue,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<WithdrawalFullFormData>({
+    resolver: zodResolver(withdrawalFullFormSchema),
+    defaultValues: withdrawalFormDefaultValues,
+    mode: 'onChange',
+  })
+
+  const selectedReason = watch('selectedReason')
+  const customReason = watch('customReason')
+  const selectedFeedback = watch('selectedFeedback')
+  const confirmText = watch('confirmText')
 
   if (!isOpen) return null
 
   const handleClose = () => {
     setStep('notice')
-    setSelectedReason('')
-    setCustomReason('')
-    setSelectedFeedback([])
-    setCustomFeedback('')
-    setConfirmText('')
+    setShowDataRetention(false)
     setIsLoading(false)
+    reset(withdrawalFormDefaultValues)
     onClose()
   }
 
-  const handleConfirm = async () => {
+  const handleConfirmSubmit = async () => {
     if (confirmText !== '탈퇴합니다') return
 
     setIsLoading(true)
     try {
-      const reason = selectedReason === '기타' ? customReason : selectedReason
-      const feedback = selectedFeedback.includes('직접 입력')
-        ? [...selectedFeedback.filter(f => f !== '직접 입력'), customFeedback].join(', ')
+      const reason = selectedReason === '기타' ? customReason || '' : selectedReason
+      const customFeedbackText = watch('customFeedback') || ''
+      const feedback = selectedFeedback.includes('직접 입력' as InconvenienceOption)
+        ? [...selectedFeedback.filter(f => f !== '직접 입력'), customFeedbackText].join(', ')
         : selectedFeedback.join(', ')
       await onConfirm(reason, feedback)
       handleClose()
@@ -77,13 +79,16 @@ export default function WithdrawalModal({
     }
   }
 
-  const toggleFeedback = (item: string) => {
-    setSelectedFeedback(prev =>
-      prev.includes(item) ? prev.filter(f => f !== item) : [...prev, item]
-    )
+  const toggleFeedback = (item: InconvenienceOption) => {
+    const current = selectedFeedback || []
+    if (current.includes(item)) {
+      setValue('selectedFeedback', current.filter(f => f !== item))
+    } else {
+      setValue('selectedFeedback', [...current, item])
+    }
   }
 
-  const canProceedFromReason = selectedReason && (selectedReason !== '기타' || customReason.trim())
+  const canProceedFromReason = selectedReason && (selectedReason !== '기타' || (customReason?.trim() || ''))
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -206,7 +211,7 @@ export default function WithdrawalModal({
                 </p>
               </div>
 
-              {/* Buttons - confusing layout: cancel on right, proceed on left */}
+              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('reason')}
@@ -236,52 +241,63 @@ export default function WithdrawalModal({
                 </p>
               </div>
 
-              <div className="space-y-2">
-                {WITHDRAWAL_REASONS.map((reason) => (
-                  <label
-                    key={reason}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                      selectedReason === reason
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="reason"
-                      value={reason}
-                      checked={selectedReason === reason}
-                      onChange={(e) => setSelectedReason(e.target.value)}
-                      className="sr-only"
-                    />
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                        selectedReason === reason
-                          ? 'border-orange-500'
-                          : 'border-slate-300'
-                      }`}
-                    >
-                      {selectedReason === reason && (
-                        <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                      )}
-                    </div>
-                    <span className="text-sm text-slate-700">{reason}</span>
-                  </label>
-                ))}
-              </div>
+              <Controller
+                name="selectedReason"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    {WITHDRAWAL_REASONS.map((reason) => (
+                      <label
+                        key={reason}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                          field.value === reason
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="reason"
+                          value={reason}
+                          checked={field.value === reason}
+                          onChange={() => field.onChange(reason)}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            field.value === reason
+                              ? 'border-orange-500'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {field.value === reason && (
+                            <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                          )}
+                        </div>
+                        <span className="text-sm text-slate-700">{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              />
 
               {selectedReason === '기타' && (
-                <textarea
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  placeholder="탈퇴 사유를 입력해주세요"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 resize-none"
-                  rows={3}
-                  maxLength={200}
+                <Controller
+                  name="customReason"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      placeholder="탈퇴 사유를 입력해주세요"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 resize-none"
+                      rows={3}
+                      maxLength={200}
+                    />
+                  )}
                 />
               )}
 
-              {/* Buttons - confusing: similar styling */}
+              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('notice')}
@@ -323,25 +339,25 @@ export default function WithdrawalModal({
                   <label
                     key={item}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                      selectedFeedback.includes(item)
+                      selectedFeedback?.includes(item)
                         ? 'border-orange-500 bg-orange-50'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <input
                       type="checkbox"
-                      checked={selectedFeedback.includes(item)}
+                      checked={selectedFeedback?.includes(item) || false}
                       onChange={() => toggleFeedback(item)}
                       className="sr-only"
                     />
                     <div
                       className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        selectedFeedback.includes(item)
+                        selectedFeedback?.includes(item)
                           ? 'border-orange-500 bg-orange-500'
                           : 'border-slate-300'
                       }`}
                     >
-                      {selectedFeedback.includes(item) && (
+                      {selectedFeedback?.includes(item) && (
                         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
@@ -352,14 +368,19 @@ export default function WithdrawalModal({
                 ))}
               </div>
 
-              {selectedFeedback.includes('직접 입력') && (
-                <textarea
-                  value={customFeedback}
-                  onChange={(e) => setCustomFeedback(e.target.value)}
-                  placeholder="구체적인 의견을 남겨주세요"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 resize-none"
-                  rows={3}
-                  maxLength={500}
+              {selectedFeedback?.includes('직접 입력' as InconvenienceOption) && (
+                <Controller
+                  name="customFeedback"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      placeholder="구체적인 의견을 남겨주세요"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 resize-none"
+                      rows={3}
+                      maxLength={500}
+                    />
+                  )}
                 />
               )}
 
@@ -423,18 +444,22 @@ export default function WithdrawalModal({
                 <p className="text-sm text-slate-600 mb-2">
                   탈퇴를 확인하려면 아래에 <span className="font-bold text-red-600">&quot;탈퇴합니다&quot;</span>를 입력해주세요.
                 </p>
-                <input
-                  type="text"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="탈퇴합니다"
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-500"
+                <Controller
+                  name="confirmText"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      placeholder="탈퇴합니다"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-500"
+                    />
+                  )}
                 />
               </div>
 
-              {/* Action buttons - very confusing layout */}
+              {/* Action buttons */}
               <div className="space-y-2">
-                {/* Primary action looks like cancel */}
                 <button
                   onClick={handleClose}
                   className="w-full py-3.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-colors"
@@ -442,7 +467,6 @@ export default function WithdrawalModal({
                   계속 이용하기
                 </button>
 
-                {/* Actual delete button looks secondary/dangerous */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStep('feedback')}
@@ -451,7 +475,7 @@ export default function WithdrawalModal({
                     이전
                   </button>
                   <button
-                    onClick={handleConfirm}
+                    onClick={handleConfirmSubmit}
                     disabled={confirmText !== '탈퇴합니다' || isLoading}
                     className="flex-1 py-2.5 text-sm text-slate-400 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                   >
