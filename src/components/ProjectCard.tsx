@@ -46,9 +46,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
 
   const badge = getBadgeInfo()
 
-  // 대표 URL
-  const primaryUrl = primaryLink?.url || project.link
-
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -92,20 +89,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           )}
         </div>
 
-        {/* Link button on hover */}
-        {primaryUrl && (
-          <a
-            href={primaryUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-            aria-label={`${project.title} 바로가기`}
-            className="absolute top-3 right-3 bg-white/90 backdrop-blur-md w-8 h-8 flex items-center justify-center rounded-lg shadow-sm border border-white/50 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white hover:scale-105 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-orange-400"
-          >
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
-          </a>
-        )}
+        {/* Link button on hover - 상세페이지로 이동 */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onClick()
+          }}
+          aria-label={`${project.title} 상세보기`}
+          className="absolute top-3 right-3 bg-white/90 backdrop-blur-md w-8 h-8 flex items-center justify-center rounded-lg shadow-sm border border-white/50 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white hover:scale-105 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-orange-400"
+        >
+          <ArrowUpRight className="w-3.5 h-3.5 text-slate-600" />
+        </button>
 
         {/* Likes badge on image */}
         <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1 text-[11px] font-semibold shadow-sm border border-white/50">
