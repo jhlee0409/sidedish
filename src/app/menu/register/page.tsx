@@ -600,14 +600,14 @@ export default function MenuRegisterPage() {
 
             {/* Description with AI */}
             <div className="space-y-4">
-              <div className="flex justify-between items-end mb-1">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 sm:gap-4 mb-1">
                 <div>
                   <label className="text-sm font-bold text-slate-700">상세 레시피 (설명)</label>
                   <p className="text-xs text-slate-500 mt-0.5">
                     최소 {AI_CONSTRAINTS.MIN_DESC_LENGTH}자 이상 작성 후 AI 생성이 가능합니다
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="text-xs text-slate-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     <span>오늘 {aiLimitInfo.remainingForDay}회 남음</span>
@@ -621,7 +621,7 @@ export default function MenuRegisterPage() {
                       aiLimitInfo.remainingForDraft === 0 ||
                       aiLimitInfo.cooldownRemaining > 0
                     }
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-full text-xs font-bold shadow-md shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:scale-105 whitespace-nowrap"
                   >
                     {aiLimitInfo.cooldownRemaining > 0 ? (
                       <>
@@ -631,7 +631,9 @@ export default function MenuRegisterPage() {
                     ) : (
                       <>
                         <Wand2 className="w-3.5 h-3.5" />
-                        AI 셰프가 대신 작성하기 ({aiLimitInfo.remainingForDraft}/{aiLimitInfo.maxPerDraft})
+                        <span className="hidden sm:inline">AI 셰프가 대신 작성하기</span>
+                        <span className="sm:hidden">AI 작성</span>
+                        <span>({aiLimitInfo.remainingForDraft}/{aiLimitInfo.maxPerDraft})</span>
                       </>
                     )}
                   </button>

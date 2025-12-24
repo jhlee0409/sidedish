@@ -360,25 +360,27 @@ function MyPageContent() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 sm:gap-2 ml-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1 ml-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                               <Link href={`/menu/edit/${project.id}`}>
                                 <button className="p-1.5 sm:p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
                                   <Edit3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 </button>
                               </Link>
                               {deleteConfirmId === project.id ? (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-0.5 sm:gap-1">
                                   <button
                                     onClick={() => handleDeleteProject(project.id)}
-                                    className="p-1.5 sm:p-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                                    className="p-1 sm:p-1.5 text-white bg-red-500 hover:bg-red-600 rounded-md sm:rounded-lg transition-colors"
+                                    title="삭제 확인"
                                   >
-                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                                   </button>
                                   <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="p-1.5 sm:p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                                    className="p-1 sm:p-1.5 text-slate-400 hover:bg-slate-100 rounded-md sm:rounded-lg transition-colors"
+                                    title="취소"
                                   >
-                                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
                                   </button>
                                 </div>
                               ) : (
