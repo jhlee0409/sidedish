@@ -23,6 +23,13 @@ export default function RootLayout({
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
+        {/* Gowun Batang - 랜딩 헤드라인용 한글 세리프 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>

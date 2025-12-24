@@ -63,7 +63,7 @@ const LandingPage: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
               {/* Left: Copy */}
               <div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.15] mb-6">
+                <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.15] mb-6">
                   당신의 사이드,
                   <br />
                   오늘의 <span className="text-orange-600">메인 디쉬</span>로
@@ -192,7 +192,7 @@ const LandingPage: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">재료만 던져주세요</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
+                <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
                   &ldquo;만들긴 했는데<br />
                   소개글은 영...&rdquo;
                 </h2>
@@ -238,7 +238,7 @@ const LandingPage: React.FC = () => {
               </div>
               <div className="order-1 lg:order-2">
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">반쯤 익어도 괜찮아요</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
+                <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
                   완성 안 했어도 OK.<br />
                   맛보기 버전도 환영해요.
                 </h2>
@@ -255,7 +255,7 @@ const LandingPage: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">단골손님을 만나요</span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
+                <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
                   혼자 먹기 아까운 요리,<br />
                   누군가의 최애 메뉴가 돼요
                 </h2>
@@ -306,7 +306,7 @@ const LandingPage: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
 
         <div className="container mx-auto px-6 text-center relative z-10">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             첫 요리, 오늘 내볼까요?
           </h2>
           <p className="text-lg text-orange-100 mb-10 max-w-xl mx-auto">
