@@ -23,18 +23,9 @@ const TermsOfServicePage: React.FC = () => {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <article className="prose prose-slate max-w-none">
-          {/* 시행일 및 버전 */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-            <p className="text-slate-500">
-              버전: v1.0 | 시행일: 2025년 12월 25일
-            </p>
-            <Link
-              href="/legal/history"
-              className="text-indigo-600 hover:text-indigo-700 hover:underline"
-            >
-              이전 버전 보기 →
-            </Link>
-          </div>
+          <p className="text-sm text-slate-400">
+            시행일 2025.12.25
+          </p>
 
           {/* 제1장 총칙 */}
           <section className="mt-8">
@@ -526,18 +517,9 @@ const TermsOfServicePage: React.FC = () => {
             <h3 className="text-xl font-bold text-slate-900 mt-6">제1조 (시행일)</h3>
             <p>이 약관은 2025년 12월 25일부터 시행합니다.</p>
 
-            <div className="bg-slate-100 p-4 rounded-lg mt-6">
-              <p className="font-semibold">개정 이력</p>
-              <ul className="mt-2 space-y-1 text-sm">
-                <li>2025년 12월 25일: 최초 제정</li>
-              </ul>
-              <Link
-                href="/legal/history"
-                className="inline-block mt-3 text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
-              >
-                전체 버전 히스토리 보기 →
-              </Link>
-            </div>
+            <p className="text-sm text-slate-500 mt-4">
+              개정 이력: 2025.12.25 최초 제정
+            </p>
           </section>
         </article>
       </main>

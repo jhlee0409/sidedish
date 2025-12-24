@@ -23,18 +23,9 @@ const PrivacyPolicyPage: React.FC = () => {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <article className="prose prose-slate max-w-none">
-          {/* 시행일 및 버전 */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-            <p className="text-slate-500">
-              버전: v1.0 | 시행일: 2025년 12월 25일
-            </p>
-            <Link
-              href="/legal/history"
-              className="text-indigo-600 hover:text-indigo-700 hover:underline"
-            >
-              이전 버전 보기 →
-            </Link>
-          </div>
+          <p className="text-sm text-slate-400">
+            시행일 2025.12.25
+          </p>
 
           {/* 서문 */}
           <section className="mt-8">
@@ -404,18 +395,9 @@ const PrivacyPolicyPage: React.FC = () => {
             있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다. 다만, 이용자의 권리에
             중요한 변경이 있을 경우에는 최소 30일 전에 공지합니다.</p>
 
-            <div className="bg-slate-100 p-4 rounded-lg mt-4">
-              <p className="font-semibold">개정 이력</p>
-              <ul className="mt-2 space-y-1 text-sm">
-                <li>2025년 12월 25일: 최초 제정</li>
-              </ul>
-              <Link
-                href="/legal/history"
-                className="inline-block mt-3 text-sm text-indigo-600 hover:text-indigo-700 hover:underline"
-              >
-                전체 버전 히스토리 보기 →
-              </Link>
-            </div>
+            <p className="text-sm text-slate-500 mt-4">
+              개정 이력: 2025.12.25 최초 제정
+            </p>
           </section>
         </article>
       </main>
