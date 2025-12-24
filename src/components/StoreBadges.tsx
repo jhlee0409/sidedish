@@ -269,7 +269,7 @@ export const LinkList: React.FC<LinkListProps> = ({
         </div>
       ) : (
         /* 칩 + 팝오버 UI */
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {sortedCategories.map(category => {
             const meta = CATEGORY_META[category]
             const categoryLinks = groupedLinks[category]
@@ -281,22 +281,24 @@ export const LinkList: React.FC<LinkListProps> = ({
                 <button
                   onClick={() => setOpenCategory(isOpen ? null : category)}
                   className={`
-                    inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all
+                    w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all
                     ${isOpen
                       ? 'ring-2 ring-offset-1 ring-orange-400 ' + meta.chipColor
                       : meta.chipColor
                     }
                   `}
                 >
-                  {meta.icon}
-                  <span>{meta.shortLabel}</span>
-                  <span className="text-xs opacity-60">({categoryLinks.length})</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  <div className="flex items-center gap-2">
+                    {meta.icon}
+                    <span>{meta.shortLabel}</span>
+                    <span className="text-xs opacity-60">({categoryLinks.length})</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* 팝오버 */}
                 {isOpen && (
-                  <div className="absolute left-0 top-full mt-2 z-50 min-w-[280px] max-w-[320px] bg-white rounded-xl shadow-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white rounded-xl shadow-xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* 팝오버 헤더 */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                       <div className="flex items-center gap-2">
