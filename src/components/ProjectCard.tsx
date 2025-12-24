@@ -1,21 +1,10 @@
 'use client'
 
-import { Heart, ArrowUpRight, FlaskConical, Smartphone, Monitor, Gamepad2, Puzzle, Package, Globe } from 'lucide-react'
+import { Heart, ArrowUpRight, FlaskConical } from 'lucide-react'
 import Image from 'next/image'
 import { ProjectResponse } from '@/lib/db-types'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
-import { getStoreConfig, StoreConfig } from '@/lib/store-config'
-
-// 카테고리별 뱃지 메타데이터 (2025 refined icons)
-const CATEGORY_BADGE: Record<StoreConfig['category'], { icon: React.ReactNode; label: string }> = {
-  mobile: { icon: <Smartphone className="w-3 h-3" />, label: '모바일' },
-  desktop: { icon: <Monitor className="w-3 h-3" />, label: '데스크탑' },
-  game: { icon: <Gamepad2 className="w-3 h-3" />, label: '게임' },
-  extension: { icon: <Puzzle className="w-3 h-3" />, label: '확장' },
-  package: { icon: <Package className="w-3 h-3" />, label: '패키지' },
-  general: { icon: <Globe className="w-3 h-3" />, label: '웹' },
-}
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -23,28 +12,12 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
-  // 대표 링크 가져오기
-  const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
-
-  // 뱃지 정보 결정: 대표 링크의 카테고리 기준, 없으면 플랫폼
-  const getBadgeInfo = () => {
-    if (primaryLink) {
-      const storeConfig = getStoreConfig(primaryLink.storeType)
-      const categoryBadge = CATEGORY_BADGE[storeConfig.category]
-      return {
-        icon: categoryBadge.icon,
-        label: categoryBadge.label,
-      }
-    }
-    // fallback: 플랫폼 기준
-    const platformOption = getPlatformOption(project.platform || 'OTHER')
-    return {
-      icon: PLATFORM_ICONS[project.platform || 'OTHER'],
-      label: platformOption.shortLabel,
-    }
+  // 뱃지 정보: 프로젝트 플랫폼 기준
+  const platformOption = getPlatformOption(project.platform || 'OTHER')
+  const badge = {
+    icon: PLATFORM_ICONS[platformOption.value] || PLATFORM_ICONS.OTHER,
+    label: platformOption.shortLabel,
   }
-
-  const badge = getBadgeInfo()
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {

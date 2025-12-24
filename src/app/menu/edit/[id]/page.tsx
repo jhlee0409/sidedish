@@ -793,22 +793,24 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
               )}
             />
 
-            <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-              <Button type="button" variant="ghost" className="w-full sm:w-auto px-6" disabled={isSubmitting} onClick={() => router.back()}>취소</Button>
+            <div className="pt-6 border-t border-slate-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto px-6"
+                disabled={isSubmitting}
+                onClick={() => router.back()}
+              >
+                취소
+              </Button>
               <Button
                 type="submit"
                 variant="primary"
-                className="w-full sm:w-auto px-8 rounded-xl shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+                className="w-full sm:w-auto px-8"
                 disabled={isSubmitting || !isAuthenticated}
+                isLoading={isSubmitting}
               >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    수정 중...
-                  </span>
-                ) : (
-                  '수정 완료'
-                )}
+                수정 완료
               </Button>
             </div>
           </form>
