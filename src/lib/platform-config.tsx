@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Puzzle,
   Package,
+  Monitor,
 } from 'lucide-react'
 import { ProjectPlatform } from './types'
 import { StoreType } from './db-types'
@@ -32,16 +33,24 @@ export const PLATFORM_OPTIONS: Array<{
     label: '웹 서비스',
     shortLabel: '웹',
     icon: <Globe className="w-5 h-5" />,
-    description: '웹사이트, SaaS, 웹앱',
+    description: '웹사이트, SaaS, PWA',
     suggestedStores: ['WEBSITE', 'GITHUB'],
   },
   {
-    value: 'APP',
-    label: '앱',
-    shortLabel: '앱',
+    value: 'MOBILE',
+    label: '모바일 앱',
+    shortLabel: '모바일',
     icon: <Smartphone className="w-5 h-5" />,
-    description: '모바일/데스크탑 앱',
-    suggestedStores: ['APP_STORE', 'PLAY_STORE', 'MAC_APP_STORE', 'WINDOWS_STORE', 'DIRECT_DOWNLOAD'],
+    description: 'iOS, Android 앱',
+    suggestedStores: ['APP_STORE', 'PLAY_STORE', 'GALAXY_STORE', 'GITHUB'],
+  },
+  {
+    value: 'DESKTOP',
+    label: '데스크탑 앱',
+    shortLabel: '데스크탑',
+    icon: <Monitor className="w-5 h-5" />,
+    description: 'Windows, macOS, Linux 앱',
+    suggestedStores: ['MAC_APP_STORE', 'WINDOWS_STORE', 'DIRECT_DOWNLOAD', 'GITHUB'],
   },
   {
     value: 'GAME',
@@ -91,23 +100,29 @@ export const CTA_CONFIG: Record<ProjectPlatform, {
   label: string
 }> = {
   WEB: { icon: <Globe className="w-5 h-5" />, label: '바로가기' },
-  APP: { icon: <Smartphone className="w-5 h-5" />, label: '설치하기' },
+  MOBILE: { icon: <Smartphone className="w-5 h-5" />, label: '설치하기' },
+  DESKTOP: { icon: <Monitor className="w-5 h-5" />, label: '다운로드' },
   GAME: { icon: <Gamepad2 className="w-5 h-5" />, label: '플레이' },
   EXTENSION: { icon: <Puzzle className="w-5 h-5" />, label: '추가하기' },
   LIBRARY: { icon: <Package className="w-5 h-5" />, label: '시작하기' },
   DESIGN: { icon: <Palette className="w-5 h-5" />, label: '살펴보기' },
   OTHER: { icon: <ExternalLink className="w-5 h-5" />, label: '바로가기' },
+  // @deprecated - 하위 호환용
+  APP: { icon: <Smartphone className="w-5 h-5" />, label: '설치하기' },
 }
 
 // 플랫폼 아이콘만 필요할 때 (카드 등에서 사용)
 export const PLATFORM_ICONS: Record<ProjectPlatform, React.ReactNode> = {
   WEB: <Globe className="w-4 h-4" />,
-  APP: <Smartphone className="w-4 h-4" />,
+  MOBILE: <Smartphone className="w-4 h-4" />,
+  DESKTOP: <Monitor className="w-4 h-4" />,
   GAME: <Gamepad2 className="w-4 h-4" />,
   EXTENSION: <Puzzle className="w-4 h-4" />,
   LIBRARY: <Package className="w-4 h-4" />,
   DESIGN: <Palette className="w-4 h-4" />,
   OTHER: <Box className="w-4 h-4" />,
+  // @deprecated - 하위 호환용
+  APP: <Smartphone className="w-4 h-4" />,
 }
 
 // 헬퍼 함수: 플랫폼별 CTA 가져오기
