@@ -133,36 +133,44 @@ const Dashboard: React.FC = () => {
 
             {/* Filter row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Platform filters */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="플랫폼 필터">
-                <button
-                  onClick={() => setActiveFilter('ALL')}
-                  role="tab"
-                  aria-selected={activeFilter === 'ALL'}
-                  className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
-                    activeFilter === 'ALL'
-                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
-                  }`}
+              {/* Platform filters - horizontal scroll container */}
+              <div className="relative -mx-6 px-6 sm:mx-0 sm:px-0 sm:flex-1 sm:min-w-0">
+                <div
+                  className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
+                  role="tablist"
+                  aria-label="플랫폼 필터"
                 >
-                  전체
-                </button>
-                {PLATFORM_OPTIONS.filter(opt => opt.value !== 'OTHER').map(opt => (
                   <button
-                    key={opt.value}
-                    onClick={() => setActiveFilter(opt.value)}
+                    onClick={() => setActiveFilter('ALL')}
                     role="tab"
-                    aria-selected={activeFilter === opt.value}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
-                      activeFilter === opt.value
+                    aria-selected={activeFilter === 'ALL'}
+                    className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 snap-start focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                      activeFilter === 'ALL'
                         ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
                     }`}
                   >
-                    <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
-                    {opt.shortLabel}
+                    전체
                   </button>
-                ))}
+                  {PLATFORM_OPTIONS.filter(opt => opt.value !== 'OTHER').map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setActiveFilter(opt.value)}
+                      role="tab"
+                      aria-selected={activeFilter === opt.value}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 snap-start focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                        activeFilter === opt.value
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
+                      }`}
+                    >
+                      <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
+                      {opt.shortLabel}
+                    </button>
+                  ))}
+                </div>
+                {/* Fade edge indicators for scroll */}
+                <div className="absolute right-6 sm:right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none sm:hidden" />
               </div>
 
               {/* Sort options */}
