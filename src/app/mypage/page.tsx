@@ -335,7 +335,7 @@ function MyPageContent() {
                         onClick={() => router.push(`/menu/${project.id}`)}
                       >
                         <div className="flex">
-                          <div className="relative w-24 sm:w-40 h-24 sm:h-28 flex-shrink-0">
+                          <div className="relative w-24 sm:w-40 aspect-[4/3] flex-shrink-0">
                             <Image
                               src={project.imageUrl}
                               alt={project.title}
@@ -438,7 +438,7 @@ function MyPageContent() {
                         className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                         onClick={() => router.push(`/menu/${project.id}`)}
                       >
-                        <div className="relative h-24 sm:h-28">
+                        <div className="relative aspect-[16/9]">
                           <Image
                             src={project.imageUrl}
                             alt={project.title}

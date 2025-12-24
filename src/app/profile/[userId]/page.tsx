@@ -216,7 +216,7 @@ function ProfilePageContent() {
                   onClick={() => router.push(`/menu/${project.id}`)}
                 >
                   <div className="flex">
-                    <div className="relative w-28 sm:w-40 h-24 sm:h-28 flex-shrink-0">
+                    <div className="relative w-28 sm:w-40 aspect-[4/3] flex-shrink-0">
                       <Image
                         src={project.imageUrl}
                         alt={project.title}
