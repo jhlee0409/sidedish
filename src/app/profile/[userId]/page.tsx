@@ -118,33 +118,33 @@ function ProfilePageContent() {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex items-center justify-between h-16">
+        <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">뒤로</span>
+              <span className="font-medium text-sm sm:text-base hidden sm:inline">뒤로</span>
             </button>
-            <div className="flex items-center gap-2">
-              <ChefHat className="w-5 h-5 text-orange-500" />
-              <span className="font-bold text-slate-900">Chef 프로필</span>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <ChefHat className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
+              <span className="font-bold text-slate-900 text-sm sm:text-base">Chef 프로필</span>
             </div>
-            <div className="w-24" />
+            <div className="w-16 sm:w-24" />
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8 max-w-5xl">
         {/* Profile Section */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-gradient-to-br from-orange-500 to-red-500 px-8 py-10 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 px-5 sm:px-8 py-6 sm:py-10 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 sm:w-64 h-48 sm:h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-32 sm:w-48 h-32 sm:h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-            <div className="relative z-10 flex items-center gap-6">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white/30 overflow-hidden">
+            <div className="relative z-10 flex items-center gap-4 sm:gap-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold backdrop-blur-sm border-3 sm:border-4 border-white/30 overflow-hidden">
                 {profile.avatarUrl ? (
                   <Image
                     src={profile.avatarUrl}
@@ -156,14 +156,14 @@ function ProfilePageContent() {
                   profile.name.charAt(0).toUpperCase()
                 )}
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">{profile.name}</h1>
-                <div className="flex items-center gap-2 mt-2 text-white/80">
-                  <ChefHat className="w-4 h-4" />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold truncate">{profile.name}</h1>
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-white/80 text-xs sm:text-sm">
+                  <ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>SideDish Chef</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-white/60 text-sm">
-                  <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 text-white/60 text-[10px] sm:text-sm">
+                  <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span>
                     {new Date(profile.createdAt).toLocaleDateString('ko-KR', {
                       year: 'numeric',
@@ -178,22 +178,22 @@ function ProfilePageContent() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 divide-x divide-slate-100">
-            <div className="py-6 text-center">
-              <div className="text-2xl font-bold text-slate-900">
+            <div className="py-4 sm:py-5 text-center">
+              <div className="text-lg sm:text-xl font-bold text-slate-900">
                 {projects.length}
               </div>
-              <div className="text-sm mt-1 text-slate-500 flex items-center justify-center gap-1">
-                <Utensils className="w-4 h-4" />
-                등록한 메뉴
+              <div className="text-xs sm:text-sm mt-0.5 sm:mt-1 text-slate-500 flex items-center justify-center gap-1">
+                <Utensils className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">등록한 메뉴</span>
               </div>
             </div>
-            <div className="py-6 text-center">
-              <div className="text-2xl font-bold text-slate-900">
+            <div className="py-4 sm:py-5 text-center">
+              <div className="text-lg sm:text-xl font-bold text-slate-900">
                 {totalLikes}
               </div>
-              <div className="text-sm mt-1 text-slate-500 flex items-center justify-center gap-1">
-                <Heart className="w-4 h-4" />
-                받은 좋아요
+              <div className="text-xs sm:text-sm mt-0.5 sm:mt-1 text-slate-500 flex items-center justify-center gap-1">
+                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">받은 좋아요</span>
               </div>
             </div>
           </div>
@@ -201,22 +201,22 @@ function ProfilePageContent() {
 
         {/* Projects Section */}
         <div className="animate-in fade-in duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
               {profile.name} Chef의 메뉴
             </h2>
           </div>
 
           {projects.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => router.push(`/menu/${project.id}`)}
                 >
                   <div className="flex">
-                    <div className="relative w-48 h-32 flex-shrink-0">
+                    <div className="relative w-28 sm:w-40 h-24 sm:h-28 flex-shrink-0">
                       <Image
                         src={project.imageUrl}
                         alt={project.title}
@@ -224,27 +224,27 @@ function ProfilePageContent() {
                         className="object-cover"
                       />
                     </div>
-                    <div className="flex-1 p-4">
+                    <div className="flex-1 p-3 sm:p-4">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
                             <span className="text-slate-400">
                               {PLATFORM_ICONS[project.platform]}
                             </span>
-                            <h3 className="font-bold text-slate-900">
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">
                               {project.title}
                             </h3>
                           </div>
-                          <p className="text-sm text-slate-500 line-clamp-2">
+                          <p className="text-xs sm:text-sm text-slate-500 line-clamp-2">
                             {project.shortDescription}
                           </p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-3 sm:gap-4 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-slate-400">
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
+                              <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               {new Date(project.createdAt).toLocaleDateString()}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Heart className="w-3 h-3" />
+                              <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               {project.likes}
                             </span>
                           </div>
@@ -256,14 +256,14 @@ function ProfilePageContent() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-100">
-              <div className="text-slate-300 mb-4">
-                <Utensils className="w-12 h-12" />
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-white rounded-xl sm:rounded-2xl border border-slate-100">
+              <div className="text-slate-300 mb-3 sm:mb-4">
+                <Utensils className="w-10 h-10 sm:w-12 sm:h-12" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5 sm:mb-2">
                 아직 등록한 메뉴가 없어요
               </h3>
-              <p className="text-slate-500 text-sm text-center">
+              <p className="text-slate-500 text-xs sm:text-sm text-center">
                 이 Chef는 아직 메뉴를 준비 중이에요
               </p>
             </div>
