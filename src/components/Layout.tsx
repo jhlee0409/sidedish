@@ -105,9 +105,9 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
               </span>
             </div>
             <div className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-400">
-              <a href="#" className="hover:text-slate-600 transition-colors">이용약관</a>
-              <a href="#" className="hover:text-slate-600 transition-colors">개인정보처리방침</a>
-              <a href="#" className="hover:text-slate-600 transition-colors">문의</a>
+              <Link href="/legal/terms" className="hover:text-slate-600 transition-colors">이용약관</Link>
+              <Link href="/legal/privacy" className="hover:text-slate-600 transition-colors">개인정보처리방침</Link>
+              <a href="mailto:support@sidedish.io" className="hover:text-slate-600 transition-colors">문의</a>
             </div>
           </div>
         </div>
