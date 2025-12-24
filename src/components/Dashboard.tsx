@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import useEmblaCarousel from 'embla-carousel-react'
 import Hero from './Hero'
 import ProjectCard from './ProjectCard'
 import { getProjectsWithAbort } from '@/lib/api-client'
@@ -24,6 +25,13 @@ const Dashboard: React.FC = () => {
 
   const galleryRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Embla Carousel for filter chips
+  const [emblaRef] = useEmblaCarousel({
+    dragFree: true,
+    containScroll: 'trimSnaps',
+    align: 'start',
+  })
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,41 +143,41 @@ const Dashboard: React.FC = () => {
           {/* Filter row */}
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              {/* Platform filters - scrollable */}
-              <div
-                className="flex-1 min-w-0 overflow-x-auto pb-1 scrollbar-hide"
-                role="tablist"
-                aria-label="플랫폼 필터"
-              >
-                <div className="flex items-center gap-2 w-max">
-                <button
-                  onClick={() => setActiveFilter('ALL')}
-                  role="tab"
-                  aria-selected={activeFilter === 'ALL'}
-                  className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
-                    activeFilter === 'ALL'
-                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
-                  }`}
+              {/* Platform filters - Embla Carousel */}
+              <div className="flex-1 min-w-0 overflow-hidden" ref={emblaRef}>
+                <div
+                  className="flex items-center gap-2"
+                  role="tablist"
+                  aria-label="플랫폼 필터"
                 >
-                  전체
-                </button>
-                {PLATFORM_OPTIONS.filter(opt => opt.value !== 'OTHER').map(opt => (
                   <button
-                    key={opt.value}
-                    onClick={() => setActiveFilter(opt.value)}
+                    onClick={() => setActiveFilter('ALL')}
                     role="tab"
-                    aria-selected={activeFilter === opt.value}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
-                      activeFilter === opt.value
+                    aria-selected={activeFilter === 'ALL'}
+                    className={`px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                      activeFilter === 'ALL'
                         ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
                     }`}
                   >
-                    <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
-                    {opt.shortLabel}
+                    전체
                   </button>
-                ))}
+                  {PLATFORM_OPTIONS.filter(opt => opt.value !== 'OTHER').map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setActiveFilter(opt.value)}
+                      role="tab"
+                      aria-selected={activeFilter === opt.value}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-full border transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 ${
+                        activeFilter === opt.value
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-orange-200 hover:text-orange-600'
+                      }`}
+                    >
+                      <span className={activeFilter === opt.value ? 'text-white' : 'text-slate-400'}>{opt.icon}</span>
+                      {opt.shortLabel}
+                    </button>
+                  ))}
                 </div>
               </div>
 
