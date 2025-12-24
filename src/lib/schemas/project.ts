@@ -85,7 +85,7 @@ export const projectFormDefaultValues: ProjectFormData = {
  * 프로젝트 업데이트 타입
  */
 export const projectUpdateTypeSchema = z.enum(['devlog', 'milestone'], {
-  errorMap: () => ({ message: '올바른 기록 유형을 선택해주세요.' }),
+  message: '올바른 기록 유형을 선택해주세요.',
 })
 
 export type ProjectUpdateType = z.infer<typeof projectUpdateTypeSchema>
@@ -95,11 +95,13 @@ export type ProjectUpdateType = z.infer<typeof projectUpdateTypeSchema>
  */
 const milestoneEmojiValues = MILESTONE_EMOJIS.map(e => e.emoji) as [string, ...string[]]
 export const milestoneEmojiSchema = z.enum(milestoneEmojiValues, {
-  errorMap: () => ({ message: '올바른 아이콘을 선택해주세요.' }),
+  message: '올바른 아이콘을 선택해주세요.',
 })
 
 /**
  * 프로젝트 업데이트 폼 스키마
+ *
+ * 주의: react-hook-form zodResolver 호환을 위해 .default() 사용 금지
  */
 export const projectUpdateFormSchema = z
   .object({
@@ -114,10 +116,8 @@ export const projectUpdateFormSchema = z
       .max(5000, '내용은 5000자 이하여야 합니다.'),
     version: z
       .string()
-      .max(20, '버전은 20자 이하여야 합니다.')
-      .optional()
-      .transform(val => val?.trim() || undefined),
-    emoji: milestoneEmojiSchema.default('🚀'),
+      .max(20, '버전은 20자 이하여야 합니다.'),
+    emoji: z.string(),
   })
   .superRefine((data, ctx) => {
     // milestone 타입일 때만 emoji 필수
@@ -135,7 +135,7 @@ export type ProjectUpdateFormData = z.infer<typeof projectUpdateFormSchema>
 /**
  * 프로젝트 업데이트 폼 기본값
  */
-export const projectUpdateFormDefaultValues: Partial<ProjectUpdateFormData> = {
+export const projectUpdateFormDefaultValues: ProjectUpdateFormData = {
   type: 'devlog',
   title: '',
   content: '',

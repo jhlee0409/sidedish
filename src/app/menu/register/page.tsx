@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, FieldError } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
@@ -14,7 +14,7 @@ import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import MultiLinkInput from '@/components/MultiLinkInput'
 import { FormField, CharacterCount } from '@/components/form'
-import { DraftData } from '@/lib/types'
+import { DraftData, StoreType } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
@@ -66,7 +66,13 @@ export default function MenuRegisterPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
   // AI limit state
-  const [aiLimitInfo, setAiLimitInfo] = useState({
+  const [aiLimitInfo, setAiLimitInfo] = useState<{
+    remainingForDraft: number
+    remainingForDay: number
+    maxPerDraft: number
+    maxPerDay: number
+    cooldownRemaining: number
+  }>({
     remainingForDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
     remainingForDay: AI_CONSTRAINTS.MAX_PER_DAY,
     maxPerDraft: AI_CONSTRAINTS.MAX_PER_DRAFT,
@@ -147,6 +153,10 @@ export default function MenuRegisterPage() {
       const updatedDraft: DraftData = {
         ...draft,
         ...formValues,
+        links: formValues.links.map(l => ({
+          ...l,
+          storeType: l.storeType as StoreType,
+        })),
       }
 
       saveDraft(updatedDraft)
@@ -359,7 +369,10 @@ export default function MenuRegisterPage() {
         imageUrl: imageUrl || `https://picsum.photos/seed/${Date.now()}/600/400`,
         link: primaryLink?.url || data.link,
         githubUrl: githubLink?.url || data.githubUrl,
-        links: data.links,
+        links: data.links.map(l => ({
+          ...l,
+          storeType: l.storeType as StoreType,
+        })),
         platform: data.platform,
         isBeta: data.isBeta,
       })
@@ -695,7 +708,7 @@ export default function MenuRegisterPage() {
             <FormField
               label="주요 재료 (키워드/카테고리)"
               hint={`최대 ${PROJECT_CONSTRAINTS.MAX_TAGS}개`}
-              error={errors.tags}
+              error={errors.tags?.root || errors.tags?.message ? { message: errors.tags.message } as FieldError : undefined}
             >
               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[52px] focus-within:ring-2 focus-within:ring-orange-100 focus-within:border-orange-500 transition-all bg-white">
                 {formValues.tags.map((tag, index) => (

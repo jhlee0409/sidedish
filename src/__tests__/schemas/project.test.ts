@@ -211,17 +211,19 @@ describe('projectUpdateFormSchema', () => {
         type: 'devlog',
         title: '개발 일지 첫 번째',
         content: '오늘은 기능 A를 구현했습니다.',
+        version: '1.0.0',
         emoji: '🚀',
       }
       const result = projectUpdateFormSchema.safeParse(update)
       expect(result.success).toBe(true)
     })
 
-    it('should accept devlog without version', () => {
+    it('should accept devlog with empty version', () => {
       const update = {
         type: 'devlog',
         title: '버그 수정',
         content: '버그를 수정했습니다.',
+        version: '',
         emoji: '🐛',
       }
       const result = projectUpdateFormSchema.safeParse(update)
@@ -250,6 +252,7 @@ describe('projectUpdateFormSchema', () => {
           type: 'milestone',
           title: '마일스톤',
           content: '내용입니다',
+          version: '',
           emoji,
         }
         const result = projectUpdateFormSchema.safeParse(update)

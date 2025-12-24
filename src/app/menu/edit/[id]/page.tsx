@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import Button from '@/components/Button'
 import AiCandidateSelector from '@/components/AiCandidateSelector'
 import MultiLinkInput from '@/components/MultiLinkInput'
-import { AiGenerationCandidate } from '@/lib/types'
+import { AiGenerationCandidate, StoreType } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { getProject, updateProject, uploadImage, generateAiContent, getAiUsageInfo, ApiError } from '@/lib/api-client'
 import { ProjectResponse } from '@/lib/db-types'
@@ -395,7 +395,10 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         imageUrl: imageUrl,
         link: primaryLink?.url || '',
         githubUrl: githubLink?.url || '',
-        links: data.links,
+        links: data.links.map(l => ({
+          ...l,
+          storeType: l.storeType as StoreType,
+        })),
         platform: data.platform,
         isBeta: data.isBeta,
       })

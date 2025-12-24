@@ -66,7 +66,7 @@ export const imageUrlSchema = z
  * 프로젝트 플랫폼 타입
  */
 export const platformSchema = z.enum(ALLOWED_PLATFORMS, {
-  errorMap: () => ({ message: '올바른 플랫폼 타입을 선택해주세요.' }),
+  message: '올바른 플랫폼 타입을 선택해주세요.',
 })
 
 export type PlatformType = z.infer<typeof platformSchema>
@@ -75,7 +75,7 @@ export type PlatformType = z.infer<typeof platformSchema>
  * 스토어 타입
  */
 export const storeTypeSchema = z.enum(ALLOWED_STORE_TYPES, {
-  errorMap: () => ({ message: '올바른 스토어 타입을 선택해주세요.' }),
+  message: '올바른 스토어 타입을 선택해주세요.',
 })
 
 export type StoreType = z.infer<typeof storeTypeSchema>
@@ -161,7 +161,7 @@ export const fileSizeSchema = z.number().max(
  * 이미지 MIME 타입 검증
  */
 export const imageTypeSchema = z.enum(FILE_CONSTRAINTS.ALLOWED_TYPES, {
-  errorMap: () => ({ message: 'JPG, PNG, WebP, GIF 형식만 지원합니다.' }),
+  message: 'JPG, PNG, WebP, GIF 형식만 지원합니다.',
 })
 
 // ============ 일반 텍스트 스키마 ============

@@ -16,10 +16,10 @@ export const signupFormSchema = z.object({
   name: nicknameSchema,
   avatarUrl: imageUrlSchema,
   termsOfService: z.literal(true, {
-    errorMap: () => ({ message: '서비스 이용약관에 동의해주세요.' }),
+    message: '서비스 이용약관에 동의해주세요.',
   }),
   privacyPolicy: z.literal(true, {
-    errorMap: () => ({ message: '개인정보 처리방침에 동의해주세요.' }),
+    message: '개인정보 처리방침에 동의해주세요.',
   }),
   marketing: z.boolean().default(false),
 })
@@ -99,7 +99,7 @@ export type InconvenienceOption = typeof INCONVENIENCE_OPTIONS[number]
 export const withdrawalReasonFormSchema = z
   .object({
     selectedReason: z.enum(WITHDRAWAL_REASONS, {
-      errorMap: () => ({ message: '탈퇴 사유를 선택해주세요.' }),
+      message: '탈퇴 사유를 선택해주세요.',
     }),
     customReason: z
       .string()
@@ -141,7 +141,7 @@ export type WithdrawalFeedbackFormData = z.infer<typeof withdrawalFeedbackFormSc
  */
 export const withdrawalConfirmFormSchema = z.object({
   confirmText: z.literal('탈퇴합니다', {
-    errorMap: () => ({ message: '"탈퇴합니다"를 정확히 입력해주세요.' }),
+    message: '"탈퇴합니다"를 정확히 입력해주세요.',
   }),
 })
 
@@ -149,12 +149,14 @@ export type WithdrawalConfirmFormData = z.infer<typeof withdrawalConfirmFormSche
 
 /**
  * 회원 탈퇴 전체 폼 스키마 (통합)
+ *
+ * 주의: react-hook-form zodResolver 호환을 위해 .default() 사용 금지
  */
 export const withdrawalFullFormSchema = z.object({
   selectedReason: z.enum(WITHDRAWAL_REASONS),
-  customReason: z.string().max(200).optional(),
-  selectedFeedback: z.array(z.enum(INCONVENIENCE_OPTIONS)).default([]),
-  customFeedback: z.string().max(500).optional(),
+  customReason: z.string().max(200),
+  selectedFeedback: z.array(z.enum(INCONVENIENCE_OPTIONS)),
+  customFeedback: z.string().max(500),
   confirmText: z.string(),
 })
 
