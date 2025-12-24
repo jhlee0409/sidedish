@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { ProjectResponse } from '@/lib/db-types'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
+import { getStoreConfig } from '@/lib/store-config'
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -12,18 +13,30 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
-  const platformOption = getPlatformOption(project.platform || 'OTHER')
+  // 대표 링크 가져오기
+  const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
 
-  // 대표 링크 가져오기 (links 배열 우선, 없으면 deprecated link 필드)
-  const getPrimaryUrl = () => {
-    if (project.links && project.links.length > 0) {
-      const primaryLink = project.links.find(l => l.isPrimary) || project.links[0]
-      return primaryLink.url
+  // 뱃지 정보 결정: 대표 링크가 있으면 스토어 타입, 없으면 플랫폼
+  const getBadgeInfo = () => {
+    if (primaryLink) {
+      const storeConfig = getStoreConfig(primaryLink.storeType)
+      return {
+        icon: storeConfig.icon,
+        label: storeConfig.shortLabel,
+      }
     }
-    return project.link
+    // fallback: 플랫폼 기준
+    const platformOption = getPlatformOption(project.platform || 'OTHER')
+    return {
+      icon: PLATFORM_ICONS[project.platform || 'OTHER'],
+      label: platformOption.shortLabel,
+    }
   }
 
-  const primaryUrl = getPrimaryUrl()
+  const badge = getBadgeInfo()
+
+  // 대표 URL
+  const primaryUrl = primaryLink?.url || project.link
 
   return (
     <article
@@ -39,11 +52,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
           className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
-        {/* Platform badge */}
+        {/* Platform/Store badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
           <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-slate-600 text-xs font-medium flex items-center gap-1.5 shadow-sm">
-            <span className="text-slate-400 [&>svg]:w-3.5 [&>svg]:h-3.5">{PLATFORM_ICONS[project.platform || 'OTHER']}</span>
-            <span>{platformOption.shortLabel}</span>
+            <span className="text-slate-400 [&>svg]:w-3.5 [&>svg]:h-3.5">{badge.icon}</span>
+            <span>{badge.label}</span>
           </div>
           {project.isBeta && (
             <div className="bg-amber-500/95 backdrop-blur-sm px-2 py-1.5 rounded-full text-white text-xs font-bold flex items-center gap-1 shadow-sm">
