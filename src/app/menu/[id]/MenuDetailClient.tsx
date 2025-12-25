@@ -196,6 +196,7 @@ export default function MenuDetailClient({
       projectId: project.id,
       projectTitle: project.title,
       projectSummary: project.shortDescription,
+      projectDescription: project.description,
       projectTags: project.tags,
       platforms: ['x', 'linkedin', 'facebook', 'threads'],
     })

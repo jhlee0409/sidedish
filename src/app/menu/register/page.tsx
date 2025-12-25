@@ -387,6 +387,7 @@ export default function MenuRegisterPage() {
           projectId: project.id,
           projectTitle: data.title,
           projectSummary: data.shortDescription,
+          projectDescription: data.description,
           projectTags: data.tags,
           platforms: selectedPlatforms,
         })

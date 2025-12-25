@@ -1591,6 +1591,8 @@ export interface PromoteProjectData {
   projectTitle: string
   /** Short summary for social posts */
   projectSummary: string
+  /** Full description for more context */
+  projectDescription?: string
   /** Tags for the project */
   projectTags: string[]
   /** Optional custom project URL */
