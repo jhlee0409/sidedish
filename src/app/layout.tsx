@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { PromotionProvider } from '@/contexts/PromotionContext'
 import { Toaster } from 'sonner'
 import ContactButton from '@/components/ContactButton'
 import { SEO_CONFIG, getOrganizationSchema, getWebSiteSchema, getFAQSchema } from '@/lib/seo-config'
@@ -183,7 +184,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <PromotionProvider>
+            {children}
+          </PromotionProvider>
+        </AuthProvider>
         <ContactButton />
         <Toaster position="top-center" richColors closeButton />
       </body>

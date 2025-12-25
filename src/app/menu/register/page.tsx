@@ -16,7 +16,8 @@ import MultiLinkInput from '@/components/MultiLinkInput'
 import { FormField, CharacterCount } from '@/components/form'
 import { DraftData, StoreType } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { createProject, uploadImage, getAiUsageInfo, generateAiContent, promoteProject, ApiError, PROMOTION_PLATFORMS, SocialPlatform } from '@/lib/api-client'
+import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError, PROMOTION_PLATFORMS, SocialPlatform } from '@/lib/api-client'
+import { usePromotion } from '@/contexts/PromotionContext'
 import LoginModal from '@/components/LoginModal'
 import {
   getOrCreateDraft,
@@ -35,6 +36,7 @@ import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 export default function MenuRegisterPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { startPromotion } = usePromotion()
 
   // RHF Form
   const {
@@ -65,7 +67,6 @@ export default function MenuRegisterPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [wantsPromotion, setWantsPromotion] = useState(false)
-  const [isPromoting, setIsPromoting] = useState(false)
   const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(['x', 'linkedin', 'facebook', 'threads'])
 
   // AI limit state
@@ -380,36 +381,15 @@ export default function MenuRegisterPage() {
         isBeta: data.isBeta,
       })
 
-      // Handle promotion if requested
+      // Handle promotion if requested (runs in background)
       if (wantsPromotion) {
-        setIsPromoting(true)
-        try {
-          const promotionResult = await promoteProject({
-            projectId: project.id,
-            projectTitle: data.title,
-            projectSummary: data.shortDescription,
-            projectTags: data.tags,
-            platforms: selectedPlatforms,
-          })
-
-          if (promotionResult.success) {
-            toast.success('소셜 미디어에 홍보 게시글이 발행되었습니다!')
-          } else {
-            toast.error('홍보 게시글 발행에 실패했습니다.')
-          }
-        } catch (promotionError) {
-          console.error('Promotion failed:', promotionError)
-          // Don't block the redirect if promotion fails
-          if (promotionError instanceof ApiError) {
-            if (promotionError.code === 'SERVICE_UNAVAILABLE') {
-              toast.error('홍보 서비스가 설정되지 않았습니다.')
-            } else {
-              toast.error('홍보 게시글 발행에 실패했습니다.')
-            }
-          }
-        } finally {
-          setIsPromoting(false)
-        }
+        startPromotion({
+          projectId: project.id,
+          projectTitle: data.title,
+          projectSummary: data.shortDescription,
+          projectTags: data.tags,
+          platforms: selectedPlatforms,
+        })
       }
 
       if (draft) {
@@ -859,10 +839,10 @@ export default function MenuRegisterPage() {
                 type="submit"
                 variant="primary"
                 className="w-full sm:w-auto px-8"
-                disabled={isSubmitting || isPromoting || !isAuthenticated}
-                isLoading={isSubmitting || isPromoting}
+                disabled={isSubmitting || !isAuthenticated}
+                isLoading={isSubmitting}
               >
-                {isPromoting ? '홍보 게시 중...' : '메뉴 등록 완료'}
+                메뉴 등록 완료
               </Button>
             </div>
           </form>
