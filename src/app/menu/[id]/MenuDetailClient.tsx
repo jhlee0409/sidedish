@@ -8,7 +8,7 @@ import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
-  Puzzle, Package, ExternalLink, Crown
+  Puzzle, Package, ExternalLink, Crown, Megaphone
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
@@ -20,6 +20,7 @@ import Button from '@/components/Button'
 import UserMenu from '@/components/UserMenu'
 import ConfirmModal from '@/components/ConfirmModal'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePromotion } from '@/contexts/PromotionContext'
 import {
   getProject,
   getProjectComments,
@@ -113,6 +114,7 @@ export default function MenuDetailClient({
 }: MenuDetailClientProps) {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
+  const { startPromotion } = usePromotion()
 
   const [project, setProject] = useState<ProjectResponse | null>(initialProject)
   const [isLoading, setIsLoading] = useState(!initialProject)
@@ -185,6 +187,20 @@ export default function MenuDetailClient({
   }, [projectId, isAuthenticated, initialProject, initialAuthor])
 
   const isOwnProject = user?.id === project?.authorId
+  const isMaster = user?.role === 'master'
+
+  const handlePromotion = () => {
+    if (!project) return
+
+    startPromotion({
+      projectId: project.id,
+      projectTitle: project.title,
+      projectSummary: project.shortDescription,
+      projectTags: project.tags,
+      platforms: ['x', 'linkedin', 'facebook', 'threads'],
+    })
+    toast.success('홍보가 시작되었습니다!')
+  }
 
   const handleReaction = async (reactionKey: ReactionKey) => {
     if (!isAuthenticated) {
@@ -472,6 +488,27 @@ export default function MenuDetailClient({
               </Link>
             )}
 
+            {/* Promote Button - Mobile, Master only */}
+            {isMaster && (
+              <button
+                onClick={handlePromotion}
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl p-3 shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-white/20 p-1.5 rounded-lg">
+                      <Megaphone className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm">SNS 홍보하기</p>
+                      <p className="text-[11px] text-white/70">X, LinkedIn, Facebook, Threads</p>
+                    </div>
+                  </div>
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </div>
+              </button>
+            )}
+
             {/* Promotion Status - Mobile */}
             {isOwnProject && project.promotionPosts && (
               <PromotionStatusCard promotionPosts={project.promotionPosts} />
@@ -661,6 +698,27 @@ export default function MenuDetailClient({
                     </div>
                   </div>
                 </Link>
+              )}
+
+              {/* Promote Button - Master only */}
+              {isMaster && (
+                <button
+                  onClick={handlePromotion}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl p-3 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-white/20 p-1.5 rounded-lg">
+                        <Megaphone className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-sm">SNS 홍보하기</p>
+                        <p className="text-[11px] text-white/70">X, LinkedIn, Facebook, Threads</p>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </div>
+                </button>
               )}
 
               {/* Promotion Status - Owner only */}
