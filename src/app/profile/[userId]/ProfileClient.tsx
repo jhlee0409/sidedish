@@ -11,6 +11,7 @@ import {
   Heart,
   Utensils,
   Loader2,
+  Crown,
 } from 'lucide-react'
 import { getUser, getProjects } from '@/lib/api-client'
 import { UserResponse, ProjectResponse } from '@/lib/db-types'
@@ -144,16 +145,23 @@ export default function ProfileClient({ userId, initialUser }: ProfileClientProp
             <div className="absolute bottom-0 left-0 w-32 sm:w-48 h-32 sm:h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10 flex items-center gap-4 sm:gap-6">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold backdrop-blur-sm border-3 sm:border-4 border-white/30 overflow-hidden relative">
-                {profile.avatarUrl ? (
-                  <Image
-                    src={profile.avatarUrl}
-                    alt={profile.name}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  profile.name.charAt(0).toUpperCase()
+              <div className="relative">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-bold backdrop-blur-sm border-3 sm:border-4 border-white/30 overflow-hidden relative">
+                  {profile.avatarUrl ? (
+                    <Image
+                      src={profile.avatarUrl}
+                      alt={profile.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    profile.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                {profile.role === 'master' && (
+                  <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                    <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                  </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">

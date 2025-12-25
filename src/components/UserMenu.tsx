@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, User, Utensils, Heart, MessageCircle, ChefHat } from 'lucide-react'
+import { LogOut, User, Utensils, Heart, MessageCircle, ChefHat, Crown } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface UserMenuProps {
@@ -59,19 +59,26 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors"
       >
-        {user.avatarUrl ? (
-          <Image
-            src={user.avatarUrl}
-            alt={user.name}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <div className="relative">
+          {user.avatarUrl ? (
+            <Image
+              src={user.avatarUrl}
+              alt={user.name}
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          {user.role === 'master' && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+              <Crown className="w-3 h-3 text-white" />
+            </div>
+          )}
+        </div>
       </button>
 
       {isOpen && (
@@ -79,19 +86,26 @@ export default function UserMenu({ onLoginClick }: UserMenuProps) {
           {/* User Info */}
           <div className="px-4 py-4 border-b border-slate-100 bg-slate-50">
             <div className="flex items-center gap-3">
-              {user.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt={user.name}
-                  width={48}
-                  height={48}
-                  className="rounded-full"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <div className="relative">
+                {user.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    width={48}
+                    height={48}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                {user.role === 'master' && (
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                    <Crown className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-slate-900 truncate">{user.name}</p>
                 <p className="text-sm text-slate-500 truncate">{user.email}</p>
