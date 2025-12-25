@@ -234,11 +234,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const errorText = await simResponse.text()
       console.error('SIM API error:', simResponse.status, errorText)
 
+      // Try to parse error details from SIM response
+      let simErrorMessage: string | undefined
+      try {
+        const simError = JSON.parse(errorText)
+        simErrorMessage = simError.error || simError.message
+      } catch {
+        // Response wasn't JSON, use raw text if short enough
+        if (errorText && errorText.length < 200) {
+          simErrorMessage = errorText
+        }
+      }
+
       // Handle specific error cases
       if (simResponse.status === 401 || simResponse.status === 403) {
         return NextResponse.json(
           { error: '홍보 서비스 인증에 실패했습니다.', code: 'SIM_AUTH_ERROR' },
           { status: 503 }
+        )
+      }
+
+      if (simResponse.status === 404) {
+        console.error('SIM workflow not found. Check SIM_WORKFLOW_ID configuration.')
+        return NextResponse.json(
+          { error: '홍보 워크플로우를 찾을 수 없습니다. 관리자에게 문의해주세요.', code: 'SIM_WORKFLOW_NOT_FOUND' },
+          { status: 503 }
+        )
+      }
+
+      if (simResponse.status === 400) {
+        return NextResponse.json(
+          {
+            error: simErrorMessage || '홍보 요청 형식이 올바르지 않습니다.',
+            code: 'SIM_BAD_REQUEST'
+          },
+          { status: 400 }
         )
       }
 
@@ -249,8 +279,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         )
       }
 
+      // Generic error with status code for debugging
       return NextResponse.json(
-        { error: '홍보 처리 중 오류가 발생했습니다.', code: 'SIM_ERROR' },
+        {
+          error: '홍보 처리 중 오류가 발생했습니다.',
+          code: 'SIM_ERROR',
+          details: process.env.NODE_ENV === 'development'
+            ? { status: simResponse.status, message: simErrorMessage }
+            : undefined
+        },
         { status: 500 }
       )
     }
