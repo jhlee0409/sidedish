@@ -4,7 +4,7 @@
  * SIM 워크플로우를 호출하여 소셜 미디어(LinkedIn, X, Threads, Facebook)에
  * 프로젝트 홍보 게시글을 자동으로 발행합니다.
  *
- * @see https://docs.sim.ai/triggers/api
+ * @see https://docs.sim.ai/execution
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // 6. Call SIM workflow
-    const simEndpoint = `https://sim.ai/api/workflows/${simWorkflowId}/execute`
+    const simEndpoint = `https://www.sim.ai/api/workflows/${simWorkflowId}/execute`
 
     const simResponse = await fetch(simEndpoint, {
       method: 'POST',
@@ -222,10 +222,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         'X-API-Key': simApiKey,
       },
       body: JSON.stringify({
-        projectTitle: body.projectTitle,
-        projectSummary: body.projectSummary,
-        projectTags: tagsString,
-        projectUrl: projectUrl,
+        title: body.projectTitle,
+        summary: body.projectSummary,
+        tags: tagsString,
+        url: projectUrl,
         platforms: platforms,
       }),
     })
