@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import { promoteProject, PromoteProjectData, PromotionResult, ApiError } from '@/lib/api-client'
+import { promoteProject, PromoteProjectData, PromotionResult, ApiError, invalidateCache } from '@/lib/api-client'
 
 interface PromotionJob {
   id: string
@@ -76,6 +76,10 @@ export function PromotionProvider({ children }: PromotionProviderProps) {
         )
 
         if (result.success) {
+          // Invalidate project cache so badges appear immediately
+          invalidateCache(`projects:${data.projectId}`)
+          invalidateCache('projects') // Also invalidate list cache for mypage
+
           // Show simple success toast - badges shown on project detail & mypage
           const platformCount = Object.entries(result.posts || {})
             .filter(([key, url]) => key !== 'promotedAt' && url).length || data.platforms?.length || 4
