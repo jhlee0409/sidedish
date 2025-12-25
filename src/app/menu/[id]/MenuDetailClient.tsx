@@ -8,7 +8,7 @@ import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
-  Puzzle, Package, ExternalLink
+  Puzzle, Package, ExternalLink, Crown
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
@@ -772,19 +772,26 @@ export default function MenuDetailClient({
                 href={`/profile/${project.authorId}`}
                 className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:bg-slate-100/50 hover:border-orange-200 transition-colors group"
               >
-                {authorProfile?.avatarUrl ? (
-                  <Image
-                    src={authorProfile.avatarUrl}
-                    alt={authorProfile?.name || project.authorName}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full object-cover shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all">
-                    {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="relative shrink-0">
+                  {authorProfile?.avatarUrl ? (
+                    <Image
+                      src={authorProfile.avatarUrl}
+                      alt={authorProfile?.name || project.authorName}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full object-cover group-hover:ring-2 group-hover:ring-orange-300 transition-all"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm group-hover:ring-2 group-hover:ring-orange-300 transition-all">
+                      {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {authorProfile?.role === 'master' && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                      <Crown className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-slate-900 text-xs group-hover:text-orange-600 transition-colors">{authorProfile?.name || project.authorName}</div>
                   <div className="text-[11px] text-slate-500">Head Chef</div>
@@ -844,19 +851,26 @@ export default function MenuDetailClient({
             href={`/profile/${project.authorId}`}
             className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:bg-slate-100/50 transition-colors group"
           >
-            {authorProfile?.avatarUrl ? (
-              <Image
-                src={authorProfile.avatarUrl}
-                alt={authorProfile?.name || project.authorName}
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm shrink-0">
-                {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="relative shrink-0">
+              {authorProfile?.avatarUrl ? (
+                <Image
+                  src={authorProfile.avatarUrl}
+                  alt={authorProfile?.name || project.authorName}
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm">
+                  {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
+                </div>
+              )}
+              {authorProfile?.role === 'master' && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                  <Crown className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-slate-900 text-xs">{authorProfile?.name || project.authorName}</div>
               <div className="text-[11px] text-slate-500">Head Chef</div>
