@@ -35,6 +35,8 @@ import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey 
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions, isReactionKey } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
+import ShareSheet from '@/components/ShareSheet'
+import { ShareData } from '@/lib/share-utils'
 
 interface MenuDetailClientProps {
   projectId: string
@@ -66,6 +68,7 @@ export default function MenuDetailClient({
   )
   const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
+  const [showShareSheet, setShowShareSheet] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -642,25 +645,7 @@ export default function MenuDetailClient({
                     <Button
                       variant="outline"
                       className="w-full py-2.5 rounded-lg text-xs"
-                      onClick={async () => {
-                        const shareData = {
-                          title: project.title,
-                          text: project.shortDescription,
-                          url: window.location.href,
-                        }
-                        if (navigator.share) {
-                          try {
-                            await navigator.share(shareData)
-                          } catch (err) {
-                            if ((err as Error).name !== 'AbortError') {
-                              console.error('Share failed:', err)
-                            }
-                          }
-                        } else {
-                          await navigator.clipboard.writeText(window.location.href)
-                          toast.success('링크가 복사되었습니다!')
-                        }
-                      }}
+                      onClick={() => setShowShareSheet(true)}
                     >
                       <Share2 className="w-3.5 h-3.5 mr-1" />
                       공유
@@ -875,25 +860,7 @@ export default function MenuDetailClient({
           )}
 
           <button
-            onClick={async () => {
-              const shareData = {
-                title: project.title,
-                text: project.shortDescription,
-                url: window.location.href,
-              }
-              if (navigator.share) {
-                try {
-                  await navigator.share(shareData)
-                } catch (err) {
-                  if ((err as Error).name !== 'AbortError') {
-                    console.error('Share failed:', err)
-                  }
-                }
-              } else {
-                await navigator.clipboard.writeText(window.location.href)
-                toast.success('링크가 복사되었습니다!')
-              }
-            }}
+            onClick={() => setShowShareSheet(true)}
             className="flex items-center justify-center py-3 px-4 rounded-xl bg-slate-100 text-slate-600 active:scale-[0.98] transition-transform"
           >
             <Share2 className="w-4 h-4" />
@@ -915,6 +882,16 @@ export default function MenuDetailClient({
         confirmText="삭제"
         cancelText="취소"
         variant="danger"
+      />
+
+      <ShareSheet
+        isOpen={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+        data={{
+          title: project.title,
+          text: project.shortDescription,
+          url: typeof window !== 'undefined' ? window.location.href : '',
+        }}
       />
     </div>
   )
