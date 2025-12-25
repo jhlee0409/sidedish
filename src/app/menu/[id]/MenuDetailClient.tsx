@@ -133,6 +133,16 @@ export default function MenuDetailClient({
   const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // 스크롤 감지 - 헤더 축소용
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -411,28 +421,54 @@ export default function MenuDetailClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+      {/* Header - 스크롤 시 메뉴명 + CTA 노출 */}
+      <div className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 transition-all duration-200 ${isScrolled ? 'shadow-sm' : ''}`}>
         <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+          <div className={`flex items-center justify-between transition-all duration-200 ${isScrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`}>
+            {/* 뒤로가기 */}
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center justify-center w-10 h-10 -ml-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
+              aria-label="뒤로가기"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium hidden sm:inline">돌아가기</span>
             </button>
-            <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
-              <Image
-                src="/sidedish_logo.png"
-                alt="SideDish"
-                width={32}
-                height={32}
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-              />
-              <span className="font-bold text-slate-900 text-sm sm:text-base">SideDish</span>
-            </Link>
-            <UserMenu onLoginClick={() => setShowLoginModal(true)} />
+
+            {/* 중앙: 로고 or 메뉴명 */}
+            <div className="flex-1 flex items-center justify-center min-w-0 px-2">
+              {isScrolled ? (
+                <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate max-w-[200px] sm:max-w-xs">
+                  {project.title}
+                </h2>
+              ) : (
+                <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
+                  <Image
+                    src="/sidedish_logo.png"
+                    alt="SideDish"
+                    width={32}
+                    height={32}
+                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                  />
+                  <span className="font-bold text-slate-900 text-sm sm:text-base">SideDish</span>
+                </Link>
+              )}
+            </div>
+
+            {/* 우측: 스크롤 시 CTA 버튼 or UserMenu */}
+            <div className="flex items-center gap-1">
+              {isScrolled && (project.links?.length ?? 0) > 0 && (
+                <a
+                  href={project.links?.find(l => l.isPrimary)?.url || project.links?.[0]?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <Utensils className="w-3.5 h-3.5" />
+                  맛보기
+                </a>
+              )}
+              <UserMenu onLoginClick={() => setShowLoginModal(true)} />
+            </div>
           </div>
         </div>
       </div>
@@ -946,7 +982,7 @@ export default function MenuDetailClient({
           {(project.links?.length ?? 0) > 0 ? (() => {
             const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
             const config = primaryLink ? getStoreConfig(primaryLink.storeType) : null
-            const ctaLabel = primaryLink?.label || config?.shortLabel || '방문하기'
+            const ctaLabel = primaryLink?.label || config?.shortLabel || '맛보러 가기'
             return (
               <a
                 href={primaryLink?.url}
@@ -954,7 +990,7 @@ export default function MenuDetailClient({
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
               >
-                {config?.icon || <Globe className="w-4 h-4" />}
+                <Utensils className="w-4 h-4" />
                 <span className="text-sm">{ctaLabel}</span>
               </a>
             )
@@ -965,8 +1001,8 @@ export default function MenuDetailClient({
               rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
             >
-              {cta.icon}
-              <span className="text-sm">{cta.label}</span>
+              <Utensils className="w-4 h-4" />
+              <span className="text-sm">맛보러 가기</span>
             </a>
           ) : (
             /* 링크가 없을 때 찜 버튼을 넓게 */
