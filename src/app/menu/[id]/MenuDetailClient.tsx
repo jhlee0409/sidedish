@@ -474,34 +474,75 @@ export default function MenuDetailClient({
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8 pb-28 lg:pb-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Header Section */}
-        <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-10">
-          <div className="flex items-start gap-2 sm:gap-3">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight">
-              {project.title}
-            </h1>
-            {project.isBeta && (
-              <span className="mt-1 sm:mt-2 inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
-                <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                Beta
-              </span>
-            )}
+        {/* Header Section - 역피라미드 구조 */}
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-10">
+          {/* 타이틀 + 뱃지 */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
+                  {project.title}
+                </h1>
+                {project.isBeta && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
+                    <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    Beta
+                  </span>
+                )}
+              </div>
+              {/* 한 줄 소개 */}
+              <p className="mt-2 text-slate-600 text-sm sm:text-base line-clamp-2">
+                {project.shortDescription}
+              </p>
+            </div>
+
+            {/* 찜하기 버튼 - 헤더에서 바로 접근 가능 */}
+            <button
+              onClick={handleLike}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all ${
+                isLiked
+                  ? 'bg-red-50 border-red-200 text-red-600'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-500'
+              }`}
+              aria-label={isLiked ? '찜 취소' : '찜하기'}
+            >
+              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-sm font-semibold">{likeCount}</span>
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-slate-500 text-xs sm:text-sm md:text-base border-b border-slate-100 pb-5 sm:pb-8">
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-orange-50 rounded-full border border-orange-100">
-              <ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
-              <span className="font-semibold text-slate-700 text-xs sm:text-sm">{authorProfile?.name || project.authorName} Chef</span>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
-            <div className="flex items-center gap-1 text-red-500 font-medium">
-              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
-              <span>{likeCount}명이 찜</span>
-            </div>
+          {/* 메타 정보 - 저자 + 날짜 (컴팩트) */}
+          <div className="flex items-center gap-3 text-slate-500 text-xs sm:text-sm border-b border-slate-100 pb-4 sm:pb-5">
+            {/* 저자 정보 - 클릭 시 프로필 이동 */}
+            <Link
+              href={`/profile/${project.authorId}`}
+              className="flex items-center gap-2 hover:text-orange-600 transition-colors group"
+            >
+              {authorProfile?.avatarUrl ? (
+                <Image
+                  src={authorProfile.avatarUrl}
+                  alt={authorProfile.name || project.authorName}
+                  width={24}
+                  height={24}
+                  className="rounded-full ring-2 ring-orange-100 group-hover:ring-orange-300 transition-all"
+                />
+              ) : (
+                <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                  <ChefHat className="w-3.5 h-3.5 text-orange-500" />
+                </div>
+              )}
+              <span className="font-medium text-slate-700 group-hover:text-orange-600">
+                {authorProfile?.name || project.authorName}
+              </span>
+            </Link>
+            <span className="text-slate-300">·</span>
+            <time className="text-slate-400" dateTime={project.createdAt}>
+              {new Date(project.createdAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </time>
           </div>
 
           {/* Mobile: Quick Actions */}
