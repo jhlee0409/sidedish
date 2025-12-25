@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateProjectInput, ProjectResponse, ProjectPlatform, ProjectLinkDoc } from '@/lib/db-types'
+import { UpdateProjectInput, ProjectResponse, ProjectPlatform, ProjectLinkDoc, PromotionPostsResponse } from '@/lib/db-types'
 import { Timestamp, UpdateData } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { validateProjectLinks, badRequestResponse } from '@/lib/security-utils'
@@ -44,6 +44,19 @@ export async function GET(
     }
 
     const data = doc.data()!
+
+    // Build promotionPosts if exists
+    let promotionPosts: PromotionPostsResponse | undefined
+    if (data.promotionPosts) {
+      promotionPosts = {
+        x: data.promotionPosts.x || null,
+        linkedin: data.promotionPosts.linkedin || null,
+        facebook: data.promotionPosts.facebook || null,
+        threads: data.promotionPosts.threads || null,
+        promotedAt: data.promotionPosts.promotedAt || new Date().toISOString(),
+      }
+    }
+
     const response: ProjectResponse = {
       id: doc.id,
       title: data.title,
@@ -60,6 +73,7 @@ export async function GET(
       links: data.links || [],
       platform: data.platform,
       isBeta: data.isBeta,
+      promotionPosts,
       createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     }
