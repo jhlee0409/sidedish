@@ -13,6 +13,7 @@ import {
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
 import { LinkList } from '@/components/StoreBadges'
+import { getStoreConfig } from '@/lib/store-config'
 import { sanitizePlainText } from '@/lib/sanitize-utils'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -354,7 +355,7 @@ export default function MenuDetailClient({
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8 pb-28 lg:pb-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header Section */}
         <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-10">
           <div className="flex items-start gap-2 sm:gap-3">
@@ -809,44 +810,69 @@ export default function MenuDetailClient({
       </div>
 
       {/* Mobile Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 backdrop-blur-xl border-t border-slate-200 px-3 py-3 safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 backdrop-blur-xl border-t border-slate-200 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-2 max-w-lg mx-auto">
-          {project.links && project.links.length > 0 ? (
-            <a
-              href={project.links.find(l => l.isPrimary)?.url || project.links[0]?.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md"
-            >
-              <Globe className="w-4 h-4" />
-              <span className="text-sm">바로가기</span>
-            </a>
-          ) : project.link ? (
+          {/* Primary CTA - 링크가 있을 때 */}
+          {(project.links?.length ?? 0) > 0 ? (() => {
+            const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
+            const config = primaryLink ? getStoreConfig(primaryLink.storeType) : null
+            const ctaLabel = primaryLink?.label || config?.shortLabel || '방문하기'
+            return (
+              <a
+                href={primaryLink?.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
+              >
+                {config?.icon || <Globe className="w-4 h-4" />}
+                <span className="text-sm">{ctaLabel}</span>
+              </a>
+            )
+          })() : project.link ? (
             <a
               href={project.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
             >
               {cta.icon}
               <span className="text-sm">{cta.label}</span>
             </a>
-          ) : null}
+          ) : (
+            /* 링크가 없을 때 찜 버튼을 넓게 */
+            <button
+              onClick={handleLikeToggle}
+              disabled={isOwnProject}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all active:scale-[0.98] ${
+                isOwnProject
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : liked
+                    ? 'bg-pink-500 text-white shadow-md'
+                    : 'bg-pink-50 text-pink-600'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+              <span className="text-sm">{liked ? '찜함' : '찜하기'} ({likeCount})</span>
+            </button>
+          )}
 
-          <button
-            onClick={handleLikeToggle}
-            disabled={isOwnProject}
-            className={`flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl font-medium transition-all ${
-              isOwnProject
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : liked
-                  ? 'bg-pink-500 text-white'
-                  : 'bg-pink-50 text-pink-600'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-            <span className="text-sm">{likeCount}</span>
-          </button>
+          {/* 링크가 있을 때만 별도의 찜 버튼 표시 */}
+          {((project.links?.length ?? 0) > 0 || project.link) && (
+            <button
+              onClick={handleLikeToggle}
+              disabled={isOwnProject}
+              className={`flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl font-medium transition-all active:scale-[0.98] ${
+                isOwnProject
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : liked
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-pink-50 text-pink-600'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+              <span className="text-sm">{likeCount}</span>
+            </button>
+          )}
 
           <button
             onClick={async () => {
@@ -868,7 +894,7 @@ export default function MenuDetailClient({
                 toast.success('링크가 복사되었습니다!')
               }
             }}
-            className="flex items-center justify-center py-3 px-4 rounded-xl bg-slate-100 text-slate-600"
+            className="flex items-center justify-center py-3 px-4 rounded-xl bg-slate-100 text-slate-600 active:scale-[0.98] transition-transform"
           >
             <Share2 className="w-4 h-4" />
           </button>
