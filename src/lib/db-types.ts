@@ -260,6 +260,15 @@ export interface ProjectLinkResponse {
   isPrimary?: boolean
 }
 
+// Promotion posts response (URLs to social media posts)
+export interface PromotionPostsResponse {
+  x?: string | null
+  linkedin?: string | null
+  facebook?: string | null
+  threads?: string | null
+  promotedAt: string
+}
+
 // API Response types (serialized for JSON)
 export interface ProjectResponse {
   id: string
@@ -280,6 +289,8 @@ export interface ProjectResponse {
   links?: ProjectLinkResponse[]
   platform: ProjectPlatform
   isBeta?: boolean
+  /** 소셜 미디어 홍보 게시글 링크 */
+  promotionPosts?: PromotionPostsResponse
   createdAt: string
   updatedAt: string
 }

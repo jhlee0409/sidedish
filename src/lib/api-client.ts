@@ -1600,6 +1600,17 @@ export interface PromoteProjectData {
 }
 
 /**
+ * Promotion posts with URLs to each platform's post.
+ */
+export interface PromotionPosts {
+  x?: string | null
+  linkedin?: string | null
+  facebook?: string | null
+  threads?: string | null
+  promotedAt?: string
+}
+
+/**
  * Result from social media promotion.
  */
 export interface PromotionResult {
@@ -1607,15 +1618,8 @@ export interface PromotionResult {
   success: boolean
   /** Success message */
   message: string
-  /** SIM workflow execution ID */
-  executionId?: string
-  /** Individual platform results */
-  results?: {
-    linkedin?: { success: boolean; postId?: string; error?: string }
-    x?: { success: boolean; tweetId?: string; error?: string }
-    threads?: { success: boolean; postId?: string; error?: string }
-    facebook?: { success: boolean; postId?: string; error?: string }
-  }
+  /** Post URLs for each platform (null if not selected or failed) */
+  posts?: PromotionPosts
 }
 
 /**

@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAdminDb } from '@/lib/firebase-admin'
 import { SEO_CONFIG, getProjectSchema, getBreadcrumbSchema, truncateDescription, getCanonicalUrl } from '@/lib/seo-config'
-import { ProjectPlatform } from '@/lib/db-types'
+import { ProjectPlatform, PromotionPostsResponse } from '@/lib/db-types'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import MenuDetailClient from './MenuDetailClient'
 
@@ -121,6 +121,7 @@ export default async function MenuDetailPage({ params }: PageProps) {
     githubUrl: project.githubUrl as string | undefined,
     links: project.links,
     isBeta: project.isBeta as boolean | undefined,
+    promotionPosts: project.promotionPosts as PromotionPostsResponse | undefined,
     createdAt: project.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
     updatedAt: project.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
   }

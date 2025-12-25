@@ -8,7 +8,7 @@ import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
-  Puzzle, Package
+  Puzzle, Package, ExternalLink
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
@@ -31,12 +31,74 @@ import {
   createWhisper,
   getUser,
 } from '@/lib/api-client'
-import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey } from '@/lib/db-types'
+import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey, PromotionPostsResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions, isReactionKey } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
 import ShareSheet from '@/components/ShareSheet'
 import { ShareData } from '@/lib/share-utils'
+import { SocialPlatform } from '@/lib/api-client'
+
+/**
+ * Platform display configuration for promotion status
+ */
+const PLATFORM_CONFIG: Record<SocialPlatform, { label: string; color: string; hoverColor: string }> = {
+  x: { label: 'X', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+  linkedin: { label: 'LinkedIn', color: 'bg-[#0A66C2]', hoverColor: 'hover:bg-[#004182]' },
+  facebook: { label: 'Facebook', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#0d5bb5]' },
+  threads: { label: 'Threads', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+}
+
+/**
+ * Promotion status card showing where the project was promoted
+ */
+function PromotionStatusCard({ promotionPosts }: { promotionPosts: PromotionPostsResponse }) {
+  const successfulPosts = Object.entries(promotionPosts)
+    .filter(([key, url]) => key !== 'promotedAt' && url)
+    .map(([platform, url]) => ({
+      platform: platform as SocialPlatform,
+      url: url as string,
+    }))
+
+  if (successfulPosts.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="bg-gradient-to-b from-indigo-50 to-white rounded-xl p-3 border border-indigo-100 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <Share2 className="w-4 h-4 text-indigo-600" />
+        <h3 className="text-xs font-bold text-slate-900">홍보 현황</h3>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {successfulPosts.map(({ platform, url }) => {
+          const config = PLATFORM_CONFIG[platform]
+          return (
+            <a
+              key={platform}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${config.color} ${config.hoverColor} text-white text-xs rounded-lg transition-colors`}
+            >
+              {config.label}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )
+        })}
+      </div>
+      {promotionPosts.promotedAt && (
+        <p className="text-[10px] text-slate-400 mt-2">
+          {new Date(promotionPosts.promotedAt).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}에 홍보됨
+        </p>
+      )}
+    </div>
+  )
+}
 
 interface MenuDetailClientProps {
   projectId: string
@@ -410,6 +472,11 @@ export default function MenuDetailClient({
               </Link>
             )}
 
+            {/* Promotion Status - Mobile */}
+            {isOwnProject && project.promotionPosts && (
+              <PromotionStatusCard promotionPosts={project.promotionPosts} />
+            )}
+
             {project.links && project.links.length > 0 && (
               <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
                 <LinkList links={project.links} compact />
@@ -594,6 +661,11 @@ export default function MenuDetailClient({
                     </div>
                   </div>
                 </Link>
+              )}
+
+              {/* Promotion Status - Owner only */}
+              {isOwnProject && project.promotionPosts && (
+                <PromotionStatusCard promotionPosts={project.promotionPosts} />
               )}
 
               {/* Action Card */}

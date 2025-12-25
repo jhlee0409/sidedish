@@ -17,6 +17,8 @@ import {
   createRateLimitKey,
 } from '@/lib/rate-limiter'
 import { getPageUrl } from '@/lib/site'
+import { getAdminDb } from '@/lib/firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
 // Rate limit config for promotion (limited to prevent spam)
 const PROMOTION_RATE_LIMIT = {
@@ -39,16 +41,30 @@ interface PromotionRequest {
   platforms?: SocialPlatform[]
 }
 
+/**
+ * SIM workflow response format (updated 2025.01)
+ * Returns post URLs for each platform
+ */
 interface SimWorkflowResponse {
   success: boolean
-  executionId?: string
-  results?: {
-    linkedin?: { success: boolean; postId?: string; error?: string }
-    x?: { success: boolean; tweetId?: string; error?: string }
-    threads?: { success: boolean; postId?: string; error?: string }
-    facebook?: { success: boolean; postId?: string; error?: string }
+  posts?: {
+    x?: string | null
+    linkedin?: string | null
+    facebook?: string | null
+    threads?: string | null
   }
   error?: string
+}
+
+/**
+ * Promotion posts stored in project document
+ */
+export interface PromotionPosts {
+  x?: string | null
+  linkedin?: string | null
+  facebook?: string | null
+  threads?: string | null
+  promotedAt: string
 }
 
 /**
@@ -209,12 +225,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const simResult = await simResponse.json() as SimWorkflowResponse
 
-    // 6. Return success response
+    // 6. Save promotion results to project document
+    if (simResult.success && simResult.posts) {
+      try {
+        const db = getAdminDb()
+        const promotionPosts: PromotionPosts = {
+          ...simResult.posts,
+          promotedAt: new Date().toISOString(),
+        }
+
+        await db.collection('projects').doc(body.projectId).update({
+          promotionPosts,
+          updatedAt: FieldValue.serverTimestamp(),
+        })
+      } catch (dbError) {
+        // Log but don't fail the request if saving fails
+        console.error('Failed to save promotion results to project:', dbError)
+      }
+    }
+
+    // 7. Return success response with post URLs
     return NextResponse.json({
-      success: true,
-      message: '홍보 게시글이 발행되었습니다.',
-      executionId: simResult.executionId,
-      results: simResult.results,
+      success: simResult.success,
+      message: simResult.success
+        ? '홍보 게시글이 발행되었습니다.'
+        : '일부 플랫폼에 홍보하지 못했습니다.',
+      posts: simResult.posts,
     })
 
   } catch (error) {

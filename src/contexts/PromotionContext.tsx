@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import { promoteProject, PromoteProjectData, PromotionResult, ApiError } from '@/lib/api-client'
+import { promoteProject, PromoteProjectData, PromotionResult, PromotionPosts, ApiError, SocialPlatform } from '@/lib/api-client'
+import { ExternalLink } from 'lucide-react'
 
 interface PromotionJob {
   id: string
@@ -12,6 +13,60 @@ interface PromotionJob {
   result?: PromotionResult
   error?: string
   startedAt: number
+}
+
+/**
+ * Platform display configuration
+ */
+const PLATFORM_CONFIG: Record<SocialPlatform, { label: string; color: string }> = {
+  x: { label: 'X', color: 'bg-black' },
+  linkedin: { label: 'LinkedIn', color: 'bg-[#0A66C2]' },
+  facebook: { label: 'Facebook', color: 'bg-[#1877F2]' },
+  threads: { label: 'Threads', color: 'bg-black' },
+}
+
+/**
+ * Toast content component showing promotion results with links
+ */
+function PromotionSuccessToast({ title, posts }: { title: string; posts: PromotionPosts }) {
+  const successfulPosts = Object.entries(posts)
+    .filter(([key, url]) => key !== 'promotedAt' && url)
+    .map(([platform, url]) => ({
+      platform: platform as SocialPlatform,
+      url: url as string,
+    }))
+
+  if (successfulPosts.length === 0) {
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="font-medium">&ldquo;{title}&rdquo; 홍보 완료</span>
+        <span className="text-sm text-slate-500">게시글 링크를 가져올 수 없습니다.</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="font-medium">&ldquo;{title}&rdquo; 홍보 완료!</span>
+      <div className="flex flex-wrap gap-1.5">
+        {successfulPosts.map(({ platform, url }) => {
+          const config = PLATFORM_CONFIG[platform]
+          return (
+            <a
+              key={platform}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-1 px-2 py-1 ${config.color} text-white text-xs rounded-full hover:opacity-80 transition-opacity`}
+            >
+              {config.label}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 interface PromotionContextType {
@@ -75,7 +130,14 @@ export function PromotionProvider({ children }: PromotionProviderProps) {
           )
         )
 
-        if (result.success) {
+        if (result.success && result.posts) {
+          // Show success toast with clickable links to posts
+          toast.success(
+            <PromotionSuccessToast title={data.projectTitle} posts={result.posts} />,
+            { id: jobId, duration: 10000 } // Keep visible for 10 seconds
+          )
+        } else if (result.success) {
+          // Fallback if no posts returned
           const platformCount = data.platforms?.length || 4
           toast.success(
             `"${data.projectTitle}" 홍보 완료! ${platformCount}개 플랫폼에 게시되었습니다.`,
