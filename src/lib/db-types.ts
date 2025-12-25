@@ -319,6 +319,7 @@ export interface CommentResponse {
   authorId: string
   authorName: string
   avatarUrl?: string
+  role?: UserRole
   content: string
   createdAt: string
 }

@@ -104,7 +104,7 @@ function PromotionStatusCard({ promotionPosts }: { promotionPosts: PromotionPost
 interface MenuDetailClientProps {
   projectId: string
   initialProject: ProjectResponse | null
-  initialAuthor: { id: string; name: string; avatarUrl?: string } | null
+  initialAuthor: { id: string; name: string; avatarUrl?: string; role?: string } | null
 }
 
 export default function MenuDetailClient({
@@ -128,11 +128,21 @@ export default function MenuDetailClient({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(
-    initialAuthor ? { ...initialAuthor, isProfileComplete: true, isWithdrawn: false, agreements: { termsOfService: true, privacyPolicy: true, marketing: false, agreedAt: '' }, createdAt: '', updatedAt: '' } as UserResponse : null
+    initialAuthor ? { ...initialAuthor, role: initialAuthor.role as UserResponse['role'], isProfileComplete: true, isWithdrawn: false, agreements: { termsOfService: true, privacyPolicy: true, marketing: false, agreedAt: '' }, createdAt: '', updatedAt: '' } as UserResponse : null
   )
   const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
   const [showShareSheet, setShowShareSheet] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // 스크롤 감지 - 헤더 축소용
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -411,61 +421,106 @@ export default function MenuDetailClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+      {/* Header - 스크롤 시 메뉴명 + CTA 노출 */}
+      <div className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100 transition-all duration-200 ${isScrolled ? 'shadow-sm' : ''}`}>
         <div className="container mx-auto px-3 sm:px-4 max-w-5xl">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+          <div className={`flex items-center justify-between transition-all duration-200 ${isScrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`}>
+            {/* 뒤로가기 */}
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center justify-center w-10 h-10 -ml-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
+              aria-label="뒤로가기"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium hidden sm:inline">돌아가기</span>
             </button>
-            <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
-              <Image
-                src="/sidedish_logo.png"
-                alt="SideDish"
-                width={32}
-                height={32}
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-              />
-              <span className="font-bold text-slate-900 text-sm sm:text-base">SideDish</span>
-            </Link>
+
+            {/* 중앙: 로고 or 메뉴명 */}
+            <div className="flex-1 flex items-center justify-center min-w-0 px-2">
+              {isScrolled ? (
+                <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate max-w-[200px] sm:max-w-xs">
+                  {project.title}
+                </h2>
+              ) : (
+                <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
+                  <Image
+                    src="/sidedish_logo.png"
+                    alt="SideDish"
+                    width={32}
+                    height={32}
+                    className="h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                  />
+                  <span className="font-bold text-slate-900 text-sm sm:text-base">SideDish</span>
+                </Link>
+              )}
+            </div>
+
+            {/* 우측: UserMenu */}
             <UserMenu onLoginClick={() => setShowLoginModal(true)} />
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8 pb-28 lg:pb-8 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Header Section */}
-        <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-10">
-          <div className="flex items-start gap-2 sm:gap-3">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-slate-900 leading-tight tracking-tight">
-              {project.title}
-            </h1>
-            {project.isBeta && (
-              <span className="mt-1 sm:mt-2 inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
-                <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                Beta
-              </span>
-            )}
+        {/* Header Section - 역피라미드 구조 */}
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-10">
+          {/* 타이틀 + 뱃지 */}
+          <div>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
+                {project.title}
+              </h1>
+              {project.isBeta && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
+                  <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  Beta
+                </span>
+              )}
+            </div>
+            {/* 한 줄 소개 */}
+            <p className="mt-2 text-slate-600 text-sm sm:text-base line-clamp-2">
+              {project.shortDescription}
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-slate-500 text-xs sm:text-sm md:text-base border-b border-slate-100 pb-5 sm:pb-8">
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-orange-50 rounded-full border border-orange-100">
-              <ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
-              <span className="font-semibold text-slate-700 text-xs sm:text-sm">{authorProfile?.name || project.authorName} Chef</span>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
-            <div className="flex items-center gap-1 text-red-500 font-medium">
-              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
-              <span>{likeCount}명이 찜</span>
-            </div>
+          {/* 메타 정보 - 저자 + 날짜 (컴팩트) */}
+          <div className="flex items-center gap-3 text-slate-500 text-xs sm:text-sm border-b border-slate-100 pb-4 sm:pb-5">
+            {/* 저자 정보 - 클릭 시 프로필 이동 */}
+            <Link
+              href={`/profile/${project.authorId}`}
+              className="flex items-center gap-2 hover:text-orange-600 transition-colors group"
+            >
+              <div className="relative">
+                {authorProfile?.avatarUrl ? (
+                  <Image
+                    src={authorProfile.avatarUrl}
+                    alt={authorProfile.name || project.authorName}
+                    width={24}
+                    height={24}
+                    className="rounded-full ring-2 ring-orange-100 group-hover:ring-orange-300 transition-all"
+                  />
+                ) : (
+                  <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                    <ChefHat className="w-3.5 h-3.5 text-orange-500" />
+                  </div>
+                )}
+                {authorProfile?.role === 'master' && (
+                  <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-0.5 shadow-sm">
+                    <Crown className="w-2 h-2 text-white" />
+                  </div>
+                )}
+              </div>
+              <span className="font-medium text-slate-700 group-hover:text-orange-600">
+                {authorProfile?.name || project.authorName}
+              </span>
+            </Link>
+            <span className="text-slate-300">·</span>
+            <time className="text-slate-400" dateTime={project.createdAt}>
+              {new Date(project.createdAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </time>
           </div>
 
           {/* Mobile: Quick Actions */}
@@ -647,8 +702,15 @@ export default function MenuDetailClient({
                 {comments.length > 0 ? (
                   comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-slate-100/80">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex-shrink-0 flex items-center justify-center text-orange-600 font-bold text-xs sm:text-sm">
-                        {comment.authorName.charAt(0)}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xs sm:text-sm">
+                          {comment.authorName.charAt(0)}
+                        </div>
+                        {comment.role === 'master' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border border-white">
+                            <Crown className="w-2 h-2 text-white" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
@@ -946,7 +1008,7 @@ export default function MenuDetailClient({
           {(project.links?.length ?? 0) > 0 ? (() => {
             const primaryLink = project.links?.find(l => l.isPrimary) || project.links?.[0]
             const config = primaryLink ? getStoreConfig(primaryLink.storeType) : null
-            const ctaLabel = primaryLink?.label || config?.shortLabel || '방문하기'
+            const ctaLabel = primaryLink?.label || config?.shortLabel || '맛보러 가기'
             return (
               <a
                 href={primaryLink?.url}
@@ -954,7 +1016,7 @@ export default function MenuDetailClient({
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
               >
-                {config?.icon || <Globe className="w-4 h-4" />}
+                <Utensils className="w-4 h-4" />
                 <span className="text-sm">{ctaLabel}</span>
               </a>
             )
@@ -965,8 +1027,8 @@ export default function MenuDetailClient({
               rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-orange-600 text-white font-semibold rounded-xl shadow-md active:scale-[0.98] transition-transform"
             >
-              {cta.icon}
-              <span className="text-sm">{cta.label}</span>
+              <Utensils className="w-4 h-4" />
+              <span className="text-sm">맛보러 가기</span>
             </a>
           ) : (
             /* 링크가 없을 때 찜 버튼을 넓게 */

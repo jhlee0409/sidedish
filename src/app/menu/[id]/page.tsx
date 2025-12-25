@@ -127,7 +127,7 @@ export default async function MenuDetailPage({ params }: PageProps) {
   }
 
   // Fetch author data
-  let authorData: { id: string; name: string; avatarUrl?: string } | null = null
+  let authorData: { id: string; name: string; avatarUrl?: string; role?: string } | null = null
   if (project.authorId) {
     try {
       const authorDoc = await db.collection('users').doc(project.authorId).get()
@@ -137,6 +137,7 @@ export default async function MenuDetailPage({ params }: PageProps) {
           id: authorDoc.id,
           name: author.name,
           avatarUrl: author.avatarUrl,
+          role: author.role,
         }
       }
     } catch (error) {
