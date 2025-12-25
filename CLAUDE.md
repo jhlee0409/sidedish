@@ -3,10 +3,10 @@
 ## Project Overview
 
 **SideDish** is an AI-powered marketplace platform where developers showcase their side projects. It uses a culinary metaphor throughout:
-- Projects = "Dishes"
-- Developers = "Chefs"
-- Users = "Diners"
-- Platform = "Restaurant/Menu"
+- Projects = "메뉴" (Dishes)
+- Developers = "셰프" (Chefs)
+- Users = "다이너" (Diners)
+- Platform = "레스토랑" (Restaurant)
 
 The standout feature is **Gemini AI integration** that transforms basic project descriptions into polished, engaging "menu descriptions" in Korean.
 
@@ -28,6 +28,8 @@ The standout feature is **Gemini AI integration** that transforms basic project 
 | Form Validation | React Hook Form + Zod | 7.68.0 / 4.2.1 |
 | Icons | Lucide React | 0.468.0 |
 | Notifications | Sonner | 2.0.7 |
+| Drag & Drop | @dnd-kit | 6.3.1 |
+| Carousel | Embla Carousel | 8.6.0 |
 | Testing | Vitest + Testing Library | 4.0.16 |
 | Package Manager | pnpm | 10.25.0 |
 | Dev Server | Turbopack | (built-in) |
@@ -38,7 +40,7 @@ The standout feature is **Gemini AI integration** that transforms basic project 
 src/
 ├── app/                           # Next.js App Router
 │   ├── page.tsx                   # Root - Landing page
-│   ├── layout.tsx                 # Root layout with AuthProvider
+│   ├── layout.tsx                 # Root layout with AuthProvider & SEO
 │   ├── globals.css                # Global styles & Tailwind 4 config
 │   ├── dashboard/page.tsx         # Project gallery with search/filter
 │   ├── menu/
@@ -48,15 +50,42 @@ src/
 │   ├── login/page.tsx             # Firebase login
 │   ├── profile/[userId]/page.tsx  # Public profile page
 │   ├── mypage/page.tsx            # User profile & liked projects
+│   ├── legal/                     # Legal pages
+│   │   ├── terms/page.tsx         # Terms of service
+│   │   ├── privacy/page.tsx       # Privacy policy
+│   │   └── history/page.tsx       # Version history
+│   ├── lunchbox/                  # @deprecated Digest feature
+│   │   ├── page.tsx               # Digest list
+│   │   ├── [slug]/page.tsx        # Digest detail
+│   │   └── create/page.tsx        # Admin: create digest
 │   └── api/                       # REST API endpoints
-│       ├── projects/              # CRUD operations
+│       ├── projects/              # Project CRUD
+│       │   ├── route.ts           # GET (list), POST (create)
+│       │   └── [id]/
+│       │       ├── route.ts       # GET, PATCH, DELETE
+│       │       ├── like/route.ts  # Like/unlike
+│       │       ├── reactions/route.ts
+│       │       ├── comments/route.ts
+│       │       └── updates/route.ts  # Project updates (milestones/devlogs)
 │       ├── comments/              # Comment management
+│       │   ├── route.ts           # GET all comments
+│       │   └── [id]/route.ts      # DELETE comment
+│       ├── updates/[id]/route.ts  # DELETE project update
 │       ├── whispers/              # Private feedback
-│       ├── users/                 # User profiles & withdrawal
-│       ├── ai/generate/           # AI content generation
-│       ├── upload/                # Image uploads (Vercel Blob)
-│       ├── stats/                 # Platform statistics
-│       └── og/                    # Open Graph image generation
+│       │   ├── route.ts           # GET, POST
+│       │   └── [id]/route.ts      # PATCH (mark as read)
+│       ├── users/                 # User management
+│       │   ├── route.ts           # POST (create/update)
+│       │   └── [id]/
+│       │       ├── route.ts       # GET, PATCH
+│       │       ├── likes/route.ts # User's liked projects
+│       │       └── withdraw/route.ts  # Account withdrawal
+│       ├── ai/generate/route.ts   # AI content generation
+│       ├── upload/route.ts        # Image uploads (Vercel Blob)
+│       ├── stats/route.ts         # Platform statistics
+│       ├── digests/               # @deprecated Digest system
+│       ├── admin/seed/route.ts    # Admin: seed data
+│       └── cron/digest/route.ts   # @deprecated Cron job for digests
 │
 ├── components/                    # React components
 │   ├── Layout.tsx                 # App wrapper with sticky header
@@ -73,13 +102,29 @@ src/
 │   ├── ConfirmModal.tsx           # Reusable confirmation dialog
 │   ├── UserMenu.tsx               # User dropdown menu
 │   ├── Hero.tsx                   # Dashboard hero section
-│   └── Button.tsx                 # Reusable button component
+│   ├── Button.tsx                 # Reusable button component
+│   ├── ContactButton.tsx          # Floating contact button
+│   ├── MultiLinkInput.tsx         # Multi-store link input (drag & drop)
+│   ├── StoreBadges.tsx            # Store/platform badges display
+│   ├── ShareSheet.tsx             # Social sharing bottom sheet
+│   ├── ProjectUpdateModal.tsx     # Create milestone/devlog modal
+│   ├── ProjectUpdateTimeline.tsx  # Timeline of project updates
+│   ├── form/
+│   │   └── FormField.tsx          # Reusable form field component
+│   └── lunchbox/                  # @deprecated
+│       ├── LunchboxCard.tsx
+│       └── LocationPicker.tsx
 │
 ├── contexts/
 │   └── AuthContext.tsx            # Firebase auth state & API client init
 │
-├── hooks/
-│   └── useRequireAuth.ts          # Navigation guard for protected pages
+├── hooks/                         # Custom React hooks
+│   ├── index.ts                   # Central export
+│   ├── useRequireAuth.ts          # Navigation guard for protected pages
+│   ├── useImageUpload.ts          # Image upload with validation
+│   ├── useTagInput.ts             # Tag input management
+│   ├── useAiGeneration.ts         # AI content generation with limits
+│   └── useProjectForm.ts          # Project form state management
 │
 ├── services/
 │   └── geminiService.ts           # Server-side Gemini AI integration
@@ -87,18 +132,33 @@ src/
 ├── lib/                           # Utilities & types
 │   ├── types.ts                   # Frontend TypeScript interfaces
 │   ├── db-types.ts                # Firestore document & API response types
+│   ├── digest-types.ts            # @deprecated Digest system types
 │   ├── firebase.ts                # Firebase client SDK initialization
 │   ├── firebase-admin.ts          # Firebase Admin SDK setup
 │   ├── api-client.ts              # Authenticated API client with caching
 │   ├── auth-utils.ts              # Token verification utilities
+│   ├── admin-utils.ts             # Admin authorization utilities
+│   ├── admin-constants.ts         # User roles & permissions
 │   ├── security-utils.ts          # Input validation & sanitization
 │   ├── sanitize-utils.ts          # XSS prevention (DOMPurify)
 │   ├── rate-limiter.ts            # Sliding window rate limiting
 │   ├── file-validation.ts         # Magic number file validation
+│   ├── nickname-validation.ts     # Korean nickname validation
 │   ├── draftService.ts            # LocalStorage draft management
-│   ├── aiLimitService.ts          # AI rate limiting (3/draft, 10/day)
 │   ├── constants.ts               # Reaction emoji mappings
-│   └── og-utils.ts                # OG image generation utilities
+│   ├── form-constants.ts          # Form constraints & messages
+│   ├── site.ts                    # Site domain & URL configuration
+│   ├── seo-config.ts              # SEO metadata & JSON-LD schemas
+│   ├── share-utils.ts             # Web Share API & social sharing
+│   ├── og-utils.ts                # OG image generation utilities
+│   ├── legal-versions.ts          # Legal document versions
+│   ├── lunchbox-text.ts           # @deprecated Digest UI text
+│   ├── geocoding.ts               # @deprecated Location services
+│   └── schemas/                   # Centralized Zod schemas
+│       ├── index.ts               # Central export
+│       ├── common.ts              # Shared schemas (URL, tags, etc.)
+│       ├── project.ts             # Project form & update schemas
+│       └── user.ts                # User & withdrawal schemas
 │
 └── __tests__/                     # Test files
     ├── setup.ts                   # Vitest setup
@@ -108,7 +168,11 @@ src/
     ├── rate-limiter.test.ts       # Rate limiter tests
     ├── file-validation.test.ts    # File validation tests
     ├── auth-utils.test.ts         # Auth utilities tests
-    └── api/projects.test.ts       # API endpoint tests
+    ├── api/projects.test.ts       # API endpoint tests
+    └── schemas/                   # Schema validation tests
+        ├── common.test.ts
+        ├── project.test.ts
+        └── user.test.ts
 ```
 
 ## Key Entry Points
@@ -116,13 +180,15 @@ src/
 | File | Purpose |
 |------|---------|
 | `src/app/page.tsx` | Root entry - landing page |
-| `src/app/layout.tsx` | Root layout wrapping all routes with AuthProvider |
+| `src/app/layout.tsx` | Root layout with AuthProvider, SEO, JSON-LD structured data |
 | `src/app/dashboard/page.tsx` | Main gallery with search, filter, pagination |
 | `src/app/menu/register/page.tsx` | Project submission with AI-powered form |
+| `src/app/menu/[id]/page.tsx` | Project detail with updates timeline |
 | `src/contexts/AuthContext.tsx` | Firebase auth state & API client initialization |
 | `src/lib/api-client.ts` | Centralized API client with cache & deduplication |
 | `src/services/geminiService.ts` | Server-side AI content generation |
 | `src/lib/security-utils.ts` | Input validation & sanitization utilities |
+| `src/lib/schemas/index.ts` | Centralized Zod validation schemas |
 
 ## Claude Code Resources
 
@@ -153,6 +219,7 @@ src/
 | `firebase-helper` | Firebase 쿼리 지원 |
 | `api-designer` | API 설계 및 구현 |
 | `performance-analyzer` | 성능 분석 및 최적화 |
+| `backend-architect` | 백엔드 아키텍처 설계 |
 
 ## Development Commands
 
@@ -190,6 +257,13 @@ FIREBASE_ADMIN_PRIVATE_KEY=...
 
 # Vercel Blob Storage
 BLOB_READ_WRITE_TOKEN=...
+
+# Site Configuration (optional)
+NEXT_PUBLIC_SITE_URL=https://sidedish.me
+
+# SEO Verification (optional)
+GOOGLE_SITE_VERIFICATION=...
+NAVER_SITE_VERIFICATION=...
 ```
 
 ## API Endpoints
@@ -204,6 +278,9 @@ BLOB_READ_WRITE_TOKEN=...
 | `/api/projects/[id]/comments` | GET/POST | POST only | Comments |
 | `/api/projects/[id]/like` | GET/POST/DELETE | Yes | Like/unlike |
 | `/api/projects/[id]/reactions` | GET/POST | POST only | Reactions |
+| `/api/projects/[id]/updates` | GET/POST | POST only | Project updates (milestones/devlogs) |
+| `/api/updates/[id]` | DELETE | Yes | Delete project update (owner only) |
+| `/api/comments` | GET | No | List all comments |
 | `/api/comments/[id]` | DELETE | Yes | Delete comment (owner only) |
 | `/api/whispers` | GET/POST | Yes | Private feedback to authors |
 | `/api/whispers/[id]` | PATCH | Yes | Mark whisper as read |
@@ -214,7 +291,6 @@ BLOB_READ_WRITE_TOKEN=...
 | `/api/ai/generate` | GET/POST | Yes | AI content generation |
 | `/api/upload` | POST | Yes | Image upload to Vercel Blob |
 | `/api/stats` | GET | No | Platform statistics |
-| `/api/og` | GET | No | Open Graph image generation |
 
 ## Code Conventions
 
@@ -254,24 +330,36 @@ BLOB_READ_WRITE_TOKEN=...
 
 ### Form Validation Pattern
 
-Use React Hook Form with Zod for type-safe form validation:
+Use React Hook Form with Zod schemas from `src/lib/schemas/`:
 
 ```tsx
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { projectFormSchema, type ProjectFormData } from '@/lib/schemas'
 
-const schema = z.object({
-  name: z.string().min(2).max(20),
-  email: z.string().email(),
-})
-
-type FormData = z.infer<typeof schema>
-
-const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
-  resolver: zodResolver(schema),
+const { control, handleSubmit, formState: { errors } } = useForm<ProjectFormData>({
+  resolver: zodResolver(projectFormSchema),
   mode: 'onChange',
 })
+```
+
+### Custom Hooks Pattern
+
+Use the centralized hooks from `src/hooks/`:
+
+```tsx
+import {
+  useImageUpload,
+  useTagInput,
+  useAiGeneration,
+  useProjectForm,
+  useRequireAuth,
+} from '@/hooks'
+
+// In component
+const { uploadImage, isUploading, error } = useImageUpload()
+const { tags, addTag, removeTag } = useTagInput({ maxTags: 5 })
+const { generate, isGenerating, limitInfo } = useAiGeneration({ draftId })
 ```
 
 ### Styling Conventions
@@ -403,48 +491,74 @@ Supported types: JPEG, PNG, GIF, WebP
 ### Frontend Types (`src/lib/types.ts`)
 
 ```tsx
-type ProjectPlatform = 'WEB' | 'APP' | 'GAME' | 'DESIGN' | 'OTHER'
+// Project platform types
+type ProjectPlatform =
+  | 'WEB'        // 웹 서비스/웹앱/SaaS
+  | 'MOBILE'     // 모바일 앱 (iOS/Android)
+  | 'DESKTOP'    // 데스크탑 앱 (Windows/macOS/Linux)
+  | 'GAME'       // 게임 (PC/모바일/콘솔)
+  | 'EXTENSION'  // 확장 프로그램 (브라우저, IDE, 에디터)
+  | 'LIBRARY'    // 라이브러리/패키지/CLI 도구
+  | 'DESIGN'     // 디자인/템플릿/리소스
+  | 'OTHER'      // 기타
+  | 'APP'        // @deprecated - MOBILE 또는 DESKTOP 사용 권장
+
+// Store types for multi-link support
+type StoreType =
+  // Mobile
+  | 'APP_STORE' | 'PLAY_STORE' | 'GALAXY_STORE'
+  // Desktop
+  | 'MAC_APP_STORE' | 'WINDOWS_STORE' | 'DIRECT_DOWNLOAD'
+  // Game
+  | 'STEAM' | 'EPIC_GAMES' | 'ITCH_IO' | 'GOG'
+  // Extensions
+  | 'CHROME_WEB_STORE' | 'FIREFOX_ADDONS' | 'EDGE_ADDONS' | 'VS_CODE'
+  // Packages
+  | 'NPM' | 'PYPI'
+  // General
+  | 'WEBSITE' | 'GITHUB' | 'FIGMA' | 'NOTION' | 'OTHER'
+
+// Project link structure (max 8 links per project)
+interface ProjectLink {
+  id: string
+  storeType: StoreType
+  url: string
+  label?: string      // Custom label
+  isPrimary?: boolean // Primary link flag
+}
+
+// Reaction types
 type ReactionKey = 'fire' | 'clap' | 'party' | 'idea' | 'love'
 type Reactions = Partial<Record<ReactionKey, number>>
 
 interface Project {
   id: string
   title: string
-  description: string        // Full markdown description
-  shortDescription: string   // Max 80 chars tagline
+  description: string
+  shortDescription: string
   tags: string[]
   imageUrl: string
   author: string
   likes: number
   reactions: Reactions
   comments: Comment[]
-  link: string
-  githubUrl?: string
+  link: string           // @deprecated - use links array
+  githubUrl?: string     // @deprecated - use links array
+  links?: ProjectLink[]  // Multi-store links (max 8)
   platform: ProjectPlatform
+  isBeta?: boolean       // Beta/development flag
   createdAt: Date
-}
-
-interface DraftData {
-  id: string
-  title: string
-  shortDescription: string
-  description: string
-  tags: string[]
-  imageUrl: string
-  link: string
-  githubUrl: string
-  platform: ProjectPlatform
-  aiCandidates: AiGenerationCandidate[]
-  selectedCandidateId: string | null
-  generationCount: number
-  lastSavedAt: number
-  createdAt: number
 }
 ```
 
 ### Database Types (`src/lib/db-types.ts`)
 
 ```tsx
+import { Timestamp } from 'firebase-admin/firestore'
+
+// User roles for admin system
+type UserRole = 'user' | 'admin' | 'master'
+
 // Firestore document structures use Timestamp
 interface ProjectDoc {
   id: string
@@ -453,38 +567,52 @@ interface ProjectDoc {
   shortDescription: string
   tags: string[]
   imageUrl: string
-  authorId: string           // Firebase UID
+  authorId: string
   authorName: string
   likes: number
   reactions: Reactions
   link: string
   githubUrl?: string
+  links?: ProjectLinkDoc[]
   platform: ProjectPlatform
+  isBeta?: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 
+// Project updates (milestones & devlogs)
+type ProjectUpdateType = 'milestone' | 'devlog'
+
+interface ProjectUpdateDoc {
+  id: string
+  projectId: string
+  authorId: string
+  authorName: string
+  type: ProjectUpdateType
+  title: string      // "v1.0 출시" or "로그인 기능 구현 중"
+  content: string    // Markdown content
+  version?: string   // For milestones: "1.0.0", "Beta 2"
+  emoji?: string     // For milestones: 🎉, 🚀, 🐛, ✨
+  createdAt: Timestamp
+}
+
 interface UserDoc {
+  id: string
+  email?: string
   name: string
   avatarUrl: string
-  agreements: {
-    termsOfService: boolean
-    privacyPolicy: boolean
-    marketing: boolean
-  }
+  role?: UserRole
+  agreements?: UserAgreements
   isProfileComplete: boolean
-  isWithdrawn: boolean        // Soft delete flag
+  isWithdrawn?: boolean
   withdrawnAt?: Timestamp
   withdrawalReason?: string
+  withdrawalFeedback?: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 
 // API responses use ISO strings for dates
-interface ProjectResponse {
-  // ... same fields with createdAt: string, updatedAt: string
-}
-
 interface PaginatedResponse<T> {
   data: T[]
   nextCursor?: string
@@ -492,27 +620,97 @@ interface PaginatedResponse<T> {
 }
 ```
 
+## Admin Role System
+
+User roles are defined in `src/lib/admin-constants.ts`:
+
+```tsx
+type UserRole = 'user' | 'admin' | 'master'
+
+// Role levels for permission checking
+const ROLE_LEVELS = { user: 0, admin: 1, master: 2 }
+
+// Check if user has admin+ permissions
+isAdmin(user?.role)  // true for admin or master
+
+// Check for master only
+isMaster(user?.role)
+
+// Check specific permission level
+hasPermission(userRole, 'admin')
+```
+
+## Project Updates Feature
+
+Projects can have updates (milestones & devlogs):
+
+```tsx
+// Create update via API
+POST /api/projects/[id]/updates
+{
+  type: 'milestone' | 'devlog',
+  title: 'v1.0 Release',
+  content: 'Description in markdown...',
+  version: '1.0.0',       // Optional, for milestones
+  emoji: '🚀'             // Optional, for milestones
+}
+
+// Available milestone emojis (from form-constants.ts)
+const MILESTONE_EMOJIS = [
+  '🎉', '🚀', '✨', '🐛', '🔧', '📦',
+  '🎨', '⚡', '🔒', '📝', '🌟', '💡'
+]
+```
+
+## Multi-Link System
+
+Projects support multiple store/platform links:
+
+```tsx
+// Max 8 links per project
+const MAX_PROJECT_LINKS = 8
+
+// Link structure in project form
+interface ProjectLink {
+  id: string           // nanoid generated
+  storeType: StoreType // Store platform type
+  url: string
+  label?: string       // Custom display label
+  isPrimary?: boolean  // Primary/main link
+}
+
+// Components for multi-link UI
+import MultiLinkInput from '@/components/MultiLinkInput'  // Drag & drop editor
+import StoreBadges from '@/components/StoreBadges'        // Display badges
+```
+
 ## AI Integration
 
 ### Gemini Service (`src/services/geminiService.ts`)
 
-Two server-side functions:
+Server-side AI functions using Gemini 2.5 Flash Lite:
 
 1. **`generateProjectContent(draft: string)`**: Generates complete project content
    - Returns: `{ shortDescription, description, tags }`
    - Uses JSON schema for structured output
    - Korean language with "Chef" persona
 
-2. **`refineDescription(rawDescription: string)`**: Polishes existing descriptions
-   - Returns refined markdown text
-   - Subtle cooking metaphors
+2. **`generateWeatherContent(input)`**: @deprecated Generates weather digest content
+   - Returns: Temperature, outfit, precipitation, air quality tips
+   - Includes fallback for AI failures
 
 ### AI Rate Limiting
 
-- **3 generations per draft** - tracked by draft ID
-- **10 generations per day per user**
-- **5-second cooldown** between generations
-- Tracked in localStorage (client-side) + Firestore (server validation)
+Constraints defined in `src/lib/form-constants.ts`:
+
+```tsx
+const AI_CONSTRAINTS = {
+  MAX_PER_DRAFT: 3,       // 3 generations per draft
+  MAX_PER_DAY: 10,        // 10 generations per day per user
+  COOLDOWN_MS: 5000,      // 5-second cooldown between requests
+  MIN_DESC_LENGTH: 30,    // Minimum description length to generate
+}
+```
 
 ### AI Prompting Style
 - Role: "SideDish Platform Editor"
@@ -533,7 +731,7 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   isConfigured: boolean
-  needsProfileSetup: boolean    // New user needs to complete profile
+  needsProfileSetup: boolean
   signInWithGoogle: () => Promise<void>
   signInWithGithub: () => Promise<void>
   signOut: () => Promise<void>
@@ -557,7 +755,6 @@ const { user, isAuthenticated, signInWithGoogle, needsProfileSetup } = useAuth()
 ### Protected Routes
 
 ```tsx
-// Use useRequireAuth hook for pages requiring login
 import { useRequireAuth } from '@/hooks/useRequireAuth'
 
 function ProtectedPage() {
@@ -567,26 +764,104 @@ function ProtectedPage() {
 }
 ```
 
-## User Management
+## Social Sharing
 
-### Account Withdrawal (Soft Delete)
+Sharing utilities in `src/lib/share-utils.ts`:
 
-Users can withdraw their account via `WithdrawalModal`:
+```tsx
+import {
+  canUseWebShare,
+  shareWithWebAPI,
+  shareToplatform,
+  copyToClipboard,
+  shouldUseNativeShare,
+} from '@/lib/share-utils'
 
-1. 4-step confirmation flow with reasons/feedback
-2. Requires typing "탈퇴합니다" to confirm
-3. **Soft delete**: Data retained for legal compliance (1 year)
-4. User content anonymized ("탈퇴한 셰프", "탈퇴한 사용자")
-5. 30-day re-registration restriction
+// Check if native share is available (mobile)
+if (shouldUseNativeShare()) {
+  await shareWithWebAPI({ title, text, url })
+} else {
+  // Show custom share sheet
+}
 
-API: `POST /api/users/[id]/withdraw`
+// Share to specific platform
+shareToplatform('x', { title, text, url })
+shareToplatform('facebook', { title, text, url })
+shareToplatform('linkedin', { title, text, url })
+shareToplatform('copy', { title, text, url })  // Copy to clipboard
+```
 
-### Profile Editing
+## SEO & Structured Data
 
-Users can edit their profile via `ProfileEditModal`:
-- Change nickname (2-20 chars, no special characters)
-- Upload/change avatar image
-- Updates reflected immediately across the platform
+SEO configuration in `src/lib/seo-config.ts`:
+
+```tsx
+import {
+  SEO_CONFIG,
+  getCanonicalUrl,
+  getPageTitle,
+  getOgImageUrl,
+  getOrganizationSchema,
+  getWebSiteSchema,
+  getProjectSchema,
+  getBreadcrumbSchema,
+  getFAQSchema,
+} from '@/lib/seo-config'
+
+// Generate JSON-LD for a project
+const projectSchema = getProjectSchema({
+  id: project.id,
+  title: project.title,
+  shortDescription: project.shortDescription,
+  // ...
+})
+
+// In page component
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{ __html: JSON.stringify(projectSchema) }}
+/>
+```
+
+## Site Configuration
+
+Centralized domain configuration in `src/lib/site.ts`:
+
+```tsx
+import {
+  SITE_DOMAIN,        // 'sidedish.me'
+  SITE_URL,           // 'https://sidedish.me'
+  CONTACT_EMAIL,      // 'contact@sidedish.me'
+  NOREPLY_EMAIL,      // 'noreply@sidedish.me'
+  TWITTER_HANDLE,     // '@sidedish_me'
+  getPageUrl,         // Generate full URL for path
+  getEmailFrom,       // Generate email from header
+} from '@/lib/site'
+```
+
+**Important**: Never hardcode domain names. Always use these constants.
+
+## Form Constants
+
+Centralized form constraints in `src/lib/form-constants.ts`:
+
+```tsx
+import {
+  PROJECT_CONSTRAINTS,    // Title, description limits
+  FILE_CONSTRAINTS,       // Upload size, types
+  AI_CONSTRAINTS,         // Rate limits
+  FORM_TIMING,           // Debounce, cooldown times
+  PAGINATION,            // Page sizes
+  MILESTONE_EMOJIS,      // Available milestone emojis
+  FORM_ERROR_MESSAGES,   // Error message templates
+  FORM_SUCCESS_MESSAGES, // Success message templates
+} from '@/lib/form-constants'
+
+// Example usage
+if (title.length > PROJECT_CONSTRAINTS.TITLE_MAX_LENGTH) {
+  return FORM_ERROR_MESSAGES.TITLE_TOO_LONG
+}
+```
 
 ## API Client
 
@@ -599,7 +874,7 @@ import { createProject, getProjects, toggleLike } from '@/lib/api-client'
 const project = await createProject({
   title: 'My Project',
   description: '...',
-  // ...
+  links: [{ id: '1', storeType: 'WEBSITE', url: 'https://...', isPrimary: true }],
 })
 ```
 
@@ -614,7 +889,6 @@ const project = await createProject({
 ## Reactions System
 
 ```tsx
-// Strongly typed reaction keys
 type ReactionKey = 'fire' | 'clap' | 'party' | 'idea' | 'love'
 
 // Emoji mapping in src/lib/constants.ts
@@ -627,7 +901,7 @@ const REACTION_EMOJI_MAP: Record<ReactionKey, string> = {
 }
 
 // Legacy emoji→key normalization for migration
-normalizeReactions(oldData) // Converts '🔥' keys to 'fire'
+normalizeReactions(oldData)
 ```
 
 ## Image Handling
@@ -639,11 +913,9 @@ Configured remote patterns in `next.config.ts`:
 - `lh3.googleusercontent.com` - Google avatars
 - `*.public.blob.vercel-storage.com` - Uploaded images
 
-Upload images via `/api/upload` endpoint → Vercel Blob storage.
-
 **Validation requirements:**
 - Max size: 5MB
-- Allowed types: JPEG, PNG, WebP
+- Allowed types: JPEG, PNG, WebP, GIF
 - Magic number validation prevents disguised files
 
 ## State Management
@@ -669,7 +941,6 @@ pnpm test:coverage  # With coverage report
 Tests are located in `src/__tests__/`:
 
 ```tsx
-// Example test file structure
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 describe('security-utils', () => {
@@ -682,9 +953,24 @@ describe('security-utils', () => {
 })
 ```
 
+### Testing Schemas
+
+Schema tests in `src/__tests__/schemas/`:
+
+```tsx
+import { projectFormSchema } from '@/lib/schemas'
+
+describe('projectFormSchema', () => {
+  it('validates valid project data', () => {
+    const result = projectFormSchema.safeParse(validData)
+    expect(result.success).toBe(true)
+  })
+})
+```
+
 ### Mocking Firebase
 
-Use `src/__tests__/helpers/mock-firebase.ts` for Firebase mocking:
+Use `src/__tests__/helpers/mock-firebase.ts`:
 
 ```tsx
 import { mockFirebaseAdmin, resetMocks } from './helpers/mock-firebase'
@@ -709,11 +995,12 @@ beforeEach(() => {
 2. Add `page.tsx` for the route
 3. Optionally add `layout.tsx` for nested layout
 4. Add auth protection with `useRequireAuth` if needed
+5. Add SEO metadata using `generateMetadata`
 
 ### Adding a New API Endpoint
 1. Create `src/app/api/endpoint-name/route.ts`
 2. Use `verifyAuth` from `@/lib/auth-utils` for protected routes
-3. Use validation from `@/lib/security-utils`
+3. Use validation from `@/lib/security-utils` or Zod schemas
 4. Apply rate limiting from `@/lib/rate-limiter`
 5. Access Firestore via `@/lib/firebase-admin`
 6. Return proper status codes and error messages
@@ -721,10 +1008,17 @@ beforeEach(() => {
 ### Adding New Project Fields
 1. Update `Project` interface in `src/lib/types.ts`
 2. Update `ProjectDoc` and `ProjectResponse` in `src/lib/db-types.ts`
-3. Update API routes to handle new fields
-4. Add validation in `security-utils.ts` if needed
-5. Update form components for input
-6. Update display components for output
+3. Update Zod schemas in `src/lib/schemas/project.ts`
+4. Update API routes to handle new fields
+5. Add validation in `security-utils.ts` if needed
+6. Update form components for input
+7. Update display components for output
+
+### Adding a Custom Hook
+1. Create file in `src/hooks/useHookName.ts`
+2. Export types for options and return value
+3. Add export to `src/hooks/index.ts`
+4. Add tests if complex logic
 
 ### Modifying AI Generation
 1. Edit prompts in `src/services/geminiService.ts`
@@ -747,6 +1041,7 @@ beforeEach(() => {
 5. **Cursor pagination** - Scalable for large datasets
 6. **Lazy loading** - More projects loaded on scroll
 7. **Image optimization** - Next.js Image component + Vercel CDN
+8. **Turbopack** - Fast dev server with HMR
 
 ## Important Notes
 
@@ -759,13 +1054,19 @@ beforeEach(() => {
 7. **XSS Prevention**: Always use `SafeMarkdown` for user-generated content
 8. **Rate Limiting**: Apply appropriate limits to all API endpoints
 9. **Soft Delete**: User deletion is soft (data retained for compliance)
+10. **Centralized Config**: Use `site.ts` for domain, `form-constants.ts` for limits
+11. **Schema Validation**: Use Zod schemas from `src/lib/schemas/` for form validation
+12. **Deprecated Features**: Lunchbox/Digest feature is deprecated but code remains for reference
 
 ## Database Collections (Firestore)
 
 | Collection | Purpose | Key Fields |
 |------------|---------|------------|
-| `projects` | User projects | authorId, title, description, tags, likes, reactions |
-| `users` | User profiles | name, avatarUrl, agreements, isWithdrawn |
+| `projects` | User projects | authorId, title, description, tags, likes, reactions, links, isBeta |
+| `users` | User profiles | name, avatarUrl, role, agreements, isWithdrawn |
 | `comments` | Project comments | projectId, authorId, content |
 | `whispers` | Private feedback | projectId, projectAuthorId, senderId, isRead |
-| `ai_usage` | AI rate limiting | usageByDraft, dailyUsage |
+| `project_updates` | Milestones & devlogs | projectId, type, title, content, version, emoji |
+| `digests` | @deprecated Digest definitions | name, slug, category, config |
+| `digest_subscriptions` | @deprecated User subscriptions | userId, digestId, settings |
+| `digest_logs` | @deprecated Delivery logs | digestId, deliveredAt, generatedContent |
