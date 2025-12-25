@@ -39,6 +39,7 @@ interface PromotionRequest {
   projectId: string
   projectTitle: string
   projectSummary: string
+  projectDescription?: string
   projectTags: string[]
   projectUrl?: string
   platforms?: SocialPlatform[]
@@ -215,6 +216,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 6. Call SIM workflow
     const simEndpoint = `https://www.sim.ai/api/workflows/${simWorkflowId}/execute`
 
+    // Combine summary and description for richer context
+    const combinedSummary = body.projectDescription
+      ? `${body.projectSummary}\n\n${body.projectDescription}`
+      : body.projectSummary
+
     const simResponse = await fetch(simEndpoint, {
       method: 'POST',
       headers: {
@@ -223,7 +229,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
       body: JSON.stringify({
         title: body.projectTitle,
-        summary: body.projectSummary,
+        summary: combinedSummary,
         tags: tagsString,
         url: projectUrl,
         platforms: platforms,
