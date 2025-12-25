@@ -1574,11 +1574,11 @@ export type SocialPlatform = 'x' | 'linkedin' | 'facebook' | 'threads'
 /**
  * All available promotion platforms.
  */
-export const PROMOTION_PLATFORMS: { id: SocialPlatform; label: string; icon: string }[] = [
-  { id: 'x', label: 'X (Twitter)', icon: '𝕏' },
-  { id: 'linkedin', label: 'LinkedIn', icon: '💼' },
-  { id: 'facebook', label: 'Facebook', icon: '📘' },
-  { id: 'threads', label: 'Threads', icon: '🧵' },
+export const PROMOTION_PLATFORMS: { id: SocialPlatform; label: string }[] = [
+  { id: 'x', label: 'X' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'facebook', label: 'Facebook' },
+  { id: 'threads', label: 'Threads' },
 ]
 
 /**

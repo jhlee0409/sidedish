@@ -601,8 +601,7 @@ export default function MenuRegisterPage() {
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          <span>{platform.icon}</span>
-                          <span>{platform.label}</span>
+                          {platform.label}
                         </button>
                       )
                     })}
