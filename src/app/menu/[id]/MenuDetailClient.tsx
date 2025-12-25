@@ -702,8 +702,15 @@ export default function MenuDetailClient({
                 {comments.length > 0 ? (
                   comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl border border-slate-100/80">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex-shrink-0 flex items-center justify-center text-orange-600 font-bold text-xs sm:text-sm">
-                        {comment.authorName.charAt(0)}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xs sm:text-sm">
+                          {comment.authorName.charAt(0)}
+                        </div>
+                        {comment.role === 'master' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border border-white">
+                            <Crown className="w-2 h-2 text-white" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">

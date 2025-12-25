@@ -50,6 +50,21 @@ export async function GET(
     const hasMore = snapshot.docs.length > limit
     const docs = snapshot.docs.slice(0, limit)
 
+    // Fetch user roles for all comment authors
+    const authorIds = [...new Set(docs.map(doc => doc.data().authorId))]
+    const userRoles: Record<string, string> = {}
+
+    if (authorIds.length > 0) {
+      const userDocs = await Promise.all(
+        authorIds.map(uid => db.collection(COLLECTIONS.USERS).doc(uid).get())
+      )
+      userDocs.forEach(userDoc => {
+        if (userDoc.exists) {
+          userRoles[userDoc.id] = userDoc.data()?.role || 'user'
+        }
+      })
+    }
+
     const comments: CommentResponse[] = docs.map(doc => {
       const data = doc.data()
       return {
@@ -58,6 +73,7 @@ export async function GET(
         authorId: data.authorId,
         authorName: data.authorName,
         avatarUrl: data.avatarUrl,
+        role: userRoles[data.authorId] as CommentResponse['role'],
         content: data.content,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       }
@@ -114,6 +130,10 @@ export async function POST(
       )
     }
 
+    // Fetch user's role
+    const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get()
+    const userRole = userDoc.exists ? (userDoc.data()?.role || 'user') : 'user'
+
     const now = Timestamp.now()
     const commentRef = db.collection(COLLECTIONS.COMMENTS).doc()
 
@@ -131,6 +151,7 @@ export async function POST(
 
     const response: CommentResponse = {
       ...commentData,
+      role: userRole as CommentResponse['role'],
       createdAt: now.toDate().toISOString(),
     }
 
