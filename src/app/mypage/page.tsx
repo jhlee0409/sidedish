@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, User, Utensils, Heart, Mail,
   Edit3, Trash2, ChefHat, Calendar, Check, X, Settings,
-  Loader2
+  Loader2, Crown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -246,6 +246,11 @@ function MyPageContent() {
                     user.name.charAt(0).toUpperCase()
                   )}
                 </div>
+                {user.role === 'master' && (
+                  <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                    <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                )}
                 <button
                   onClick={() => setShowProfileEditModal(true)}
                   className="absolute bottom-0 right-0 p-1 sm:p-1.5 bg-white text-orange-500 rounded-full shadow-lg hover:bg-orange-50 transition-colors"

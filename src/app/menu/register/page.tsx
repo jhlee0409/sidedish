@@ -7,7 +7,7 @@ import { useForm, Controller, FieldError } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft, Sparkles, Hash, Upload, Image as ImageIcon,
-  Wand2, ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical
+  Wand2, ChefHat, Utensils, X, Loader2, Save, Clock, AlertCircle, FlaskConical, Megaphone
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/Button'
@@ -16,7 +16,8 @@ import MultiLinkInput from '@/components/MultiLinkInput'
 import { FormField, CharacterCount } from '@/components/form'
 import { DraftData, StoreType } from '@/lib/types'
 import { useAuth } from '@/contexts/AuthContext'
-import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError } from '@/lib/api-client'
+import { createProject, uploadImage, getAiUsageInfo, generateAiContent, ApiError, PROMOTION_PLATFORMS, SocialPlatform } from '@/lib/api-client'
+import { usePromotion } from '@/contexts/PromotionContext'
 import LoginModal from '@/components/LoginModal'
 import {
   getOrCreateDraft,
@@ -35,6 +36,7 @@ import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 export default function MenuRegisterPage() {
   const router = useRouter()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { startPromotion } = usePromotion()
 
   // RHF Form
   const {
@@ -64,6 +66,8 @@ export default function MenuRegisterPage() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>('')
+  const [wantsPromotion, setWantsPromotion] = useState(false)
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(['x', 'linkedin', 'facebook', 'threads'])
 
   // AI limit state
   const [aiLimitInfo, setAiLimitInfo] = useState<{
@@ -377,6 +381,17 @@ export default function MenuRegisterPage() {
         isBeta: data.isBeta,
       })
 
+      // Handle promotion if requested (runs in background)
+      if (wantsPromotion) {
+        startPromotion({
+          projectId: project.id,
+          projectTitle: data.title,
+          projectSummary: data.shortDescription,
+          projectTags: data.tags,
+          platforms: selectedPlatforms,
+        })
+      }
+
       if (draft) {
         deleteDraft(draft.id)
         clearCurrentDraftId()
@@ -535,6 +550,68 @@ export default function MenuRegisterPage() {
                 </div>
               )}
             />
+
+            {/* Promotion Checkbox */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-4 bg-indigo-50 border border-indigo-200 rounded-lg sm:rounded-xl">
+                <div className="flex items-center h-4 sm:h-5">
+                  <input
+                    type="checkbox"
+                    id="wantsPromotion"
+                    checked={wantsPromotion}
+                    onChange={(e) => setWantsPromotion(e.target.checked)}
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500 bg-white border-indigo-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="wantsPromotion" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-indigo-800 cursor-pointer">
+                    <Megaphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    소셜 미디어에 홍보하기
+                  </label>
+                  <p className="text-[10px] sm:text-xs text-indigo-700 mt-0.5 sm:mt-1 leading-relaxed">
+                    선택한 플랫폼에 자동으로 홍보 게시글을 발행합니다.
+                  </p>
+                </div>
+              </div>
+
+              {/* Platform Selection - shown when promotion is enabled */}
+              {wantsPromotion && (
+                <div className="ml-6 sm:ml-8 p-3 sm:p-4 bg-white border border-indigo-100 rounded-lg sm:rounded-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                  <p className="text-xs font-semibold text-slate-700 mb-2.5">홍보할 플랫폼 선택</p>
+                  <div className="flex flex-wrap gap-2">
+                    {PROMOTION_PLATFORMS.map((platform) => {
+                      const isSelected = selectedPlatforms.includes(platform.id)
+                      return (
+                        <button
+                          key={platform.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              // Prevent deselecting all platforms
+                              if (selectedPlatforms.length > 1) {
+                                setSelectedPlatforms(prev => prev.filter(p => p !== platform.id))
+                              }
+                            } else {
+                              setSelectedPlatforms(prev => [...prev, platform.id])
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            isSelected
+                              ? 'bg-indigo-500 text-white shadow-sm'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {platform.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-2">
+                    최소 1개 이상의 플랫폼을 선택해야 합니다.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Image Upload */}
             <Controller

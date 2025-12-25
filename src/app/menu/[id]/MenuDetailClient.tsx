@@ -8,7 +8,7 @@ import {
   ArrowLeft, Heart, Calendar, Share2, Hash, MessageCircle, Send,
   Sparkles, Lock, MessageSquareMore, Smartphone, Gamepad2, Palette,
   Globe, Github, User, ChefHat, Utensils, Loader2, Trash2, Pencil, FlaskConical,
-  Puzzle, Package
+  Puzzle, Package, ExternalLink, Crown, Megaphone
 } from 'lucide-react'
 import SafeMarkdown from '@/components/SafeMarkdown'
 import ProjectUpdateTimeline from '@/components/ProjectUpdateTimeline'
@@ -20,6 +20,7 @@ import Button from '@/components/Button'
 import UserMenu from '@/components/UserMenu'
 import ConfirmModal from '@/components/ConfirmModal'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePromotion } from '@/contexts/PromotionContext'
 import {
   getProject,
   getProjectComments,
@@ -31,12 +32,74 @@ import {
   createWhisper,
   getUser,
 } from '@/lib/api-client'
-import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey } from '@/lib/db-types'
+import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey, PromotionPostsResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions, isReactionKey } from '@/lib/constants'
 import { getProjectThumbnail } from '@/lib/og-utils'
 import LoginModal from '@/components/LoginModal'
 import ShareSheet from '@/components/ShareSheet'
 import { ShareData } from '@/lib/share-utils'
+import { SocialPlatform } from '@/lib/api-client'
+
+/**
+ * Platform display configuration for promotion status
+ */
+const PLATFORM_CONFIG: Record<SocialPlatform, { label: string; color: string; hoverColor: string }> = {
+  x: { label: 'X', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+  linkedin: { label: 'LinkedIn', color: 'bg-[#0A66C2]', hoverColor: 'hover:bg-[#004182]' },
+  facebook: { label: 'Facebook', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#0d5bb5]' },
+  threads: { label: 'Threads', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+}
+
+/**
+ * Promotion status card showing where the project was promoted
+ */
+function PromotionStatusCard({ promotionPosts }: { promotionPosts: PromotionPostsResponse }) {
+  const successfulPosts = Object.entries(promotionPosts)
+    .filter(([key, url]) => key !== 'promotedAt' && url)
+    .map(([platform, url]) => ({
+      platform: platform as SocialPlatform,
+      url: url as string,
+    }))
+
+  if (successfulPosts.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="bg-gradient-to-b from-indigo-50 to-white rounded-xl p-3 border border-indigo-100 shadow-sm">
+      <div className="flex items-center gap-2 mb-2">
+        <Share2 className="w-4 h-4 text-indigo-600" />
+        <h3 className="text-xs font-bold text-slate-900">홍보 현황</h3>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {successfulPosts.map(({ platform, url }) => {
+          const config = PLATFORM_CONFIG[platform]
+          return (
+            <a
+              key={platform}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex items-center gap-1 px-2.5 py-1.5 ${config.color} ${config.hoverColor} text-white text-xs rounded-lg transition-colors`}
+            >
+              {config.label}
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )
+        })}
+      </div>
+      {promotionPosts.promotedAt && (
+        <p className="text-[10px] text-slate-400 mt-2">
+          {new Date(promotionPosts.promotedAt).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })}에 홍보됨
+        </p>
+      )}
+    </div>
+  )
+}
 
 interface MenuDetailClientProps {
   projectId: string
@@ -51,6 +114,7 @@ export default function MenuDetailClient({
 }: MenuDetailClientProps) {
   const router = useRouter()
   const { user, isAuthenticated } = useAuth()
+  const { startPromotion } = usePromotion()
 
   const [project, setProject] = useState<ProjectResponse | null>(initialProject)
   const [isLoading, setIsLoading] = useState(!initialProject)
@@ -123,6 +187,20 @@ export default function MenuDetailClient({
   }, [projectId, isAuthenticated, initialProject, initialAuthor])
 
   const isOwnProject = user?.id === project?.authorId
+  const isMaster = user?.role === 'master'
+
+  const handlePromotion = () => {
+    if (!project) return
+
+    startPromotion({
+      projectId: project.id,
+      projectTitle: project.title,
+      projectSummary: project.shortDescription,
+      projectTags: project.tags,
+      platforms: ['x', 'linkedin', 'facebook', 'threads'],
+    })
+    toast.success('홍보가 시작되었습니다!')
+  }
 
   const handleReaction = async (reactionKey: ReactionKey) => {
     if (!isAuthenticated) {
@@ -410,6 +488,32 @@ export default function MenuDetailClient({
               </Link>
             )}
 
+            {/* Promote Button - Mobile, Master only */}
+            {isMaster && (
+              <button
+                onClick={handlePromotion}
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl p-3 shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-white/20 p-1.5 rounded-lg">
+                      <Megaphone className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm">SNS 홍보하기</p>
+                      <p className="text-[11px] text-white/70">X, LinkedIn, Facebook, Threads</p>
+                    </div>
+                  </div>
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </div>
+              </button>
+            )}
+
+            {/* Promotion Status - Mobile */}
+            {isOwnProject && project.promotionPosts && (
+              <PromotionStatusCard promotionPosts={project.promotionPosts} />
+            )}
+
             {project.links && project.links.length > 0 && (
               <div className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm">
                 <LinkList links={project.links} compact />
@@ -596,6 +700,32 @@ export default function MenuDetailClient({
                 </Link>
               )}
 
+              {/* Promote Button - Master only */}
+              {isMaster && (
+                <button
+                  onClick={handlePromotion}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl p-3 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="bg-white/20 p-1.5 rounded-lg">
+                        <Megaphone className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-sm">SNS 홍보하기</p>
+                        <p className="text-[11px] text-white/70">X, LinkedIn, Facebook, Threads</p>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </div>
+                </button>
+              )}
+
+              {/* Promotion Status - Owner only */}
+              {isOwnProject && project.promotionPosts && (
+                <PromotionStatusCard promotionPosts={project.promotionPosts} />
+              )}
+
               {/* Action Card */}
               <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-lg shadow-slate-200/40">
                 <h3 className="text-base font-bold text-slate-900 mb-1">메뉴 시식하기</h3>
@@ -700,19 +830,26 @@ export default function MenuDetailClient({
                 href={`/profile/${project.authorId}`}
                 className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:bg-slate-100/50 hover:border-orange-200 transition-colors group"
               >
-                {authorProfile?.avatarUrl ? (
-                  <Image
-                    src={authorProfile.avatarUrl}
-                    alt={authorProfile?.name || project.authorName}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full object-cover shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm shrink-0 group-hover:ring-2 group-hover:ring-orange-300 transition-all">
-                    {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="relative shrink-0">
+                  {authorProfile?.avatarUrl ? (
+                    <Image
+                      src={authorProfile.avatarUrl}
+                      alt={authorProfile?.name || project.authorName}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full object-cover group-hover:ring-2 group-hover:ring-orange-300 transition-all"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm group-hover:ring-2 group-hover:ring-orange-300 transition-all">
+                      {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {authorProfile?.role === 'master' && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                      <Crown className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-slate-900 text-xs group-hover:text-orange-600 transition-colors">{authorProfile?.name || project.authorName}</div>
                   <div className="text-[11px] text-slate-500">Head Chef</div>
@@ -772,19 +909,26 @@ export default function MenuDetailClient({
             href={`/profile/${project.authorId}`}
             className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 flex items-center gap-3 hover:bg-slate-100/50 transition-colors group"
           >
-            {authorProfile?.avatarUrl ? (
-              <Image
-                src={authorProfile.avatarUrl}
-                alt={authorProfile?.name || project.authorName}
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm shrink-0">
-                {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="relative shrink-0">
+              {authorProfile?.avatarUrl ? (
+                <Image
+                  src={authorProfile.avatarUrl}
+                  alt={authorProfile?.name || project.authorName}
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-sm">
+                  {(authorProfile?.name || project.authorName).charAt(0).toUpperCase()}
+                </div>
+              )}
+              {authorProfile?.role === 'master' && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                  <Crown className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-slate-900 text-xs">{authorProfile?.name || project.authorName}</div>
               <div className="text-[11px] text-slate-500">Head Chef</div>

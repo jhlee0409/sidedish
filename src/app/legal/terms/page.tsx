@@ -298,6 +298,34 @@ const TermsOfServicePage: React.FC = () => {
               </li>
             </ol>
 
+            <h3 className="text-xl font-bold text-slate-900 mt-6">제11조의2 (소셜 미디어 홍보 서비스)</h3>
+            <ol className="list-decimal pl-6 mt-2 space-y-2">
+              <li>
+                운영자는 회원이 등록한 프로젝트를 외부 소셜 미디어 플랫폼(X, LinkedIn, Facebook, Threads 등)에
+                자동으로 홍보할 수 있는 서비스를 제공합니다.
+              </li>
+              <li>
+                소셜 미디어 홍보 서비스는 다음과 같이 운영됩니다.
+                <ul className="list-disc pl-6 mt-2">
+                  <li>회원이 프로젝트 등록 시 홍보를 선택한 경우에만 실행됩니다.</li>
+                  <li>회원당 시간당 최대 5회의 홍보 요청이 가능합니다.</li>
+                  <li>홍보 게시물에는 프로젝트 제목, 한 줄 소개, 태그 및 프로젝트 링크가 포함됩니다.</li>
+                  <li>홍보 처리는 백그라운드에서 진행되며, 완료 시 알림으로 결과가 전달됩니다.</li>
+                </ul>
+              </li>
+              <li>
+                운영자는 외부 소셜 미디어 플랫폼의 API 장애, 정책 변경, 네트워크 오류 등으로 인해
+                홍보가 실패하거나 지연되는 경우에 대해 책임을 지지 않습니다.
+              </li>
+              <li>
+                소셜 미디어 홍보 서비스를 위해 회원의 프로젝트 정보(제목, 한 줄 소개, 태그)가
+                제3자 서비스(SIM)를 통해 처리될 수 있으며, 이에 대한 세부사항은 개인정보 처리방침에서 확인할 수 있습니다.
+              </li>
+              <li>
+                홍보된 콘텐츠에 대한 저작권 및 책임은 해당 콘텐츠를 등록한 회원에게 있습니다.
+              </li>
+            </ol>
+
             <h3 className="text-xl font-bold text-slate-900 mt-6">제12조 (유료 서비스)</h3>
             <ol className="list-decimal pl-6 mt-2 space-y-2">
               <li>

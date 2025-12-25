@@ -1561,3 +1561,97 @@ export async function deleteProjectUpdate(updateId: string): Promise<void> {
   // 캐시 무효화 - 업데이트 삭제됨
   invalidateCache('project-updates')
 }
+
+// ============ Promotion API ============
+// Social media promotion via SIM workflow.
+// Posts project announcements to LinkedIn, X, Threads, and Facebook.
+
+/**
+ * Available social media platforms for promotion.
+ */
+export type SocialPlatform = 'x' | 'linkedin' | 'facebook' | 'threads'
+
+/**
+ * All available promotion platforms.
+ */
+export const PROMOTION_PLATFORMS: { id: SocialPlatform; label: string }[] = [
+  { id: 'x', label: 'X' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'facebook', label: 'Facebook' },
+  { id: 'threads', label: 'Threads' },
+]
+
+/**
+ * Data required to promote a project to social media.
+ */
+export interface PromoteProjectData {
+  /** Project ID */
+  projectId: string
+  /** Project title */
+  projectTitle: string
+  /** Short summary for social posts */
+  projectSummary: string
+  /** Tags for the project */
+  projectTags: string[]
+  /** Optional custom project URL */
+  projectUrl?: string
+  /** Selected platforms to promote to (default: all) */
+  platforms?: SocialPlatform[]
+}
+
+/**
+ * Promotion posts with URLs to each platform's post.
+ */
+export interface PromotionPosts {
+  x?: string | null
+  linkedin?: string | null
+  facebook?: string | null
+  threads?: string | null
+  promotedAt?: string
+}
+
+/**
+ * Result from social media promotion.
+ */
+export interface PromotionResult {
+  /** Whether the promotion was successful */
+  success: boolean
+  /** Success message */
+  message: string
+  /** Post URLs for each platform (null if not selected or failed) */
+  posts?: PromotionPosts
+}
+
+/**
+ * Promotes a project to social media platforms.
+ *
+ * Uses SIM workflow to automatically post to LinkedIn, X (Twitter),
+ * Threads, and Facebook. Rate limited to 5 promotions per hour.
+ *
+ * @param data - Project data for promotion
+ * @returns Promotion result with platform-specific status
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 429 if rate limited
+ * @throws {ApiError} 503 if promotion service is unavailable
+ *
+ * @example
+ * ```tsx
+ * const result = await promoteProject({
+ *   projectId: 'abc123',
+ *   projectTitle: '나의 사이드 프로젝트',
+ *   projectSummary: 'AI 기반 생산성 도구입니다',
+ *   projectTags: ['AI', 'Productivity', 'SaaS']
+ * })
+ *
+ * if (result.success) {
+ *   toast.success('소셜 미디어에 홍보되었습니다!')
+ * }
+ * ```
+ */
+export async function promoteProject(data: PromoteProjectData): Promise<PromotionResult> {
+  const response = await fetchWithAuth('/api/promotion', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return handleResponse<PromotionResult>(response)
+}

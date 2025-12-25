@@ -226,6 +226,13 @@ const PrivacyPolicyPage: React.FC = () => {
                     <td className="border border-slate-300 px-4 py-2">프로젝트 초안 텍스트 (개인정보 미포함)</td>
                     <td className="border border-slate-300 px-4 py-2">처리 즉시 파기</td>
                   </tr>
+                  <tr>
+                    <td className="border border-slate-300 px-4 py-2">SIM<br/>(sim.ai)</td>
+                    <td className="border border-slate-300 px-4 py-2">미국</td>
+                    <td className="border border-slate-300 px-4 py-2">소셜 미디어 자동 홍보</td>
+                    <td className="border border-slate-300 px-4 py-2">프로젝트 제목, 한 줄 소개, 태그 (개인정보 미포함)</td>
+                    <td className="border border-slate-300 px-4 py-2">처리 즉시 파기</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

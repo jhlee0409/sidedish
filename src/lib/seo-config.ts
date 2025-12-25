@@ -31,7 +31,7 @@ export const SEO_CONFIG = {
   locale: 'ko_KR',
   language: 'ko',
   twitterHandle: TWITTER_HANDLE,
-  defaultOgImage: '/og-image.png',
+  defaultOgImage: '/sidedish_og_thumbnail.png',
   themeColor: '#F97316', // Orange-500
   backgroundColor: '#F8FAFC', // Slate-50
 } as const

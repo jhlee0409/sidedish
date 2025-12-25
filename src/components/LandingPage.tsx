@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowRight, Sparkles, MessageSquare, Heart, ExternalLink } from 'lucide-react'
+import { ArrowRight, Sparkles, MessageSquare, Heart, ExternalLink, Share2 } from 'lucide-react'
 import Link from 'next/link'
 import Button from './Button'
 
@@ -92,7 +92,7 @@ const LandingPage: React.FC = () => {
                 </div>
 
                 {/* Mini stats */}
-                <div className="flex items-center gap-6 text-sm">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
                   <div className="flex items-center gap-2 text-slate-600">
                     <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                       <Sparkles className="w-4 h-4 text-orange-500" />
@@ -104,6 +104,12 @@ const LandingPage: React.FC = () => {
                       <MessageSquare className="w-4 h-4 text-orange-500" />
                     </div>
                     <span>귓속말</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      <Share2 className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <span>자동 홍보</span>
                   </div>
                 </div>
               </div>
@@ -250,7 +256,7 @@ const LandingPage: React.FC = () => {
           </div>
 
           {/* Feature 3 */}
-          <div>
+          <div className="mb-16 sm:mb-24 lg:mb-32">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               <div>
                 <span className="text-orange-600 font-semibold text-sm mb-4 block">단골손님을 만나요</span>
@@ -289,6 +295,47 @@ const LandingPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 4 - Social Media Promotion */}
+          <div>
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="order-2 lg:order-1">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6">
+                  <div className="flex items-center gap-2 text-indigo-600 text-sm font-medium mb-4">
+                    <Share2 className="w-4 h-4" />
+                    자동 홍보 중...
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'X', bg: 'bg-black', delay: '0' },
+                      { name: 'LinkedIn', bg: 'bg-[#0A66C2]', delay: '100' },
+                      { name: 'Threads', bg: 'bg-black', delay: '200' },
+                      { name: 'Facebook', bg: 'bg-[#1877F2]', delay: '300' },
+                    ].map((platform) => (
+                      <div
+                        key={platform.name}
+                        className={`${platform.bg} text-white px-4 py-2 rounded-full text-sm font-medium`}
+                      >
+                        {platform.name} 게시 완료
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-indigo-600 font-medium mt-4">4개 플랫폼 동시 홍보 완료</p>
+                </div>
+              </div>
+              <div className="order-1 lg:order-2">
+                <span className="text-orange-600 font-semibold text-sm mb-4 block">배달도 해드려요</span>
+                <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
+                  &ldquo;만들었는데<br />
+                  홍보는 언제 하지?&rdquo;
+                </h2>
+                <p className="text-lg text-slate-600 leading-relaxed">
+                  체크 한 번이면 X, LinkedIn, Threads, Facebook에
+                  자동으로 소식이 퍼져요. 만드느라 바빴잖아요.
+                </p>
               </div>
             </div>
           </div>
