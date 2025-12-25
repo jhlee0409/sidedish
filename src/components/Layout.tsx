@@ -8,6 +8,7 @@ import Button from './Button'
 import UserMenu from './UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import LoginModal from './LoginModal'
+import { CONTACT_EMAIL } from '@/lib/site'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -108,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
               <Link href="/legal/terms" className="hover:text-slate-600 transition-colors">이용약관</Link>
               <Link href="/legal/privacy" className="hover:text-slate-600 transition-colors">개인정보처리방침</Link>
               <Link href="/legal/history" className="hover:text-slate-600 transition-colors">약관 히스토리</Link>
-              <a href="mailto:contact@sidedish.me" className="hover:text-slate-600 transition-colors">문의</a>
+              <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-slate-600 transition-colors">문의</a>
             </div>
           </div>
         </div>

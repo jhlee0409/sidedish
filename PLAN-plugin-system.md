@@ -373,7 +373,7 @@ ${JSON.stringify(weatherData, null, 2)}
     </p>
   </div>
 
-  <a href="https://sidedish.app/lunchbox/weather"
+  <a href="https://sidedish.me/lunchbox/weather"
      style="display: inline-block; background: #4F46E5; color: white;
             padding: 12px 24px; border-radius: 8px; text-decoration: none;">
     👉 자세히 보기
@@ -383,7 +383,7 @@ ${JSON.stringify(weatherData, null, 2)}
 
   <p style="color: #94A3B8; font-size: 12px;">
     이 메일은 SideDish 도시락 구독으로 배달되었습니다.<br>
-    <a href="https://sidedish.app/mypage">구독 관리</a>
+    <a href="https://sidedish.me/mypage">구독 관리</a>
   </p>
 </div>
 ```
@@ -410,7 +410,7 @@ export async function sendDigestEmail({
   html: string
 }) {
   return resend.emails.send({
-    from: 'SideDish <noreply@sidedish.app>',
+    from: 'SideDish <noreply@sidedish.me>',
     to,
     subject,
     html,

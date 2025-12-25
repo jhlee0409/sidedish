@@ -8,6 +8,7 @@ import {
   formatVersionShort,
   getEffectiveDate,
 } from '@/lib/legal-versions'
+import { CONTACT_EMAIL } from '@/lib/site'
 
 const PrivacyPolicyPage: React.FC = () => {
   const { currentVersion } = PRIVACY_DOCUMENT
@@ -357,7 +358,7 @@ const PrivacyPolicyPage: React.FC = () => {
               <p className="font-semibold">개인정보 보호책임자</p>
               <ul className="mt-2 space-y-1">
                 <li>담당자: SideDish 운영자</li>
-                <li>이메일: contact@sidedish.me</li>
+                <li>이메일: {CONTACT_EMAIL}</li>
               </ul>
             </div>
 
