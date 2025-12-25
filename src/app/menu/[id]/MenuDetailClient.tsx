@@ -487,13 +487,13 @@ export default function MenuDetailClient({
             <button
               onClick={handleLikeToggle}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all ${
-                isLiked
+                liked
                   ? 'bg-red-50 border-red-200 text-red-600'
                   : 'bg-white border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-500'
               }`}
-              aria-label={isLiked ? '찜 취소' : '찜하기'}
+              aria-label={liked ? '찜 취소' : '찜하기'}
             >
-              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${liked ? 'fill-current' : ''}`} />
               <span className="text-sm font-semibold">{likeCount}</span>
             </button>
           </div>
