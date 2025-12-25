@@ -402,7 +402,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
                             <span className="text-red-500 font-medium">[필수]</span> 서비스 이용약관
                           </span>
                           <Link
-                            href="/terms"
+                            href="/legal/terms"
                             target="_blank"
                             className="text-slate-400 hover:text-slate-600"
                             onClick={(e) => e.stopPropagation()}
@@ -439,7 +439,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
                             <span className="text-red-500 font-medium">[필수]</span> 개인정보 처리방침
                           </span>
                           <Link
-                            href="/privacy"
+                            href="/legal/privacy"
                             target="_blank"
                             className="text-slate-400 hover:text-slate-600"
                             onClick={(e) => e.stopPropagation()}

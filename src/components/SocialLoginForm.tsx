@@ -112,8 +112,8 @@ export default function SocialLoginForm({ onSuccess, showTermsLinks = true }: So
         계속하면 SideDish의{' '}
         {showTermsLinks ? (
           <>
-            <Link href="/terms" className="underline hover:text-slate-600">이용약관</Link>과{' '}
-            <Link href="/privacy" className="underline hover:text-slate-600">개인정보처리방침</Link>
+            <Link href="/legal/terms" className="underline hover:text-slate-600">이용약관</Link>과{' '}
+            <Link href="/legal/privacy" className="underline hover:text-slate-600">개인정보처리방침</Link>
           </>
         ) : (
           '이용약관과 개인정보처리방침'
