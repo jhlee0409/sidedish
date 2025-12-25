@@ -5,6 +5,7 @@
 
 import { DigestEmailData } from './digestGeneratorService'
 import { LUNCHBOX_TEXT } from '@/lib/lunchbox-text'
+import { LUNCHBOX_EMAIL } from '@/lib/site'
 
 /** Resend API 응답 타입 */
 interface ResendResponse {
@@ -33,7 +34,7 @@ async function sendViaResend(
     throw new Error('RESEND_API_KEY is not configured')
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'lunchbox@sidedish.app'
+  const fromEmail = process.env.RESEND_FROM_EMAIL || LUNCHBOX_EMAIL
   const fromName = process.env.RESEND_FROM_NAME || 'SideDish 도시락'
 
   const response = await fetch('https://api.resend.com/emails', {

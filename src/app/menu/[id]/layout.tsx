@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
+import { SITE_URL } from '@/lib/site'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sidedish.me'
+  const baseUrl = SITE_URL
 
   // Build OG image URL with project data
   const ogImageParams = new URLSearchParams({

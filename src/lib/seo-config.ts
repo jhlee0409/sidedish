@@ -3,9 +3,11 @@
  * 2025 SEO Best Practices & AI Search Optimization (GEO)
  */
 
+import { SITE_URL, TWITTER_HANDLE } from './site'
+
 export const SEO_CONFIG = {
   siteName: 'SideDish',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://sidedish.kr',
+  siteUrl: SITE_URL,
   defaultTitle: 'SideDish - 메이커가 요리한 맛있는 사이드 프로젝트',
   titleTemplate: '%s | SideDish',
   defaultDescription:
@@ -28,7 +30,7 @@ export const SEO_CONFIG = {
   ],
   locale: 'ko_KR',
   language: 'ko',
-  twitterHandle: '@sidedish_kr',
+  twitterHandle: TWITTER_HANDLE,
   defaultOgImage: '/og-image.png',
   themeColor: '#F97316', // Orange-500
   backgroundColor: '#F8FAFC', // Slate-50
