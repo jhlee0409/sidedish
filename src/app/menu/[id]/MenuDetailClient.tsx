@@ -741,7 +741,7 @@ export default function MenuDetailClient({
         </div>
 
         {/* Mobile: Sidebar Content */}
-        <div className="lg:hidden space-y-4 mt-6">
+        <div className="lg:hidden space-y-4 mt-6 mb-20">
           {/* Secret Feedback Box - Mobile */}
           <div className="bg-gradient-to-b from-purple-50 to-white rounded-xl p-4 border border-purple-100 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
