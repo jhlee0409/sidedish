@@ -2,9 +2,16 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, History } from 'lucide-react'
+import {
+  PRIVACY_DOCUMENT,
+  formatVersionShort,
+  getEffectiveDate,
+} from '@/lib/legal-versions'
 
 const PrivacyPolicyPage: React.FC = () => {
+  const { currentVersion } = PRIVACY_DOCUMENT
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -23,9 +30,22 @@ const PrivacyPolicyPage: React.FC = () => {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <article className="prose prose-slate max-w-none">
-          <p className="text-sm text-slate-400">
-            시행일 2025.12.25
-          </p>
+          {/* 버전 정보 */}
+          <div className="not-prose flex flex-wrap items-center gap-3 text-sm mb-6">
+            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded font-medium">
+              {formatVersionShort(currentVersion)}
+            </span>
+            <span className="text-slate-500">
+              시행일 {getEffectiveDate(currentVersion)}
+            </span>
+            <Link
+              href="/legal/history"
+              className="inline-flex items-center gap-1 text-slate-500 hover:text-indigo-600 transition-colors ml-auto"
+            >
+              <History className="w-4 h-4" />
+              <span>변경 이력</span>
+            </Link>
+          </div>
 
           {/* 서문 */}
           <section className="mt-8">
@@ -391,13 +411,31 @@ const PrivacyPolicyPage: React.FC = () => {
           {/* 14. 개인정보 처리방침의 변경 */}
           <section className="mt-8">
             <h2 className="text-xl font-bold text-slate-900">14. 개인정보 처리방침의 변경</h2>
-            <p>이 개인정보 처리방침은 시행일로부터 적용되며, 법령 및 방침에 따른 변경내용의 추가, 삭제 및 정정이
+            <p>이 개인정보 처리방침은 {getEffectiveDate(currentVersion)}부터 적용되며, 법령 및 방침에 따른 변경내용의 추가, 삭제 및 정정이
             있는 경우에는 변경사항의 시행 7일 전부터 공지사항을 통하여 고지할 것입니다. 다만, 이용자의 권리에
             중요한 변경이 있을 경우에는 최소 30일 전에 공지합니다.</p>
+          </section>
 
-            <p className="text-sm text-slate-500 mt-4">
-              개정 이력: 2025.12.25 최초 제정
-            </p>
+          {/* 개정 이력 안내 */}
+          <section className="not-prose mt-12 p-6 bg-slate-100 rounded-xl">
+            <h4 className="font-semibold text-slate-900 mb-3">개정 이력</h4>
+            <ul className="space-y-2 text-sm text-slate-600">
+              {PRIVACY_DOCUMENT.versions.slice(0, 3).map((v, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="text-slate-400 tabular-nums">{v.effectiveDate}</span>
+                  <span className="px-1.5 py-0.5 text-xs bg-slate-200 text-slate-600 rounded">v{v.version}</span>
+                  <span>{v.summary}</span>
+                </li>
+              ))}
+            </ul>
+            {PRIVACY_DOCUMENT.versions.length > 3 && (
+              <Link
+                href="/legal/history"
+                className="inline-block mt-3 text-sm text-indigo-600 hover:text-indigo-700"
+              >
+                전체 이력 보기 →
+              </Link>
+            )}
           </section>
         </article>
       </main>
@@ -410,6 +448,8 @@ const PrivacyPolicyPage: React.FC = () => {
             <Link href="/legal/terms" className="hover:text-indigo-600">서비스 이용약관</Link>
             <span>|</span>
             <Link href="/legal/privacy" className="text-indigo-600">개인정보 처리방침</Link>
+            <span>|</span>
+            <Link href="/legal/history" className="hover:text-indigo-600">변경 이력</Link>
           </div>
         </div>
       </footer>

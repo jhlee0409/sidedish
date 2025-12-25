@@ -2,6 +2,7 @@
 
 import { MessageCircle } from 'lucide-react'
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 declare global {
   interface Window {
@@ -15,6 +16,11 @@ declare global {
 const FORM_ID = 'RGdaZv'
 
 export default function ContactButton() {
+  const pathname = usePathname()
+
+  // 메뉴 상세페이지에서는 모바일 하단 바 위로 올리기
+  const isMenuDetailPage = pathname?.startsWith('/menu/') && !pathname?.includes('/register') && !pathname?.includes('/edit')
+
   useEffect(() => {
     // Tally 스크립트 동적 로드
     if (document.querySelector('script[src="https://tally.so/widgets/embed.js"]')) return
@@ -38,7 +44,11 @@ export default function ContactButton() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-full shadow-lg transition-all hover:scale-105 active:scale-95"
+      className={`fixed right-6 z-50 flex items-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 ${
+        isMenuDetailPage
+          ? 'bottom-24 lg:bottom-6' // 모바일에서 하단바 위로
+          : 'bottom-6'
+      }`}
       aria-label="문의하기"
     >
       <MessageCircle className="w-4 h-4" />
