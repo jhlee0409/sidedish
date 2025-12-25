@@ -464,38 +464,22 @@ export default function MenuDetailClient({
         {/* Header Section - 역피라미드 구조 */}
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-10">
           {/* 타이틀 + 뱃지 */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
-                  {project.title}
-                </h1>
-                {project.isBeta && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
-                    <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    Beta
-                  </span>
-                )}
-              </div>
-              {/* 한 줄 소개 */}
-              <p className="mt-2 text-slate-600 text-sm sm:text-base line-clamp-2">
-                {project.shortDescription}
-              </p>
+          <div>
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
+                {project.title}
+              </h1>
+              {project.isBeta && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0">
+                  <FlaskConical className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  Beta
+                </span>
+              )}
             </div>
-
-            {/* 찜하기 버튼 - 헤더에서 바로 접근 가능 */}
-            <button
-              onClick={handleLikeToggle}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all ${
-                liked
-                  ? 'bg-red-50 border-red-200 text-red-600'
-                  : 'bg-white border-slate-200 text-slate-600 hover:border-red-200 hover:text-red-500'
-              }`}
-              aria-label={liked ? '찜 취소' : '찜하기'}
-            >
-              <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${liked ? 'fill-current' : ''}`} />
-              <span className="text-sm font-semibold">{likeCount}</span>
-            </button>
+            {/* 한 줄 소개 */}
+            <p className="mt-2 text-slate-600 text-sm sm:text-base line-clamp-2">
+              {project.shortDescription}
+            </p>
           </div>
 
           {/* 메타 정보 - 저자 + 날짜 (컴팩트) */}
