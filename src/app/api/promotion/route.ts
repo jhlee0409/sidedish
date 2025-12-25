@@ -22,10 +22,13 @@ import { FieldValue } from 'firebase-admin/firestore'
 
 // Rate limit config for promotion (limited to prevent spam)
 const PROMOTION_RATE_LIMIT = {
-  windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 5, // 5 promotions per hour
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  maxRequests: 3, // 3 promotions per day
   keyPrefix: 'promotion',
 }
+
+// Project-level cooldown (7 days between re-promotions)
+const PROJECT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 // Available social media platforms
 export type SocialPlatform = 'x' | 'linkedin' | 'facebook' | 'threads'
@@ -180,7 +183,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // 5. Call SIM workflow
+    // 5. Check project-level cooldown (7 days between re-promotions)
+    const db = getAdminDb()
+    const projectDoc = await db.collection('projects').doc(body.projectId).get()
+
+    if (!projectDoc.exists) {
+      return NextResponse.json(
+        { error: '프로젝트를 찾을 수 없습니다.', code: 'PROJECT_NOT_FOUND' },
+        { status: 404 }
+      )
+    }
+
+    const projectData = projectDoc.data()
+    if (projectData?.promotionPosts?.promotedAt) {
+      const lastPromotedAt = new Date(projectData.promotionPosts.promotedAt).getTime()
+      const timeSinceLastPromotion = Date.now() - lastPromotedAt
+
+      if (timeSinceLastPromotion < PROJECT_COOLDOWN_MS) {
+        const remainingDays = Math.ceil((PROJECT_COOLDOWN_MS - timeSinceLastPromotion) / (24 * 60 * 60 * 1000))
+        return NextResponse.json(
+          {
+            error: `이 프로젝트는 ${remainingDays}일 후에 다시 홍보할 수 있습니다.`,
+            code: 'PROJECT_COOLDOWN',
+            remainingDays,
+          },
+          { status: 429 }
+        )
+      }
+    }
+
+    // 6. Call SIM workflow
     const simEndpoint = `https://sim.ai/api/workflows/${simWorkflowId}/execute`
 
     const simResponse = await fetch(simEndpoint, {
@@ -225,10 +257,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const simResult = await simResponse.json() as SimWorkflowResponse
 
-    // 6. Save promotion results to project document
+    // 7. Save promotion results to project document
     if (simResult.success && simResult.posts) {
       try {
-        const db = getAdminDb()
         const promotionPosts: PromotionPosts = {
           ...simResult.posts,
           promotedAt: new Date().toISOString(),
@@ -244,7 +275,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // 7. Return success response with post URLs
+    // 8. Return success response with post URLs
     return NextResponse.json({
       success: simResult.success,
       message: simResult.success
