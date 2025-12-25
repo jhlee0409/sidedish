@@ -21,13 +21,59 @@ import {
   getProject,
   withdrawUser,
 } from '@/lib/api-client'
-import { ProjectResponse, WhisperResponse } from '@/lib/db-types'
+import { ProjectResponse, WhisperResponse, PromotionPostsResponse } from '@/lib/db-types'
+import { SocialPlatform } from '@/lib/api-client'
 import LoginModal from '@/components/LoginModal'
 import ProfileEditModal from '@/components/ProfileEditModal'
 import WithdrawalModal from '@/components/WithdrawalModal'
 import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
 
 type TabType = 'menus' | 'likes' | 'whispers'
+
+/**
+ * Platform display configuration for promotion badges
+ */
+const SOCIAL_PLATFORM_CONFIG: Record<SocialPlatform, { label: string; color: string; hoverColor: string }> = {
+  x: { label: 'X', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+  linkedin: { label: 'in', color: 'bg-[#0A66C2]', hoverColor: 'hover:bg-[#004182]' },
+  facebook: { label: 'f', color: 'bg-[#1877F2]', hoverColor: 'hover:bg-[#0d5bb5]' },
+  threads: { label: '@', color: 'bg-black', hoverColor: 'hover:bg-gray-800' },
+}
+
+/**
+ * Compact promotion badges for menu cards
+ */
+function PromotionBadges({ promotionPosts }: { promotionPosts: PromotionPostsResponse }) {
+  const successfulPosts = Object.entries(promotionPosts)
+    .filter(([key, url]) => key !== 'promotedAt' && url)
+    .map(([platform, url]) => ({
+      platform: platform as SocialPlatform,
+      url: url as string,
+    }))
+
+  if (successfulPosts.length === 0) return null
+
+  return (
+    <div className="flex items-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+      <span className="text-[9px] sm:text-[10px] text-slate-400 mr-0.5">홍보됨:</span>
+      {successfulPosts.map(({ platform, url }) => {
+        const config = SOCIAL_PLATFORM_CONFIG[platform]
+        return (
+          <a
+            key={platform}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 ${config.color} ${config.hoverColor} text-white text-[9px] sm:text-[10px] font-bold rounded-md transition-colors`}
+            title={`${platform.charAt(0).toUpperCase() + platform.slice(1)} 게시글 보기`}
+          >
+            {config.label}
+          </a>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function MyPage() {
   return (
@@ -405,6 +451,10 @@ function MyPageContent() {
                                 {project.likes}
                               </span>
                             </div>
+                            {/* 홍보 현황 */}
+                            {project.promotionPosts && (
+                              <PromotionBadges promotionPosts={project.promotionPosts} />
+                            )}
                           </div>
                         </div>
                       </div>
