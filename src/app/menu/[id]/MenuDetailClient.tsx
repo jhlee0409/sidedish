@@ -454,21 +454,8 @@ export default function MenuDetailClient({
               )}
             </div>
 
-            {/* 우측: 스크롤 시 CTA 버튼 or UserMenu */}
-            <div className="flex items-center gap-1">
-              {isScrolled && (project.links?.length ?? 0) > 0 && (
-                <a
-                  href={project.links?.find(l => l.isPrimary)?.url || project.links?.[0]?.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-colors"
-                >
-                  <Utensils className="w-3.5 h-3.5" />
-                  맛보기
-                </a>
-              )}
-              <UserMenu onLoginClick={() => setShowLoginModal(true)} />
-            </div>
+            {/* 우측: UserMenu */}
+            <UserMenu onLoginClick={() => setShowLoginModal(true)} />
           </div>
         </div>
       </div>
