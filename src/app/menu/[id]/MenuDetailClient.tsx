@@ -485,7 +485,7 @@ export default function MenuDetailClient({
 
             {/* 찜하기 버튼 - 헤더에서 바로 접근 가능 */}
             <button
-              onClick={handleLike}
+              onClick={handleLikeToggle}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all ${
                 isLiked
                   ? 'bg-red-50 border-red-200 text-red-600'
