@@ -104,7 +104,7 @@ function PromotionStatusCard({ promotionPosts }: { promotionPosts: PromotionPost
 interface MenuDetailClientProps {
   projectId: string
   initialProject: ProjectResponse | null
-  initialAuthor: { id: string; name: string; avatarUrl?: string } | null
+  initialAuthor: { id: string; name: string; avatarUrl?: string; role?: string } | null
 }
 
 export default function MenuDetailClient({
@@ -128,7 +128,7 @@ export default function MenuDetailClient({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [authorProfile, setAuthorProfile] = useState<UserResponse | null>(
-    initialAuthor ? { ...initialAuthor, isProfileComplete: true, isWithdrawn: false, agreements: { termsOfService: true, privacyPolicy: true, marketing: false, agreedAt: '' }, createdAt: '', updatedAt: '' } as UserResponse : null
+    initialAuthor ? { ...initialAuthor, role: initialAuthor.role as UserResponse['role'], isProfileComplete: true, isWithdrawn: false, agreements: { termsOfService: true, privacyPolicy: true, marketing: false, agreedAt: '' }, createdAt: '', updatedAt: '' } as UserResponse : null
   )
   const [userReactions, setUserReactions] = useState<ReactionKey[]>([])
   const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
