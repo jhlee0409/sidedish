@@ -489,19 +489,26 @@ export default function MenuDetailClient({
               href={`/profile/${project.authorId}`}
               className="flex items-center gap-2 hover:text-orange-600 transition-colors group"
             >
-              {authorProfile?.avatarUrl ? (
-                <Image
-                  src={authorProfile.avatarUrl}
-                  alt={authorProfile.name || project.authorName}
-                  width={24}
-                  height={24}
-                  className="rounded-full ring-2 ring-orange-100 group-hover:ring-orange-300 transition-all"
-                />
-              ) : (
-                <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
-                  <ChefHat className="w-3.5 h-3.5 text-orange-500" />
-                </div>
-              )}
+              <div className="relative">
+                {authorProfile?.avatarUrl ? (
+                  <Image
+                    src={authorProfile.avatarUrl}
+                    alt={authorProfile.name || project.authorName}
+                    width={24}
+                    height={24}
+                    className="rounded-full ring-2 ring-orange-100 group-hover:ring-orange-300 transition-all"
+                  />
+                ) : (
+                  <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                    <ChefHat className="w-3.5 h-3.5 text-orange-500" />
+                  </div>
+                )}
+                {authorProfile?.role === 'master' && (
+                  <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full p-0.5 shadow-sm">
+                    <Crown className="w-2 h-2 text-white" />
+                  </div>
+                )}
+              </div>
               <span className="font-medium text-slate-700 group-hover:text-orange-600">
                 {authorProfile?.name || project.authorName}
               </span>
