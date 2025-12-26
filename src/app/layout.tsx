@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { PromotionProvider } from '@/contexts/PromotionContext'
 import { Toaster } from 'sonner'
 import ContactButton from '@/components/ContactButton'
+import Analytics from '@/components/Analytics'
 import { SEO_CONFIG, getOrganizationSchema, getWebSiteSchema, getFAQSchema } from '@/lib/seo-config'
 
 // Comprehensive metadata configuration for 2025 SEO best practices
@@ -191,6 +192,7 @@ export default function RootLayout({
         </AuthProvider>
         <ContactButton />
         <Toaster position="top-center" richColors closeButton />
+        <Analytics />
       </body>
     </html>
   )
