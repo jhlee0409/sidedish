@@ -11,20 +11,19 @@
 
 import { sendGAEvent } from '@next/third-parties/google'
 
-// GA4 Measurement ID
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+// GA4 Measurement ID (클라이언트에 노출되는 공개 값)
+export const GA_MEASUREMENT_ID = 'G-YLS8KDYSD2'
 
 // 프로덕션 환경에서만 추적 활성화
 export const isAnalyticsEnabled = (): boolean => {
   if (typeof window === 'undefined') return false
-  if (!GA_MEASUREMENT_ID) return false
   if (process.env.NODE_ENV !== 'production') return false
 
-  // 개발자 도구나 테스트 환경 감지 (선택적)
-  const isDevTools =
+  // 테스트 환경 감지
+  const isHeadless =
     typeof navigator !== 'undefined' && /HeadlessChrome/.test(navigator.userAgent)
 
-  return !isDevTools
+  return !isHeadless
 }
 
 // ============================================
