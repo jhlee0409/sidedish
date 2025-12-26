@@ -1,3 +1,16 @@
+/**
+ * Authentication Utilities - Server-Only Module
+ *
+ * 2025 베스트 프랙티스:
+ * - server-only import로 클라이언트 번들 보호
+ * - Firebase Admin Auth를 사용한 서버 측 토큰 검증
+ * - 타입 안전성 보장
+ *
+ * @see https://next-firebase-auth-edge-docs.vercel.app
+ */
+
+import 'server-only'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminApp } from './firebase-admin'
 import { getAuth, DecodedIdToken } from 'firebase-admin/auth'

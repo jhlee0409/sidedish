@@ -1,0 +1,264 @@
+rules_version = '2';
+
+/**
+ * SideDish Firestore Security Rules
+ *
+ * 2025 베스트 프랙티스 적용:
+ * - Defense in depth: API + Security Rules 이중 보안
+ * - Least privilege principle: 필요한 최소 권한만 부여
+ * - Field-level validation: 데이터 무결성 보장
+ *
+ * @see https://firebase.google.com/docs/firestore/security/get-started
+ * @see https://donlalicon.dev/articles/common-firebase-security-rules-patterns-firestore
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================
+    // Helper Functions
+    // ========================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'master'];
+    }
+
+    function isMaster() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'master';
+    }
+
+    // 문자열 길이 검증
+    function isValidStringLength(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    // 배열 길이 검증
+    function isValidArrayLength(value, min, max) {
+      return value is list && value.size() >= min && value.size() <= max;
+    }
+
+    // ========================================
+    // 기본 규칙: 모든 접근 차단
+    // ========================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ========================================
+    // Users Collection
+    // ========================================
+
+    match /users/{userId} {
+      // 읽기: 모든 사용자 허용 (공개 프로필)
+      allow read: if true;
+
+      // 생성: 인증된 사용자, 본인 ID만
+      allow create: if isOwner(userId)
+        && isValidStringLength(request.resource.data.name, 1, 20)
+        && request.resource.data.keys().hasAll(['id', 'name', 'avatarUrl', 'isProfileComplete', 'createdAt', 'updatedAt'])
+        && request.resource.data.id == userId
+        && (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'user');
+
+      // 수정: 본인만, role 필드 수정 불가 (관리자만 가능)
+      allow update: if isOwner(userId)
+        && isValidStringLength(request.resource.data.name, 1, 20)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'createdAt']));
+
+      // 삭제: 본인만 (soft delete 권장, 실제 삭제는 관리자만)
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // ========================================
+    // Projects Collection
+    // ========================================
+
+    match /projects/{projectId} {
+      // 읽기: 모든 사용자 허용
+      allow read: if true;
+
+      // 생성: 인증된 사용자만, 필수 필드 검증
+      allow create: if isAuthenticated()
+        && request.resource.data.authorId == request.auth.uid
+        && isValidStringLength(request.resource.data.title, 1, 100)
+        && isValidStringLength(request.resource.data.shortDescription, 1, 500)
+        && isValidStringLength(request.resource.data.description, 0, 10000)
+        && isValidArrayLength(request.resource.data.tags, 1, 5)
+        && request.resource.data.likes == 0
+        && request.resource.data.reactions.size() == 0
+        && request.resource.data.keys().hasAll(['id', 'title', 'description', 'shortDescription', 'tags', 'authorId', 'authorName', 'platform', 'createdAt', 'updatedAt']);
+
+      // 수정: 소유자만, 핵심 필드 보호
+      allow update: if isOwner(resource.data.authorId)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'authorId', 'createdAt', 'likes', 'reactions']))
+        && isValidStringLength(request.resource.data.title, 1, 100)
+        && isValidStringLength(request.resource.data.shortDescription, 1, 500)
+        && isValidStringLength(request.resource.data.description, 0, 10000)
+        && isValidArrayLength(request.resource.data.tags, 1, 5);
+
+      // 삭제: 소유자 또는 관리자
+      allow delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+
+    // ========================================
+    // Comments Collection
+    // ========================================
+
+    match /comments/{commentId} {
+      // 읽기: 모든 사용자 허용
+      allow read: if true;
+
+      // 생성: 인증된 사용자만
+      allow create: if isAuthenticated()
+        && request.resource.data.authorId == request.auth.uid
+        && isValidStringLength(request.resource.data.content, 1, 1000)
+        && request.resource.data.keys().hasAll(['id', 'projectId', 'authorId', 'authorName', 'content', 'createdAt']);
+
+      // 수정: 불가 (삭제 후 재생성)
+      allow update: if false;
+
+      // 삭제: 작성자 본인 또는 관리자
+      allow delete: if isOwner(resource.data.authorId) || isAdmin();
+    }
+
+    // ========================================
+    // Whispers Collection (Private Feedback)
+    // ========================================
+
+    match /whispers/{whisperId} {
+      // 읽기: 프로젝트 작성자만 (비공개 피드백)
+      allow read: if isAuthenticated()
+        && resource.data.projectAuthorId == request.auth.uid;
+
+      // 생성: 인증된 사용자
+      allow create: if isAuthenticated()
+        && isValidStringLength(request.resource.data.content, 1, 2000)
+        && request.resource.data.isRead == false
+        && request.resource.data.keys().hasAll(['id', 'projectId', 'projectTitle', 'projectAuthorId', 'senderName', 'content', 'isRead', 'createdAt']);
+
+      // 수정: 읽음 상태만 변경 가능 (프로젝트 작성자만)
+      allow update: if isOwner(resource.data.projectAuthorId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+        && request.resource.data.isRead == true;
+
+      // 삭제: 프로젝트 작성자만
+      allow delete: if isOwner(resource.data.projectAuthorId);
+    }
+
+    // ========================================
+    // Project Updates Collection
+    // ========================================
+
+    match /projectUpdates/{updateId} {
+      // 읽기: 모든 사용자 허용
+      allow read: if true;
+
+      // 생성: 인증된 사용자, 프로젝트 소유자만
+      allow create: if isAuthenticated()
+        && request.resource.data.authorId == request.auth.uid
+        && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId))
+        && get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.authorId == request.auth.uid
+        && isValidStringLength(request.resource.data.title, 1, 100)
+        && isValidStringLength(request.resource.data.content, 1, 10000)
+        && request.resource.data.type in ['milestone', 'devlog'];
+
+      // 수정: 불가 (삭제 후 재생성)
+      allow update: if false;
+
+      // 삭제: 작성자 본인만
+      allow delete: if isOwner(resource.data.authorId);
+    }
+
+    // ========================================
+    // Likes Collection
+    // ========================================
+
+    match /likes/{likeId} {
+      // 읽기: 모든 사용자 허용
+      allow read: if true;
+
+      // 생성: 인증된 사용자, 본인만
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'projectId', 'createdAt']);
+
+      // 수정: 불가
+      allow update: if false;
+
+      // 삭제: 본인만
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // ========================================
+    // Reactions Collection
+    // ========================================
+
+    match /reactions/{reactionId} {
+      // 읽기: 모든 사용자 허용
+      allow read: if true;
+
+      // 생성: 인증된 사용자
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.reactionKey in ['fire', 'clap', 'party', 'idea', 'love'];
+
+      // 수정: 불가
+      allow update: if false;
+
+      // 삭제: 본인만
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // ========================================
+    // AI Usage Collection (Rate Limiting)
+    // ========================================
+
+    match /aiUsage/{userId} {
+      // 읽기: 본인만
+      allow read: if isOwner(userId);
+
+      // 생성/수정: 본인만
+      allow create, update: if isOwner(userId);
+
+      // 삭제: 불가 (히스토리 유지)
+      allow delete: if false;
+    }
+
+    // ========================================
+    // Digest 관련 Collections (@deprecated)
+    // ========================================
+
+    match /digests/{digestId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /digest_subscriptions/{subscriptionId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create, update: if isOwner(request.resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    match /digest_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /weather_logs/{logId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,8 +1,22 @@
+/**
+ * Firebase Admin SDK - Server-Only Module
+ *
+ * 2025 베스트 프랙티스 적용:
+ * - server-only import: 빌드 타임에 클라이언트 번들 유입 차단
+ * - Singleton pattern: 핫 리로드 시 다중 인스턴스 방지
+ * - 환경 변수 유연성: 여러 인증 방식 지원
+ *
+ * @see https://www.jamesshopland.com/blog/nextjs-firebase-admin-sdk/
+ * @see https://firebase.google.com/docs/admin/setup
+ */
+
+import 'server-only'
+
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app'
 import { getFirestore, Firestore } from 'firebase-admin/firestore'
 
-let adminApp: App
-let adminDb: Firestore
+let adminApp: App | undefined
+let adminDb: Firestore | undefined
 
 // Server-side Firebase Admin initialization
 // For server-side operations in API routes
@@ -46,20 +60,40 @@ function getFirebaseAdminConfig() {
   }
 }
 
+/**
+ * Singleton Admin App Initializer
+ *
+ * 패턴: Lazy initialization with memoization
+ * - 첫 호출 시에만 초기화
+ * - 이후 호출은 캐시된 인스턴스 반환
+ * - 핫 리로드 시 기존 인스턴스 재사용
+ */
 export function getAdminApp(): App {
   if (!adminApp) {
-    if (getApps().length === 0) {
-      adminApp = initializeApp(getFirebaseAdminConfig())
+    // Check if already initialized by Next.js hot reload
+    const existingApps = getApps()
+    if (existingApps.length > 0) {
+      adminApp = existingApps[0]
+      console.log('Firebase Admin: Reusing existing app instance')
     } else {
-      adminApp = getApps()[0]
+      adminApp = initializeApp(getFirebaseAdminConfig())
+      console.log('Firebase Admin: New app instance created')
     }
   }
   return adminApp
 }
 
+/**
+ * Singleton Firestore Instance
+ *
+ * 패턴: Lazy initialization
+ * - Admin App 초기화 후 Firestore 인스턴스 생성
+ * - 전역 변수로 캐싱하여 재사용
+ */
 export function getAdminDb(): Firestore {
   if (!adminDb) {
     adminDb = getFirestore(getAdminApp())
+    console.log('Firebase Admin: Firestore instance created')
   }
   return adminDb
 }

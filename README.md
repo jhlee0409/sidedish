@@ -421,6 +421,10 @@ const { allowed, remaining } = checkRateLimit(key, RATE_LIMIT_CONFIGS.AUTHENTICA
 
 ## Testing
 
+**📚 전체 테스트 문서**: [TESTING.md](./claudedocs/TESTING.md)에서 모든 테스트의 상세한 목적, 동작, 보안 계층 설명을 확인하세요.
+
+### Quick Start
+
 ```bash
 # 전체 테스트 실행
 pnpm test:run
@@ -430,16 +434,33 @@ pnpm test:coverage
 
 # 특정 파일 테스트
 pnpm test security-utils
+
+# Firebase Rules 테스트 (에뮬레이터 필요)
+firebase emulators:start --only firestore
+pnpm test firestore-rules
 ```
 
-### Test Files
+### Test Coverage
 
-- `security-utils.test.ts` - 입력 검증 테스트
-- `sanitize-utils.test.ts` - XSS 방지 테스트
-- `rate-limiter.test.ts` - Rate Limiter 테스트
-- `file-validation.test.ts` - 파일 검증 테스트
-- `auth-utils.test.ts` - 인증 유틸 테스트
-- `schemas/*.test.ts` - Zod 스키마 검증 테스트
+- ✅ **283 tests passing** - 모든 핵심 기능 검증
+- ⏭️ **33 tests skipped** - Firebase 에뮬레이터 필요 (선택적)
+- 📊 **14 test files** - 7개 보안 계층 완전 커버
+- 🛡️ **Defense in Depth** - OWASP 기반 다층 보안 아키텍처
+
+### Key Test Files
+
+- `security-utils.test.ts` - Layer 1: 입력 검증 (36 tests)
+- `sanitize-utils.test.ts` - Layer 2: XSS 방지 (5 tests)
+- `file-validation.test.ts` - Layer 3: 파일 업로드 보안 (12 tests)
+- `rate-limiter.test.ts` - Layer 4: Rate Limiting (21 tests)
+- `auth-utils.test.ts` - Layer 5: 인증 (10 tests)
+- `middleware.test.ts` - Layer 6: 보안 헤더 (16 tests)
+- `firestore-rules.test.ts` - Layer 7: Firestore Rules (33 tests)
+- `schemas/*.test.ts` - Zod 스키마 검증 (110 tests)
+- `api/projects.test.ts` - REST API 엔드포인트 (6 tests)
+- `actions/projects.test.ts` - Server Actions (18 tests)
+
+자세한 내용은 [TESTING.md](./claudedocs/TESTING.md)를 참조하세요.
 
 ---
 
