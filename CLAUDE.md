@@ -31,6 +31,8 @@ The standout feature is **Gemini AI integration** that transforms basic project 
 | Drag & Drop | @dnd-kit | 6.3.1 |
 | Carousel | Embla Carousel | 8.6.0 |
 | Testing | Vitest + Testing Library | 4.0.16 |
+| Analytics | Google Analytics 4 (@next/third-parties) | 16.1.1 |
+| Social Automation | SIM Workflow API | External |
 | Package Manager | pnpm | 10.25.0 |
 | Dev Server | Turbopack | (built-in) |
 
@@ -84,6 +86,7 @@ src/
 │       ├── upload/route.ts        # Image uploads (Vercel Blob)
 │       ├── stats/route.ts         # Platform statistics
 │       ├── digests/               # @deprecated Digest system
+│       ├── promotion/route.ts     # Social media promotion (SIM workflow)
 │       ├── admin/seed/route.ts    # Admin: seed data
 │       └── cron/digest/route.ts   # @deprecated Cron job for digests
 │
@@ -109,6 +112,7 @@ src/
 │   ├── ShareSheet.tsx             # Social sharing bottom sheet
 │   ├── ProjectUpdateModal.tsx     # Create milestone/devlog modal
 │   ├── ProjectUpdateTimeline.tsx  # Timeline of project updates
+│   ├── Analytics.tsx              # GA4 analytics component
 │   ├── form/
 │   │   └── FormField.tsx          # Reusable form field component
 │   └── lunchbox/                  # @deprecated
@@ -116,7 +120,8 @@ src/
 │       └── LocationPicker.tsx
 │
 ├── contexts/
-│   └── AuthContext.tsx            # Firebase auth state & API client init
+│   ├── AuthContext.tsx            # Firebase auth state & API client init
+│   └── PromotionContext.tsx       # Background social media promotion jobs
 │
 ├── hooks/                         # Custom React hooks
 │   ├── index.ts                   # Central export
@@ -152,6 +157,7 @@ src/
 │   ├── share-utils.ts             # Web Share API & social sharing
 │   ├── og-utils.ts                # OG image generation utilities
 │   ├── legal-versions.ts          # Legal document versions
+│   ├── analytics.ts               # GA4 event tracking utilities
 │   ├── lunchbox-text.ts           # @deprecated Digest UI text
 │   ├── geocoding.ts               # @deprecated Location services
 │   └── schemas/                   # Centralized Zod schemas
@@ -189,6 +195,8 @@ src/
 | `src/services/geminiService.ts` | Server-side AI content generation |
 | `src/lib/security-utils.ts` | Input validation & sanitization utilities |
 | `src/lib/schemas/index.ts` | Centralized Zod validation schemas |
+| `src/lib/analytics.ts` | GA4 event tracking with type-safe functions |
+| `src/contexts/PromotionContext.tsx` | Background promotion job management |
 
 ## Claude Code Resources
 
@@ -264,6 +272,10 @@ NEXT_PUBLIC_SITE_URL=https://sidedish.me
 # SEO Verification (optional)
 GOOGLE_SITE_VERIFICATION=...
 NAVER_SITE_VERIFICATION=...
+
+# Social Media Promotion (SIM Workflow)
+SIM_API_KEY=...              # SIM workflow API key
+SIM_WORKFLOW_ID=...          # Workflow ID for social posting
 ```
 
 ## API Endpoints
@@ -291,6 +303,7 @@ NAVER_SITE_VERIFICATION=...
 | `/api/ai/generate` | GET/POST | Yes | AI content generation |
 | `/api/upload` | POST | Yes | Image upload to Vercel Blob |
 | `/api/stats` | GET | No | Platform statistics |
+| `/api/promotion` | POST | Yes | Social media promotion (SIM workflow) |
 
 ## Code Conventions
 
@@ -576,6 +589,7 @@ interface ProjectDoc {
   links?: ProjectLinkDoc[]
   platform: ProjectPlatform
   isBeta?: boolean
+  promotionPosts?: PromotionPosts  // Social media post URLs
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -682,6 +696,128 @@ interface ProjectLink {
 // Components for multi-link UI
 import MultiLinkInput from '@/components/MultiLinkInput'  // Drag & drop editor
 import StoreBadges from '@/components/StoreBadges'        // Display badges
+```
+
+## Analytics (GA4)
+
+Google Analytics 4 integration using `@next/third-parties/google`:
+
+### Setup (`src/components/Analytics.tsx`)
+
+```tsx
+import { GoogleAnalytics } from '@next/third-parties/google'
+
+// Automatically loaded in production only
+const Analytics: React.FC = () => {
+  if (process.env.NODE_ENV !== 'production') return null
+  return <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
+}
+```
+
+### Event Tracking (`src/lib/analytics.ts`)
+
+Type-safe event tracking functions:
+
+```tsx
+import {
+  trackProjectView,
+  trackProjectCreate,
+  trackProjectLike,
+  trackProjectShare,
+  trackAIGenerate,
+  trackSearch,
+  trackLogin,
+  trackSignUp,
+} from '@/lib/analytics'
+
+// Track project view
+trackProjectView({
+  project_id: project.id,
+  project_title: project.title,
+  project_platform: project.platform,
+})
+
+// Track share action
+trackProjectShare({
+  method: 'x',
+  content_type: 'project',
+  item_id: project.id,
+})
+```
+
+Available event types:
+- **Project events**: `project_view`, `project_create`, `project_edit`, `project_delete`, `project_like`, `project_share`, `project_reaction`, `project_comment`
+- **AI events**: `ai_generate`, `ai_candidate_select`
+- **User events**: `sign_up`, `login`, `user_logout`, `profile_view`, `profile_edit`
+- **Interaction events**: `search`, `external_link_click`, `store_badge_click`, `whisper_send`, `copy_link`
+
+## Social Media Promotion
+
+Automated promotion to social platforms (X, LinkedIn, Facebook, Threads) via SIM workflow:
+
+### PromotionContext (`src/contexts/PromotionContext.tsx`)
+
+Background job management for non-blocking promotions:
+
+```tsx
+import { usePromotion } from '@/contexts/PromotionContext'
+
+const { startPromotion, isPromoting, jobs } = usePromotion()
+
+// Start background promotion
+startPromotion({
+  projectId: project.id,
+  projectTitle: project.title,
+  projectSummary: project.shortDescription,
+  projectTags: project.tags,
+  platforms: ['x', 'linkedin', 'facebook', 'threads'],
+})
+```
+
+### Promotion API (`/api/promotion`)
+
+```tsx
+POST /api/promotion
+{
+  projectId: string,
+  projectTitle: string,
+  projectSummary: string,
+  projectDescription?: string,
+  projectTags: string[],
+  platforms?: ['x', 'linkedin', 'facebook', 'threads']
+}
+
+// Response includes posted URLs
+{
+  success: true,
+  posts: {
+    x: 'https://x.com/...',
+    linkedin: 'https://linkedin.com/...',
+    facebook: 'https://facebook.com/...',
+    threads: 'https://threads.net/...'
+  }
+}
+```
+
+### Rate Limits
+
+- **Per user**: 3 promotions per 24 hours
+- **Per project**: 7-day cooldown between re-promotions
+
+### Promotion Posts Storage
+
+Promotion results are stored in the project document:
+
+```tsx
+interface PromotionPostsResponse {
+  x?: string | null
+  linkedin?: string | null
+  facebook?: string | null
+  threads?: string | null
+  promotedAt: string
+}
+
+// Accessed via ProjectResponse.promotionPosts
 ```
 
 ## AI Integration
@@ -922,6 +1058,7 @@ Configured remote patterns in `next.config.ts`:
 
 - **No external state library** - Uses React hooks only
 - **AuthContext** - Firebase auth state & API client
+- **PromotionContext** - Background promotion job management
 - **Client-side caching** - In-memory Map with TTL
 - **Draft persistence** - LocalStorage with auto-save (1s debounce)
 - **AI usage tracking** - LocalStorage for rate limiting
@@ -1057,12 +1194,14 @@ beforeEach(() => {
 10. **Centralized Config**: Use `site.ts` for domain, `form-constants.ts` for limits
 11. **Schema Validation**: Use Zod schemas from `src/lib/schemas/` for form validation
 12. **Deprecated Features**: Lunchbox/Digest feature is deprecated but code remains for reference
+13. **Analytics**: GA4 tracking enabled in production only via `@next/third-parties/google`
+14. **Social Promotion**: SIM workflow integration requires `SIM_API_KEY` and `SIM_WORKFLOW_ID`
 
 ## Database Collections (Firestore)
 
 | Collection | Purpose | Key Fields |
 |------------|---------|------------|
-| `projects` | User projects | authorId, title, description, tags, likes, reactions, links, isBeta |
+| `projects` | User projects | authorId, title, description, tags, likes, reactions, links, isBeta, promotionPosts |
 | `users` | User profiles | name, avatarUrl, role, agreements, isWithdrawn |
 | `comments` | Project comments | projectId, authorId, content |
 | `whispers` | Private feedback | projectId, projectAuthorId, senderId, isRead |
