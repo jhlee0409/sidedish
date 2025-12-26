@@ -70,6 +70,23 @@
 - **소셜 플랫폼** - X(Twitter), Facebook, LinkedIn 공유
 - **링크 복사** - 클립보드 복사 기능
 
+### Social Media Promotion (자동 홍보)
+
+프로젝트를 소셜 미디어에 자동으로 홍보할 수 있습니다:
+
+- **지원 플랫폼** - X, LinkedIn, Facebook, Threads
+- **SIM 워크플로우** - AI 기반 홍보 게시글 자동 생성
+- **백그라운드 처리** - 비동기 처리로 UX 방해 없음
+- **Rate Limit** - 일일 3회, 프로젝트당 7일 쿨다운
+
+### Analytics (GA4)
+
+Google Analytics 4를 통한 사용자 행동 분석:
+
+- **이벤트 추적** - 프로젝트 조회, 좋아요, 공유, AI 생성 등
+- **프로덕션 전용** - 개발 환경에서는 비활성화
+- **타입 안전** - TypeScript 기반 이벤트 트래킹
+
 ### Contact & Support
 
 - **문의하기 버튼** - 플로팅 버튼으로 Tally 폼 연동
@@ -113,6 +130,8 @@
 | **Drag & Drop** | @dnd-kit |
 | **Carousel** | Embla Carousel |
 | **Security** | DOMPurify, Rate Limiter |
+| **Analytics** | Google Analytics 4 (@next/third-parties) |
+| **Social Automation** | SIM Workflow API |
 | **Testing** | Vitest, Testing Library |
 | **CI/CD** | GitHub Actions |
 
@@ -168,6 +187,10 @@ BLOB_READ_WRITE_TOKEN=
 
 # Site Configuration (optional)
 NEXT_PUBLIC_SITE_URL=https://sidedish.me
+
+# Social Media Promotion (optional)
+SIM_API_KEY=              # SIM workflow API key
+SIM_WORKFLOW_ID=          # Workflow ID for social posting
 ```
 
 ---
@@ -215,6 +238,7 @@ src/
 │   ├── ShareSheet.tsx     # 소셜 공유 시트
 │   ├── ContactButton.tsx  # 플로팅 문의 버튼
 │   ├── SafeMarkdown.tsx   # XSS-safe markdown
+│   ├── Analytics.tsx      # GA4 analytics
 │   └── ...
 │
 ├── hooks/                 # Custom React hooks
@@ -234,11 +258,16 @@ src/
 │   ├── form-constants.ts  # 폼 제약사항
 │   ├── admin-constants.ts # 관리자 권한
 │   ├── legal-versions.ts  # 약관 버전 관리
+│   ├── analytics.ts       # GA4 이벤트 트래킹
 │   ├── schemas/           # Zod 검증 스키마
 │   │   ├── common.ts      # 공통 스키마
 │   │   ├── project.ts     # 프로젝트 스키마
 │   │   └── user.ts        # 사용자 스키마
 │   └── ...
+│
+├── contexts/              # React contexts
+│   ├── AuthContext.tsx    # Firebase 인증 상태
+│   └── PromotionContext.tsx # 소셜 홍보 백그라운드 작업
 │
 ├── services/              # External services
 │   └── geminiService.ts   # AI integration
@@ -267,6 +296,7 @@ src/
 | `/api/ai/generate` | POST | AI 콘텐츠 생성 |
 | `/api/upload` | POST | 이미지 업로드 |
 | `/api/stats` | GET | 플랫폼 통계 |
+| `/api/promotion` | POST | 소셜 미디어 자동 홍보 |
 
 ---
 
@@ -417,7 +447,7 @@ pnpm test security-utils
 
 | Collection | Description |
 |------------|-------------|
-| `projects` | 프로젝트 정보 (links, isBeta, reactions 포함) |
+| `projects` | 프로젝트 정보 (links, isBeta, reactions, promotionPosts 포함) |
 | `users` | 사용자 프로필 (role, agreements, isWithdrawn 포함) |
 | `comments` | 프로젝트 댓글 |
 | `whispers` | 비공개 귓속말 |
