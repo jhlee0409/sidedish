@@ -53,7 +53,7 @@ export interface LegalDocument {
 export const TERMS_VERSIONS: LegalVersion[] = [
   {
     version: '1.0',
-    effectiveDate: '2025.01.01',
+    effectiveDate: '2025.12.26',
     summary: '서비스 이용약관 최초 제정',
     changeType: 'initial',
   },
