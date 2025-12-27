@@ -123,7 +123,7 @@ export default function ProfileEditModal({
 
   const handleRemoveAvatar = useCallback(() => {
     setValue('avatarUrl', '', { shouldValidate: true })
-    toast.success('프로필 사진이 제거되었습니다. 이니셜로 표시됩니다.')
+    toast.success('프로필 사진이 삭제되었습니다.')
   }, [setValue])
 
   const onSubmit = async (data: ProfileEditFormData) => {
@@ -233,7 +233,7 @@ export default function ProfileEditModal({
                   className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
-                  사진 제거
+                  사진 삭제
                 </button>
               )}
 
