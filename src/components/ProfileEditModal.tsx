@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useCallback, useEffect } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
-import { X, Camera, RotateCcw, Loader2, User } from 'lucide-react'
+import { X, Camera, Loader2, Trash2 } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,6 +11,29 @@ import { toast } from 'sonner'
 import { profileEditFormSchema, type ProfileEditFormData } from '@/lib/schemas'
 import { FormField, CharacterCount } from '@/components/form'
 import { CONTENT_LIMITS } from '@/lib/security-utils'
+import ImageCropModal from '@/components/ImageCropModal'
+
+// ==================== Helper Functions ====================
+
+const getInitial = (name: string) => {
+  if (!name?.trim()) return '?'
+  return name.trim().charAt(0).toUpperCase()
+}
+
+const getProfileColor = (name: string) => {
+  const colors = [
+    'bg-orange-500',
+    'bg-red-500',
+    'bg-indigo-500',
+    'bg-emerald-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-cyan-500',
+    'bg-amber-500',
+  ]
+  const index = (name?.length || 0) % colors.length
+  return colors[index]
+}
 
 interface ProfileEditModalProps {
   isOpen: boolean
@@ -25,6 +48,11 @@ export default function ProfileEditModal({
 }: ProfileEditModalProps) {
   const { user, updateProfile } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 크롭 모달 상태
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const {
     control,
@@ -52,15 +80,25 @@ export default function ProfileEditModal({
     }
   }, [isOpen, user, reset])
 
+  // 모달 닫힐 때 크롭 상태 초기화
+  useEffect(() => {
+    if (!isOpen) {
+      setCropModalOpen(false)
+      setSelectedImageSrc(null)
+    }
+  }, [isOpen])
+
   const watchName = watch('name')
   const watchAvatarUrl = watch('avatarUrl')
 
+  // 레거시: 소셜 이미지 관련 (미사용)
   const isCustomAvatar =
     watchAvatarUrl && watchAvatarUrl.includes('public.blob.vercel-storage.com')
   const originalAvatarUrl = user?.originalAvatarUrl || ''
 
-  const handleImageUpload = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 파일 선택 시 크롭 모달 열기
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
 
@@ -76,28 +114,66 @@ export default function ProfileEditModal({
         return
       }
 
+      // 이미지를 Data URL로 변환하여 크롭 모달에 전달
+      const reader = new FileReader()
+      reader.onload = () => {
+        setSelectedImageSrc(reader.result as string)
+        setCropModalOpen(true)
+      }
+      reader.readAsDataURL(file)
+
+      // input 초기화
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    },
+    []
+  )
+
+  // 크롭 완료 후 업로드
+  const handleCropComplete = useCallback(
+    async (croppedBlob: Blob) => {
+      setIsUploading(true)
       try {
+        // Blob을 File로 변환
+        const file = new File([croppedBlob], 'profile.jpg', {
+          type: 'image/jpeg',
+        })
         const { url } = await uploadImage(file)
         setValue('avatarUrl', url, { shouldValidate: true })
-        toast.success('이미지가 업로드되었습니다.')
+        toast.success('프로필 사진이 변경되었습니다.')
+        setCropModalOpen(false)
+        setSelectedImageSrc(null)
       } catch (error) {
         console.error('Image upload failed:', error)
         toast.error('이미지 업로드에 실패했습니다.')
       } finally {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
+        setIsUploading(false)
       }
     },
     [setValue]
   )
 
+  // 크롭 모달 닫기
+  const handleCropModalClose = useCallback(() => {
+    if (!isUploading) {
+      setCropModalOpen(false)
+      setSelectedImageSrc(null)
+    }
+  }, [isUploading])
+
+  // 레거시: 소셜 이미지 되돌리기 (미사용)
   const handleResetToOriginal = useCallback(() => {
     if (originalAvatarUrl) {
       setValue('avatarUrl', originalAvatarUrl, { shouldValidate: true })
       toast.success('기본 프로필 사진으로 변경되었습니다.')
     }
   }, [originalAvatarUrl, setValue])
+
+  const handleRemoveAvatar = useCallback(() => {
+    setValue('avatarUrl', '', { shouldValidate: true })
+    toast.success('프로필 사진이 삭제되었습니다.')
+  }, [setValue])
 
   const onSubmit = async (data: ProfileEditFormData) => {
     if (!user) return
@@ -130,143 +206,168 @@ export default function ProfileEditModal({
   if (!isOpen || !user) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={onClose}
+        />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-orange-500 to-red-500 px-8 py-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        {/* Modal */}
+        <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+          {/* Header */}
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 px-8 py-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold">프로필 수정</h2>
-            <p className="text-white/80 mt-1">나만의 스타일을 표현해보세요</p>
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold">프로필 수정</h2>
+              <p className="text-white/80 mt-1">나만의 스타일을 표현해보세요</p>
+            </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-lg">
-                {watchAvatarUrl ? (
-                  <Image
-                    src={watchAvatarUrl}
-                    alt={watchName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    <User className="w-12 h-12" />
-                  </div>
+          {/* Content */}
+          <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                  {watchAvatarUrl ? (
+                    <Image
+                      src={watchAvatarUrl}
+                      alt={watchName}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div
+                      className={`w-full h-full flex items-center justify-center text-4xl font-bold text-white ${getProfileColor(watchName || '')}`}
+                    >
+                      {getInitial(watchName || '')}
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 p-2 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition-colors"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Avatar Action Buttons */}
+              <div className="mt-3 flex flex-col items-center gap-2">
+                {/* Remove Avatar Button - 이미지가 있을 때만 표시 */}
+                {watchAvatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    사진 삭제
+                  </button>
                 )}
               </div>
 
-              {/* Upload Button */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 p-2 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition-colors"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              {/* Helper Text */}
+              {!watchAvatarUrl && (
+                <p className="mt-2 text-xs text-slate-400">
+                  사진이 없으면 닉네임 첫 글자가 표시됩니다
+                </p>
+              )}
             </div>
 
-            {/* Reset to Original Button */}
-            {isCustomAvatar && originalAvatarUrl && (
+            {/* Name Input */}
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <FormField
+                  label="닉네임"
+                  htmlFor="name"
+                  required
+                  error={errors.name}
+                >
+                  <input
+                    {...field}
+                    id="name"
+                    type="text"
+                    placeholder="닉네임을 입력하세요"
+                    maxLength={CONTENT_LIMITS.USER_NAME_MAX}
+                    className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      errors.name
+                        ? 'border-red-500 focus:ring-red-500/20'
+                        : 'border-slate-200 focus:ring-orange-500 focus:border-orange-500'
+                    }`}
+                  />
+                  <div className="flex justify-end mt-1">
+                    <CharacterCount
+                      current={field.value?.length || 0}
+                      max={CONTENT_LIMITS.USER_NAME_MAX}
+                    />
+                  </div>
+                </FormField>
+              )}
+            />
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleResetToOriginal}
-                className="mt-3 text-sm text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
               >
-                <RotateCcw className="w-3 h-3" />
-                기본 사진으로 되돌리기
+                취소
               </button>
-            )}
-          </div>
-
-          {/* Name Input */}
-          <Controller
-            name="name"
-            control={control}
-            render={({ field }) => (
-              <FormField
-                label="닉네임"
-                htmlFor="name"
-                required
-                error={errors.name}
+              <button
+                type="submit"
+                disabled={isSubmitting || !isValid}
+                className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <input
-                  {...field}
-                  id="name"
-                  type="text"
-                  placeholder="닉네임을 입력하세요"
-                  maxLength={CONTENT_LIMITS.USER_NAME_MAX}
-                  className={`w-full px-4 py-3 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
-                    errors.name
-                      ? 'border-red-500 focus:ring-red-500/20'
-                      : 'border-slate-200 focus:ring-orange-500 focus:border-orange-500'
-                  }`}
-                />
-                <div className="flex justify-end mt-1">
-                  <CharacterCount
-                    current={field.value?.length || 0}
-                    max={CONTENT_LIMITS.USER_NAME_MAX}
-                  />
-                </div>
-              </FormField>
-            )}
-          />
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !isValid}
-              className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                '저장'
-              )}
-            </button>
-          </div>
-        </form>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    저장 중...
+                  </>
+                ) : (
+                  '저장'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      {/* Image Crop Modal */}
+      {selectedImageSrc && (
+        <ImageCropModal
+          isOpen={cropModalOpen}
+          imageSrc={selectedImageSrc}
+          onClose={handleCropModalClose}
+          onCropComplete={handleCropComplete}
+          isUploading={isUploading}
+        />
+      )}
+    </>
   )
 }
