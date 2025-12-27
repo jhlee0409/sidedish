@@ -106,7 +106,7 @@ export function getOrganizationSchema() {
     '@type': 'Organization',
     name: SEO_CONFIG.siteName,
     url: SEO_CONFIG.siteUrl,
-    logo: `${SEO_CONFIG.siteUrl}/sidedish_logo.png`,
+    logo: `${SEO_CONFIG.siteUrl}/sidedish_logo_512.png`,
     description: SEO_CONFIG.defaultDescription,
     sameAs: [
       // Add social media URLs when available

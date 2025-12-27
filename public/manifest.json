@@ -13,36 +13,16 @@
   "categories": ["productivity", "social", "lifestyle"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/sidedish_logo_192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/sidedish_logo_512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "SideDish 대시보드"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -51,7 +31,7 @@
       "short_name": "메뉴판",
       "description": "등록된 프로젝트 갤러리 보기",
       "url": "/dashboard",
-      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/sidedish_logo_192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],

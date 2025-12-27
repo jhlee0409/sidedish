@@ -443,7 +443,7 @@ export default function MenuDetailClient({
               ) : (
                 <Link href="/" className="flex items-center gap-1.5 sm:gap-2">
                   <Image
-                    src="/sidedish_logo.png"
+                    src="/sidedish_logo_512.png"
                     alt="SideDish"
                     width={32}
                     height={32}
