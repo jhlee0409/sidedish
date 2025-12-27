@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ExternalLink, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { isWebView, getWebViewName, WebViewBlockedError } from '@/lib/firebase'
 
 interface SocialLoginFormProps {
   onSuccess?: () => void
@@ -14,6 +15,45 @@ export default function SocialLoginForm({ onSuccess, showTermsLinks = true }: So
   const { signInWithGoogle, signInWithGithub } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [inWebView, setInWebView] = useState(false)
+  const [webViewName, setWebViewName] = useState<string>('인앱 브라우저')
+
+  useEffect(() => {
+    // 클라이언트에서만 WebView 감지
+    const webView = isWebView()
+    setInWebView(webView)
+    if (webView) {
+      setWebViewName(getWebViewName() || '인앱 브라우저')
+    }
+  }, [])
+
+  const handleOpenInBrowser = () => {
+    // 현재 URL을 시스템 기본 브라우저로 열기 시도
+    const currentUrl = window.location.href
+
+    // Android intent 방식 시도
+    if (/Android/i.test(navigator.userAgent)) {
+      window.location.href = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;end`
+      return
+    }
+
+    // iOS Safari로 열기 시도 (대부분의 인앱 브라우저에서 동작)
+    // window.open은 일부 WebView에서 외부 브라우저로 열림
+    window.open(currentUrl, '_system')
+  }
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setError(null)
+      // 임시로 성공 메시지 표시
+      const originalError = error
+      setError('URL이 복사되었습니다. 브라우저에 붙여넣기 해주세요.')
+      setTimeout(() => setError(originalError), 3000)
+    } catch {
+      setError('URL 복사에 실패했습니다.')
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     try {
@@ -22,8 +62,13 @@ export default function SocialLoginForm({ onSuccess, showTermsLinks = true }: So
       await signInWithGoogle()
       onSuccess?.()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다. 다시 시도해주세요.'
-      setError(message)
+      if (err instanceof WebViewBlockedError) {
+        // WebView 차단 에러는 별도 처리 (이미 UI에서 안내 중)
+        setError(err.message)
+      } else {
+        const message = err instanceof Error ? err.message : 'Google 로그인에 실패했습니다. 다시 시도해주세요.'
+        setError(message)
+      }
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -47,8 +92,50 @@ export default function SocialLoginForm({ onSuccess, showTermsLinks = true }: So
 
   return (
     <div className="space-y-4">
-      {error && (
+      {/* WebView 경고 메시지 */}
+      {inWebView && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm animate-in fade-in duration-200">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <p className="font-medium">
+                {webViewName}에서는 Google 로그인이 제한됩니다
+              </p>
+              <p className="text-amber-700">
+                Google 보안 정책으로 인해 인앱 브라우저에서 Google 로그인을 사용할 수 없습니다.
+                아래 방법 중 하나를 선택해주세요:
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  onClick={handleOpenInBrowser}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 rounded-lg text-amber-900 font-medium transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  외부 브라우저로 열기
+                </button>
+                <button
+                  onClick={handleCopyUrl}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 rounded-lg text-amber-900 font-medium transition-colors"
+                >
+                  URL 복사
+                </button>
+              </div>
+              <p className="text-xs text-amber-600">
+                또는 GitHub 계정으로 로그인하실 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && !error.includes('URL이 복사되었습니다') && (
         <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm animate-in fade-in duration-200">
+          {error}
+        </div>
+      )}
+
+      {error?.includes('URL이 복사되었습니다') && (
+        <div className="bg-green-50 text-green-600 px-4 py-3 rounded-xl text-sm animate-in fade-in duration-200">
           {error}
         </div>
       )}
@@ -60,8 +147,13 @@ export default function SocialLoginForm({ onSuccess, showTermsLinks = true }: So
       {/* Google Login Button */}
       <button
         onClick={handleGoogleSignIn}
-        disabled={isLoading}
-        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isLoading || inWebView}
+        className={`w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          inWebView
+            ? 'border-slate-200 text-slate-400 cursor-not-allowed'
+            : 'border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:shadow-md'
+        }`}
+        title={inWebView ? '인앱 브라우저에서는 Google 로그인을 사용할 수 없습니다' : undefined}
       >
         {isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin" />

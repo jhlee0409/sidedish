@@ -76,6 +76,11 @@ const githubProvider = new GithubAuthProvider()
  * WebView/인앱 브라우저 감지
  * Google OAuth는 WebView에서 차단됨 (disallowed_useragent 오류)
  * 카카오톡, 네이버, Instagram, Facebook 등의 인앱 브라우저 감지
+ *
+ * 참고: Google은 2017년 4월 20일부터 embedded user-agent(WebView)에서의
+ * OAuth 요청을 완전히 차단함. signInWithRedirect도 WebView 내에서
+ * 실행되므로 해결책이 되지 않음.
+ * https://developers.google.com/identity/protocols/oauth2/policies
  */
 export function isWebView(): boolean {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -93,6 +98,8 @@ export function isWebView(): boolean {
     /Line/i, // LINE
     /wv\)/i, // Android WebView
     /WebView/i, // Generic WebView
+    /Twitter/i, // Twitter/X 앱
+    /LinkedInApp/i, // LinkedIn 앱
   ]
 
   // iOS WebView 감지 (standalone 모드가 아닌 경우)
@@ -110,6 +117,25 @@ export function isWebView(): boolean {
     isIOSWebView ||
     isAndroidWebView
   )
+}
+
+/**
+ * WebView 이름 반환 (사용자 안내용)
+ */
+export function getWebViewName(): string | null {
+  if (typeof navigator === 'undefined') return null
+
+  const userAgent = navigator.userAgent || ''
+
+  if (/FBAN|FBAV/i.test(userAgent)) return 'Facebook'
+  if (/Instagram/i.test(userAgent)) return 'Instagram'
+  if (/KAKAOTALK/i.test(userAgent)) return '카카오톡'
+  if (/NAVER/i.test(userAgent)) return '네이버'
+  if (/Line/i.test(userAgent)) return 'LINE'
+  if (/Twitter/i.test(userAgent)) return 'X(Twitter)'
+  if (/LinkedInApp/i.test(userAgent)) return 'LinkedIn'
+
+  return '인앱 브라우저'
 }
 
 // Helper to get provider display name
@@ -167,22 +193,35 @@ async function handleAuthError(auth: Auth, error: AuthError): Promise<never> {
   throw new Error(getAuthErrorMessage(error))
 }
 
+/**
+ * WebView 환경에서 Google OAuth 차단 에러
+ * UI에서 이 에러 타입을 체크하여 적절한 안내 표시
+ */
+export class WebViewBlockedError extends Error {
+  constructor(webViewName: string) {
+    super(`${webViewName}에서는 Google 로그인을 사용할 수 없습니다. 외부 브라우저에서 열어주세요.`)
+    this.name = 'WebViewBlockedError'
+  }
+}
+
 // Sign in with Google
-// WebView에서는 signInWithRedirect 사용, 일반 브라우저에서는 signInWithPopup 사용
+// WebView에서는 Google OAuth가 차단되므로 에러 발생
 export async function signInWithGoogle(): Promise<FirebaseUser | null> {
   const auth = getFirebaseAuth()
   if (!auth) {
     throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
   }
+
+  // WebView에서는 Google OAuth가 차단됨
+  // signInWithRedirect도 WebView 내에서 실행되므로 해결책이 되지 않음
+  if (isWebView()) {
+    const webViewName = getWebViewName() || '인앱 브라우저'
+    throw new WebViewBlockedError(webViewName)
+  }
+
   try {
-    if (isWebView()) {
-      // WebView에서는 redirect 방식 사용 (페이지 이동 후 돌아옴)
-      await signInWithRedirect(auth, googleProvider)
-      return null // redirect 후에는 null 반환, onAuthChange에서 처리됨
-    } else {
-      const result = await signInWithPopup(auth, googleProvider)
-      return result.user
-    }
+    const result = await signInWithPopup(auth, googleProvider)
+    return result.user
   } catch (error) {
     await handleAuthError(auth, error as AuthError)
     throw error // TypeScript needs this, but handleAuthError always throws
@@ -190,21 +229,15 @@ export async function signInWithGoogle(): Promise<FirebaseUser | null> {
 }
 
 // Sign in with GitHub
-// WebView에서는 signInWithRedirect 사용, 일반 브라우저에서는 signInWithPopup 사용
+// GitHub은 WebView에서도 OAuth가 허용됨
 export async function signInWithGithub(): Promise<FirebaseUser | null> {
   const auth = getFirebaseAuth()
   if (!auth) {
     throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
   }
   try {
-    if (isWebView()) {
-      // WebView에서는 redirect 방식 사용 (페이지 이동 후 돌아옴)
-      await signInWithRedirect(auth, githubProvider)
-      return null // redirect 후에는 null 반환, onAuthChange에서 처리됨
-    } else {
-      const result = await signInWithPopup(auth, githubProvider)
-      return result.user
-    }
+    const result = await signInWithPopup(auth, githubProvider)
+    return result.user
   } catch (error) {
     await handleAuthError(auth, error as AuthError)
     throw error // TypeScript needs this, but handleAuthError always throws
