@@ -52,6 +52,8 @@ export async function GET(
       role: data.role || 'user',
       agreements,
       isProfileComplete: data.isProfileComplete || false,
+      isWithdrawn: data.isWithdrawn || false,
+      withdrawnAt: data.withdrawnAt ? timestampToISO(data.withdrawnAt) : undefined,
       createdAt: timestampToISO(data.createdAt),
     }
 

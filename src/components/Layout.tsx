@@ -8,6 +8,7 @@ import Button from './Button'
 import UserMenu from './UserMenu'
 import { useAuth } from '@/contexts/AuthContext'
 import LoginModal from './LoginModal'
+import ReactivateAccountModal from './ReactivateAccountModal'
 import { CONTACT_EMAIL } from '@/lib/site'
 
 interface LayoutProps {
@@ -18,7 +19,12 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
   const [scrolled, setScrolled] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
-  const { isAuthenticated } = useAuth()
+  const {
+    isAuthenticated,
+    withdrawnAccountInfo,
+    reactivateAccount,
+    dismissReactivation,
+  } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -119,6 +125,16 @@ const Layout: React.FC<LayoutProps> = ({ children, isLanding = false }) => {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+
+      {/* 탈퇴 계정 복구 모달 */}
+      {withdrawnAccountInfo && withdrawnAccountInfo.canReactivate && (
+        <ReactivateAccountModal
+          isOpen={true}
+          withdrawnInfo={withdrawnAccountInfo}
+          onReactivate={reactivateAccount}
+          onDismiss={dismissReactivation}
+        />
+      )}
     </div>
   )
 }

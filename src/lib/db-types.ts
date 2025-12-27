@@ -310,6 +310,8 @@ export interface UserResponse {
   role?: UserRole
   agreements?: UserAgreementsResponse
   isProfileComplete: boolean
+  isWithdrawn?: boolean // 탈퇴 여부
+  withdrawnAt?: string // 탈퇴 시점 (ISO string)
   createdAt: string
 }
 
