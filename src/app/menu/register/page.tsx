@@ -853,7 +853,7 @@ export default function MenuRegisterPage() {
                 disabled={isSubmitting || !isAuthenticated}
                 isLoading={isSubmitting}
               >
-                메뉴 등록 완료
+                {isSubmitting ? '등록 중...' : '메뉴 등록 완료'}
               </Button>
             </div>
           </form>
