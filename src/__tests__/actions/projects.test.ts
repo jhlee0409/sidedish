@@ -251,7 +251,7 @@ describe('Server Actions - Projects', () => {
       )
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard')
       expect(revalidatePath).toHaveBeenCalledWith('/menu/project123')
-      expect(revalidateTag).toHaveBeenCalledWith('projects')
+      expect(revalidateTag).toHaveBeenCalledWith('projects', 'max')
     })
 
     it('should handle Firestore errors gracefully', async () => {
@@ -419,7 +419,7 @@ describe('Server Actions - Projects', () => {
       )
       expect(revalidatePath).toHaveBeenCalledWith('/menu/project123')
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard')
-      expect(revalidateTag).toHaveBeenCalledWith('projects')
+      expect(revalidateTag).toHaveBeenCalledWith('projects', 'max')
     })
 
     it('should return error if project does not exist', async () => {
@@ -611,7 +611,7 @@ describe('Server Actions - Projects', () => {
       expect(mockBatchDelete).toHaveBeenCalledTimes(4) // 2 comments + 1 like + 1 project
       expect(mockBatchCommit).toHaveBeenCalled()
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard')
-      expect(revalidateTag).toHaveBeenCalledWith('projects')
+      expect(revalidateTag).toHaveBeenCalledWith('projects', 'max')
     })
 
     it('should return error if project does not exist', async () => {
@@ -749,7 +749,7 @@ describe('Server Actions - Projects', () => {
       )
       expect(mockUpdate).toHaveBeenCalledWith({ likes: 6 })
       expect(revalidatePath).toHaveBeenCalledWith('/menu/project123')
-      expect(revalidateTag).toHaveBeenCalledWith('projects')
+      expect(revalidateTag).toHaveBeenCalledWith('projects', 'max')
     })
 
     it('should remove like if already liked', async () => {
@@ -828,7 +828,7 @@ describe('Server Actions - Projects', () => {
       expect(mockDelete).toHaveBeenCalled()
       expect(mockUpdate).toHaveBeenCalledWith({ likes: 4 })
       expect(revalidatePath).toHaveBeenCalledWith('/menu/project123')
-      expect(revalidateTag).toHaveBeenCalledWith('projects')
+      expect(revalidateTag).toHaveBeenCalledWith('projects', 'max')
     })
 
     it('should handle Firestore errors gracefully', async () => {
