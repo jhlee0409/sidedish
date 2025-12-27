@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { X, Camera, RotateCcw, Loader2, User } from 'lucide-react'
+import { X, Camera, RotateCcw, Loader2, Trash2 } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,6 +11,28 @@ import { toast } from 'sonner'
 import { profileEditFormSchema, type ProfileEditFormData } from '@/lib/schemas'
 import { FormField, CharacterCount } from '@/components/form'
 import { CONTENT_LIMITS } from '@/lib/security-utils'
+
+// ==================== Helper Functions ====================
+
+const getInitial = (name: string) => {
+  if (!name?.trim()) return '?'
+  return name.trim().charAt(0).toUpperCase()
+}
+
+const getProfileColor = (name: string) => {
+  const colors = [
+    'bg-orange-500',
+    'bg-red-500',
+    'bg-indigo-500',
+    'bg-emerald-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-cyan-500',
+    'bg-amber-500',
+  ]
+  const index = (name?.length || 0) % colors.length
+  return colors[index]
+}
 
 interface ProfileEditModalProps {
   isOpen: boolean
@@ -99,6 +121,11 @@ export default function ProfileEditModal({
     }
   }, [originalAvatarUrl, setValue])
 
+  const handleRemoveAvatar = useCallback(() => {
+    setValue('avatarUrl', '', { shouldValidate: true })
+    toast.success('프로필 사진이 제거되었습니다. 이니셜로 표시됩니다.')
+  }, [setValue])
+
   const onSubmit = async (data: ProfileEditFormData) => {
     if (!user) return
 
@@ -162,7 +189,7 @@ export default function ProfileEditModal({
           {/* Avatar Section */}
           <div className="flex flex-col items-center">
             <div className="relative">
-              <div className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-lg">
+              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg">
                 {watchAvatarUrl ? (
                   <Image
                     src={watchAvatarUrl}
@@ -171,8 +198,10 @@ export default function ProfileEditModal({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    <User className="w-12 h-12" />
+                  <div
+                    className={`w-full h-full flex items-center justify-center text-4xl font-bold text-white ${getProfileColor(watchName || '')}`}
+                  >
+                    {getInitial(watchName || '')}
                   </div>
                 )}
               </div>
@@ -194,16 +223,38 @@ export default function ProfileEditModal({
               />
             </div>
 
-            {/* Reset to Original Button */}
-            {isCustomAvatar && originalAvatarUrl && (
-              <button
-                type="button"
-                onClick={handleResetToOriginal}
-                className="mt-3 text-sm text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" />
-                기본 사진으로 되돌리기
-              </button>
+            {/* Avatar Action Buttons */}
+            <div className="mt-3 flex flex-col items-center gap-2">
+              {/* Remove Avatar Button - 이미지가 있을 때만 표시 */}
+              {watchAvatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  className="text-sm text-slate-500 hover:text-red-500 flex items-center gap-1 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  사진 제거
+                </button>
+              )}
+
+              {/* Reset to Original Button - 커스텀 이미지이고 원본이 있을 때만 표시 */}
+              {isCustomAvatar && originalAvatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleResetToOriginal}
+                  className="text-sm text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  소셜 기본 사진으로 되돌리기
+                </button>
+              )}
+            </div>
+
+            {/* Helper Text */}
+            {!watchAvatarUrl && (
+              <p className="mt-2 text-xs text-slate-400">
+                사진이 없으면 닉네임 첫 글자가 표시됩니다
+              </p>
             )}
           </div>
 
