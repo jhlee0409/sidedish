@@ -372,7 +372,8 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
       // Upload image if a new file was selected
       if (selectedFile) {
         try {
-          const uploadResult = await uploadImage(selectedFile)
+          // Use actual project ID as entityId
+          const uploadResult = await uploadImage(selectedFile, 'project', id)
           imageUrl = uploadResult.url
         } catch (error) {
           console.error('Image upload failed:', error)
@@ -609,6 +610,11 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                           <Upload className="w-4 h-4 text-slate-700" />
                         </div>
                       </div>
+                      {isSubmitting && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                          <Loader2 className="w-8 h-8 text-white animate-spin" />
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center text-slate-400">

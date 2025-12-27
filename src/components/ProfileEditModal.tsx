@@ -52,7 +52,8 @@ export default function ProfileEditModal({
   // 크롭 모달 상태
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const {
     control,
@@ -85,8 +86,14 @@ export default function ProfileEditModal({
     if (!isOpen) {
       setCropModalOpen(false)
       setSelectedImageSrc(null)
+      setCroppedBlob(null)
+      // Blob URL cleanup
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+        setPreviewUrl(null)
+      }
     }
-  }, [isOpen])
+  }, [isOpen, previewUrl])
 
   const watchName = watch('name')
   const watchAvatarUrl = watch('avatarUrl')
@@ -130,37 +137,32 @@ export default function ProfileEditModal({
     []
   )
 
-  // 크롭 완료 후 업로드
+  // 크롭 완료 후 프리뷰 설정 (업로드는 "저장" 시)
   const handleCropComplete = useCallback(
-    async (croppedBlob: Blob) => {
-      setIsUploading(true)
-      try {
-        // Blob을 File로 변환
-        const file = new File([croppedBlob], 'profile.jpg', {
-          type: 'image/jpeg',
-        })
-        const { url } = await uploadImage(file)
-        setValue('avatarUrl', url, { shouldValidate: true })
-        toast.success('프로필 사진이 변경되었습니다.')
-        setCropModalOpen(false)
-        setSelectedImageSrc(null)
-      } catch (error) {
-        console.error('Image upload failed:', error)
-        toast.error('이미지 업로드에 실패했습니다.')
-      } finally {
-        setIsUploading(false)
+    (blob: Blob) => {
+      // 이전 Blob URL cleanup
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
       }
+
+      // 새 Blob과 preview URL 설정
+      setCroppedBlob(blob)
+      const blobUrl = URL.createObjectURL(blob)
+      setPreviewUrl(blobUrl)
+      setValue('avatarUrl', blobUrl, { shouldValidate: true })
+
+      // 모달 닫기
+      setCropModalOpen(false)
+      setSelectedImageSrc(null)
     },
-    [setValue]
+    [previewUrl, setValue]
   )
 
   // 크롭 모달 닫기
   const handleCropModalClose = useCallback(() => {
-    if (!isUploading) {
-      setCropModalOpen(false)
-      setSelectedImageSrc(null)
-    }
-  }, [isUploading])
+    setCropModalOpen(false)
+    setSelectedImageSrc(null)
+  }, [])
 
   // 레거시: 소셜 이미지 되돌리기 (미사용)
   const handleResetToOriginal = useCallback(() => {
@@ -172,23 +174,40 @@ export default function ProfileEditModal({
 
   const handleRemoveAvatar = useCallback(() => {
     setValue('avatarUrl', '', { shouldValidate: true })
-    toast.success('프로필 사진이 삭제되었습니다.')
   }, [setValue])
 
   const onSubmit = async (data: ProfileEditFormData) => {
     if (!user) return
 
     try {
+      let finalAvatarUrl = data.avatarUrl
+
+      // 크롭된 이미지가 있으면 서버에 업로드
+      if (croppedBlob) {
+        const file = new File([croppedBlob], 'profile.webp', {
+          type: 'image/webp',
+        })
+        const { url } = await uploadImage(file, 'profile', user.id)
+        finalAvatarUrl = url
+
+        // Blob URL cleanup
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl)
+          setPreviewUrl(null)
+        }
+        setCroppedBlob(null)
+      }
+
       // 서버에 업데이트 요청
       await updateUser(user.id, {
         name: data.name.trim(),
-        avatarUrl: data.avatarUrl,
+        avatarUrl: finalAvatarUrl,
       })
 
       // 로컬 상태 업데이트
       updateProfile({
         name: data.name.trim(),
-        avatarUrl: data.avatarUrl,
+        avatarUrl: finalAvatarUrl,
       })
 
       // 캐시 무효화
@@ -365,7 +384,6 @@ export default function ProfileEditModal({
           imageSrc={selectedImageSrc}
           onClose={handleCropModalClose}
           onCropComplete={handleCropComplete}
-          isUploading={isUploading}
         />
       )}
     </>

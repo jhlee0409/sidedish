@@ -2,14 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import Cropper, { Area } from 'react-easy-crop'
-import { X, ZoomIn, ZoomOut, Loader2 } from 'lucide-react'
+import { X, ZoomIn, ZoomOut } from 'lucide-react'
 
 interface ImageCropModalProps {
   isOpen: boolean
   imageSrc: string
   onClose: () => void
   onCropComplete: (croppedImageBlob: Blob) => void
-  isUploading?: boolean
 }
 
 // 크롭된 이미지를 Blob으로 변환하는 유틸리티 함수
@@ -53,7 +52,7 @@ async function getCroppedImg(
           reject(new Error('Canvas is empty'))
         }
       },
-      'image/jpeg',
+      'image/webp',
       0.9
     )
   })
@@ -75,7 +74,6 @@ export default function ImageCropModal({
   imageSrc,
   onClose,
   onCropComplete,
-  isUploading = false,
 }: ImageCropModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -129,8 +127,7 @@ export default function ImageCropModal({
           <h3 className="text-lg font-semibold text-slate-900">사진 조정</h3>
           <button
             onClick={onClose}
-            disabled={isUploading}
-            className="p-1.5 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5 text-slate-500" />
           </button>
@@ -157,7 +154,7 @@ export default function ImageCropModal({
             <button
               type="button"
               onClick={handleZoomOut}
-              disabled={zoom <= 1 || isUploading}
+              disabled={zoom <= 1}
               className="p-2 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50"
             >
               <ZoomOut className="w-5 h-5 text-slate-600" />
@@ -169,13 +166,12 @@ export default function ImageCropModal({
               step={0.1}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              disabled={isUploading}
-              className="flex-1 h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-orange-500 disabled:opacity-50"
+              className="flex-1 h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-orange-500"
             />
             <button
               type="button"
               onClick={handleZoomIn}
-              disabled={zoom >= 3 || isUploading}
+              disabled={zoom >= 3}
               className="p-2 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50"
             >
               <ZoomIn className="w-5 h-5 text-slate-600" />
@@ -191,25 +187,16 @@ export default function ImageCropModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={isUploading}
-            className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors"
           >
             취소
           </button>
           <button
             type="button"
             onClick={handleSave}
-            disabled={isUploading}
-            className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
           >
-            {isUploading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                업로드 중...
-              </>
-            ) : (
-              '적용'
-            )}
+            적용
           </button>
         </div>
       </div>

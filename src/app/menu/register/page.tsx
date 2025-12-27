@@ -348,12 +348,18 @@ export default function MenuRegisterPage() {
       return
     }
 
+    if (!draft) {
+      toast.error('임시 저장 정보를 찾을 수 없습니다.')
+      return
+    }
+
     try {
       let imageUrl = data.imageUrl
 
       if (selectedFile) {
         try {
-          const uploadResult = await uploadImage(selectedFile)
+          // Use draft.id as temporary entityId (no projectId yet)
+          const uploadResult = await uploadImage(selectedFile, 'project', draft.id)
           imageUrl = uploadResult.url
         } catch (error) {
           console.error('Image upload failed:', error)
@@ -633,6 +639,11 @@ export default function MenuRegisterPage() {
                               <Upload className="w-4 h-4 text-slate-700" />
                             </div>
                           </div>
+                          {isSubmitting && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <Loader2 className="w-8 h-8 text-white animate-spin" />
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-slate-400">

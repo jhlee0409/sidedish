@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { signupFormSchema, signupFormDefaultValues, type SignupFormData } from '@/lib/schemas'
 import { uploadImage } from '@/lib/api-client'
 import ImageCropModal from '@/components/ImageCropModal'
+import { useAuth } from '@/contexts/AuthContext'
 
 // ==================== Types ====================
 
@@ -44,6 +45,8 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
   provider,
   email,
 }) => {
+  const { firebaseUser } = useAuth()
+
   // Avatar State
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -129,13 +132,18 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
 
   // 크롭 완료 후 업로드
   const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!firebaseUser?.uid) {
+      setUploadError('사용자 인증 정보를 찾을 수 없습니다.')
+      return
+    }
+
     setIsUploading(true)
     try {
       // Blob을 File로 변환
-      const file = new File([croppedBlob], 'profile.jpg', {
-        type: 'image/jpeg',
+      const file = new File([croppedBlob], 'profile.webp', {
+        type: 'image/webp',
       })
-      const { url } = await uploadImage(file)
+      const { url } = await uploadImage(file, 'profile', firebaseUser.uid)
       setValue('avatarUrl', url)
       setCropModalOpen(false)
       setSelectedImageSrc(null)
@@ -529,7 +537,6 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
           imageSrc={selectedImageSrc}
           onClose={handleCropModalClose}
           onCropComplete={handleCropComplete}
-          isUploading={isUploading}
         />
       )}
     </>
