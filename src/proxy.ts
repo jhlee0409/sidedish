@@ -1,13 +1,13 @@
 /**
- * Next.js Middleware - Edge Runtime
+ * Next.js Proxy - Node.js Runtime
  *
- * 2025 베스트 프랙티스:
- * - Edge Runtime에서 실행 (빠른 응답)
+ * Next.js 16+: Middleware → Proxy 마이그레이션
+ * - Node.js Runtime에서 실행 (Edge Runtime 미지원)
+ * - 네트워크 경계에서 요청 인터셉트 및 수정
  * - 인증 상태 검증 및 보호된 라우트 가드
- * - httpOnly 쿠키 기반 세션 관리 (향후 적용)
+ * - 보안 헤더 적용
  *
- * @see https://nextjs.org/docs/app/building-your-application/routing/middleware
- * @see https://next-firebase-auth-edge-docs.vercel.app/docs/usage/middleware
+ * @see https://nextjs.org/docs/app/api-reference/file-conventions/proxy
  */
 
 import { NextResponse } from 'next/server'
@@ -17,7 +17,7 @@ import type { NextRequest } from 'next/server'
  * Protected routes that require authentication
  *
  * 현재: API 레이어에서 인증 체크
- * TODO: Middleware에서 사전 검증 (성능 향상)
+ * TODO: Proxy에서 사전 검증 (성능 향상)
  */
 const protectedRoutes = [
   '/menu/register',
@@ -33,7 +33,7 @@ const protectedApiRoutes = [
 ]
 
 /**
- * Middleware matcher configuration
+ * Proxy matcher configuration
  *
  * 최적화: 정적 파일은 제외하여 성능 향상
  */
@@ -50,11 +50,11 @@ export const config = {
   ],
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip middleware for API routes (handled by route handlers)
-  // TODO: 향후 API 라우트도 Middleware에서 검증 (rate limiting 등)
+  // Skip proxy for API routes (handled by route handlers)
+  // TODO: 향후 API 라우트도 Proxy에서 검증 (rate limiting 등)
   if (pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
