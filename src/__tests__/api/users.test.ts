@@ -20,6 +20,9 @@ vi.mock('@/lib/auth-utils', () => ({
   unauthorizedResponse: vi.fn(
     () => new Response(JSON.stringify({ error: '인증이 필요합니다.' }), { status: 401 })
   ),
+  forbiddenResponse: vi.fn(
+    (message?: string) => new Response(JSON.stringify({ error: message || '권한이 없습니다.' }), { status: 403 })
+  ),
 }))
 
 vi.mock('firebase-admin/firestore', () => ({
