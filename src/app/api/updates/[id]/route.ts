@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -24,20 +26,14 @@ export async function DELETE(
     // 업데이트 존재 확인
     const updateDoc = await db.collection(COLLECTIONS.PROJECT_UPDATES).doc(id).get()
     if (!updateDoc.exists) {
-      return NextResponse.json(
-        { error: '업데이트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.UPDATE_NOT_FOUND)
     }
 
     const updateData = updateDoc.data()
 
     // 소유권 검증
     if (updateData?.authorId !== user.uid) {
-      return NextResponse.json(
-        { error: '본인의 업데이트만 삭제할 수 있습니다.' },
-        { status: 403 }
-      )
+      return forbiddenResponse('본인의 업데이트만 삭제할 수 있습니다.')
     }
 
     // 삭제
@@ -45,10 +41,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting update:', error)
-    return NextResponse.json(
-      { error: '업데이트 삭제에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'DELETE /api/updates/[id]', ERROR_MESSAGES.UPDATE_DELETE_FAILED)
   }
 }

@@ -179,7 +179,7 @@ export async function createProject(
     // 5. Revalidate affected pages
     revalidatePath('/dashboard')
     revalidatePath(`/menu/${projectRef.id}`)
-    revalidateTag('projects')
+    revalidateTag('projects', 'max')
 
     return {
       success: true,
@@ -247,7 +247,7 @@ export async function updateProject(
     // 5. Revalidate
     revalidatePath(`/menu/${projectId}`)
     revalidatePath('/dashboard')
-    revalidateTag('projects')
+    revalidateTag('projects', 'max')
 
     return { success: true, data: undefined }
   } catch (error) {
@@ -307,7 +307,7 @@ export async function deleteProject(
 
     // 4. Revalidate
     revalidatePath('/dashboard')
-    revalidateTag('projects')
+    revalidateTag('projects', 'max')
 
     return { success: true, data: undefined }
   } catch (error) {
@@ -365,7 +365,7 @@ export async function toggleLike(
       const newCount = updatedProject.data()!.likes
 
       revalidatePath(`/menu/${projectId}`)
-      revalidateTag('projects')
+      revalidateTag('projects', 'max')
 
       return { success: true, data: { liked: true, newCount } }
     } else {
@@ -380,7 +380,7 @@ export async function toggleLike(
       const newCount = updatedProject.data()!.likes
 
       revalidatePath(`/menu/${projectId}`)
-      revalidateTag('projects')
+      revalidateTag('projects', 'max')
 
       return { success: true, data: { liked: false, newCount } }
     }

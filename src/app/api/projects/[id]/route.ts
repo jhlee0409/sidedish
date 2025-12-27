@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { UpdateProjectInput, ProjectResponse, ProjectPlatform, ProjectLinkDoc, PromotionPostsResponse } from '@/lib/db-types'
+import { UpdateProjectInput, ProjectResponse, ProjectPlatform, ProjectLinkDoc } from '@/lib/db-types'
 import { Timestamp, UpdateData } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { validateProjectLinks, badRequestResponse } from '@/lib/security-utils'
+import { convertTimestamps, convertPromotionPosts } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 import { del } from '@vercel/blob'
 
 // Typed update data for project patches
@@ -37,25 +40,11 @@ export async function GET(
     const doc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     const data = doc.data()!
-
-    // Build promotionPosts if exists
-    let promotionPosts: PromotionPostsResponse | undefined
-    if (data.promotionPosts) {
-      promotionPosts = {
-        x: data.promotionPosts.x || null,
-        linkedin: data.promotionPosts.linkedin || null,
-        facebook: data.promotionPosts.facebook || null,
-        threads: data.promotionPosts.threads || null,
-        promotedAt: data.promotionPosts.promotedAt || new Date().toISOString(),
-      }
-    }
+    const timestamps = convertTimestamps(data, ['createdAt', 'updatedAt'])
 
     const response: ProjectResponse = {
       id: doc.id,
@@ -73,18 +62,14 @@ export async function GET(
       links: data.links || [],
       platform: data.platform,
       isBeta: data.isBeta,
-      promotionPosts,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      promotionPosts: convertPromotionPosts(data.promotionPosts),
+      createdAt: timestamps.createdAt,
+      updatedAt: timestamps.updatedAt,
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching project:', error)
-    return NextResponse.json(
-      { error: '프로젝트를 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects/[id]', ERROR_MESSAGES.PROJECT_FETCH_FAILED)
   }
 }
 
@@ -108,10 +93,7 @@ export async function PATCH(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // Check ownership
@@ -159,6 +141,7 @@ export async function PATCH(
     // Fetch updated document
     const updatedDoc = await docRef.get()
     const data = updatedDoc.data()!
+    const timestamps = convertTimestamps(data, ['createdAt', 'updatedAt'])
 
     const response: ProjectResponse = {
       id: updatedDoc.id,
@@ -176,17 +159,14 @@ export async function PATCH(
       links: data.links || [],
       platform: data.platform,
       isBeta: data.isBeta,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      promotionPosts: convertPromotionPosts(data.promotionPosts),
+      createdAt: timestamps.createdAt,
+      updatedAt: timestamps.updatedAt,
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error updating project:', error)
-    return NextResponse.json(
-      { error: '프로젝트 수정에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'PATCH /api/projects/[id]', ERROR_MESSAGES.PROJECT_UPDATE_FAILED)
   }
 }
 
@@ -209,10 +189,7 @@ export async function DELETE(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // Check ownership
@@ -270,10 +247,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting project:', error)
-    return NextResponse.json(
-      { error: '프로젝트 삭제에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'DELETE /api/projects/[id]', ERROR_MESSAGES.PROJECT_DELETE_FAILED)
   }
 }

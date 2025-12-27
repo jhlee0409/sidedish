@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
+import { handleApiError } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // GET /api/stats - Get platform statistics (public endpoint)
 export async function GET() {
@@ -20,10 +22,6 @@ export async function GET() {
       updatedAt: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('Error fetching stats:', error)
-    return NextResponse.json(
-      { error: '통계를 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/stats', ERROR_MESSAGES.STATS_FETCH_FAILED)
   }
 }

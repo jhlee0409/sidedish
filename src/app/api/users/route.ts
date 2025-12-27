@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { CreateUserInput, UserResponse, UserAgreementsResponse } from '@/lib/db-types'
+import { CreateUserInput, UserResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
+import { convertTimestamps, convertUserAgreements } from '@/lib/firestore-utils'
+import { handleApiError } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
+import { ensureString, ensureBoolean } from '@/lib/type-guards'
 
 // GET /api/users - List all users (limited use case)
 export async function GET(request: NextRequest) {
@@ -18,35 +22,21 @@ export async function GET(request: NextRequest) {
 
     const users: UserResponse[] = snapshot.docs.map(doc => {
       const data = doc.data()
-
-      // 약관 동의 정보 변환
-      let agreements: UserAgreementsResponse | undefined
-      if (data.agreements) {
-        agreements = {
-          termsOfService: data.agreements.termsOfService || false,
-          privacyPolicy: data.agreements.privacyPolicy || false,
-          marketing: data.agreements.marketing || false,
-          agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        }
-      }
+      const timestamps = convertTimestamps(data, ['createdAt'])
 
       return {
         id: doc.id,
         name: data.name,
         avatarUrl: data.avatarUrl || '',
-        agreements,
+        agreements: convertUserAgreements(data.agreements),
         isProfileComplete: data.isProfileComplete || false,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt: timestamps.createdAt,
       }
     })
 
     return NextResponse.json({ data: users })
   } catch (error) {
-    console.error('Error fetching users:', error)
-    return NextResponse.json(
-      { error: '사용자 목록을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/users', ERROR_MESSAGES.USERS_FETCH_FAILED)
   }
 }
 
@@ -62,25 +52,15 @@ export async function POST(request: NextRequest) {
       const existingDoc = await db.collection(COLLECTIONS.USERS).doc(body.deviceId).get()
       if (existingDoc.exists) {
         const data = existingDoc.data()!
-
-        // 약관 동의 정보 변환
-        let agreements: UserAgreementsResponse | undefined
-        if (data.agreements) {
-          agreements = {
-            termsOfService: data.agreements.termsOfService || false,
-            privacyPolicy: data.agreements.privacyPolicy || false,
-            marketing: data.agreements.marketing || false,
-            agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-          }
-        }
+        const timestamps = convertTimestamps(data, ['createdAt'])
 
         return NextResponse.json({
           id: existingDoc.id,
           name: data.name,
           avatarUrl: data.avatarUrl || '',
-          agreements,
+          agreements: convertUserAgreements(data.agreements),
           isProfileComplete: data.isProfileComplete || false,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          createdAt: timestamps.createdAt,
         })
       }
     }
@@ -109,32 +89,24 @@ export async function POST(request: NextRequest) {
 
     await userRef.set(userData)
 
-    // 약관 동의 응답 변환
-    let agreementsResponse: UserAgreementsResponse | undefined
-    if (body.agreements) {
-      agreementsResponse = {
-        termsOfService: body.agreements.termsOfService,
-        privacyPolicy: body.agreements.privacyPolicy,
-        marketing: body.agreements.marketing,
-        agreedAt: now.toDate().toISOString(),
-      }
-    }
+    const timestamps = convertTimestamps({ createdAt: now }, ['createdAt'])
 
     const response: UserResponse = {
       id: userId,
-      name: userData.name as string,
-      avatarUrl: userData.avatarUrl as string,
-      agreements: agreementsResponse,
-      isProfileComplete: userData.isProfileComplete as boolean,
-      createdAt: now.toDate().toISOString(),
+      name: ensureString(userData.name, 'Anonymous Chef'),
+      avatarUrl: ensureString(userData.avatarUrl),
+      agreements: body.agreements
+        ? convertUserAgreements({
+            ...body.agreements,
+            agreedAt: now,
+          })
+        : undefined,
+      isProfileComplete: ensureBoolean(userData.isProfileComplete),
+      createdAt: timestamps.createdAt,
     }
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
-    console.error('Error creating user:', error)
-    return NextResponse.json(
-      { error: '사용자 생성에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/users', ERROR_MESSAGES.USER_CREATE_FAILED)
   }
 }

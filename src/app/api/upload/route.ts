@@ -10,6 +10,8 @@ import {
   createRateLimitKey,
 } from '@/lib/rate-limiter'
 import { validateMagicNumber } from '@/lib/file-validation'
+import { handleApiError, badRequestResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // Max file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -77,26 +79,17 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null
 
     if (!file) {
-      return NextResponse.json(
-        { error: '파일이 제공되지 않았습니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('파일이 제공되지 않았습니다.')
     }
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: '지원하지 않는 파일 형식입니다. JPG, PNG, WebP, GIF만 가능합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('지원하지 않는 파일 형식입니다. JPG, PNG, WebP, GIF만 가능합니다.')
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: '파일 크기는 5MB 이하여야 합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('파일 크기는 5MB 이하여야 합니다.')
     }
 
     // Convert file to buffer
@@ -111,10 +104,7 @@ export async function POST(request: NextRequest) {
         fileSize: file.size,
         timestamp: new Date().toISOString(),
       })
-      return NextResponse.json(
-        { error: '파일 형식이 올바르지 않습니다. 실제 이미지 파일을 업로드해주세요.' },
-        { status: 400 }
-      )
+      return badRequestResponse('파일 형식이 올바르지 않습니다. 실제 이미지 파일을 업로드해주세요.')
     }
 
     // Optimize image
@@ -139,10 +129,6 @@ export async function POST(request: NextRequest) {
       compressionRatio: ((1 - optimizedBuffer.length / file.size) * 100).toFixed(1) + '%',
     })
   } catch (error) {
-    console.error('Image upload error:', error)
-    return NextResponse.json(
-      { error: '이미지 업로드 중 오류가 발생했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/upload', ERROR_MESSAGES.UPLOAD_FAILED)
   }
 }

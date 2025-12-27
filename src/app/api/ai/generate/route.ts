@@ -10,6 +10,8 @@ import {
   getClientIdentifier,
   createRateLimitKey,
 } from '@/lib/rate-limiter'
+import { handleApiError, badRequestResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' })
 const MODEL = 'gemini-2.5-flash-lite'
@@ -77,24 +79,15 @@ export async function POST(request: NextRequest) {
 
     // 2. Validate input
     if (!draftId || typeof draftId !== 'string') {
-      return NextResponse.json(
-        { error: 'draftId가 필요합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('draftId가 필요합니다.')
     }
 
     if (!description || typeof description !== 'string') {
-      return NextResponse.json(
-        { error: '설명 내용이 필요합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('설명 내용이 필요합니다.')
     }
 
     if (description.trim().length < LIMITS.MIN_DESCRIPTION_LENGTH) {
-      return NextResponse.json(
-        { error: `최소 ${LIMITS.MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요.` },
-        { status: 400 }
-      )
+      return badRequestResponse(`최소 ${LIMITS.MIN_DESCRIPTION_LENGTH}자 이상의 설명을 입력해주세요.`)
     }
 
     // 3. Check and reserve usage atomically using Firestore transaction
@@ -293,11 +286,7 @@ ${description}
     })
 
   } catch (error) {
-    console.error('AI Generate Error:', error)
-    return NextResponse.json(
-      { error: 'AI 콘텐츠 생성에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/ai/generate', ERROR_MESSAGES.AI_GENERATE_FAILED)
   }
 }
 
@@ -314,10 +303,7 @@ export async function GET(request: NextRequest) {
     const draftId = searchParams.get('draftId')
 
     if (!draftId) {
-      return NextResponse.json(
-        { error: 'draftId가 필요합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('draftId가 필요합니다.')
     }
 
     const usageRef = db.collection(COLLECTIONS.AI_USAGE).doc(user.uid)
@@ -337,10 +323,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Get AI Usage Error:', error)
-    return NextResponse.json(
-      { error: '사용량 정보를 가져오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/ai/generate', ERROR_MESSAGES.AI_USAGE_FETCH_FAILED)
   }
 }

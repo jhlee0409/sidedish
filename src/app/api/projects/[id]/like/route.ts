@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -27,10 +29,7 @@ export async function POST(
     const projectDoc = await projectRef.get()
 
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // Check if user is trying to like their own project
@@ -80,11 +79,7 @@ export async function POST(
       })
     }
   } catch (error) {
-    console.error('Error toggling like:', error)
-    return NextResponse.json(
-      { error: '좋아요 처리에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/projects/[id]/like', ERROR_MESSAGES.LIKE_TOGGLE_FAILED)
   }
 }
 
@@ -110,10 +105,6 @@ export async function GET(
       liked: likeDoc.exists,
     })
   } catch (error) {
-    console.error('Error checking like status:', error)
-    return NextResponse.json(
-      { error: '좋아요 상태 확인에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects/[id]/like', ERROR_MESSAGES.LIKE_CHECK_FAILED)
   }
 }

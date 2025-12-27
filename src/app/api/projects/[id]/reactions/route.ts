@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
-import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { isValidReactionKey, badRequestResponse } from '@/lib/security-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -96,24 +98,14 @@ export async function POST(
     // Handle specific transaction errors
     if (error instanceof Error) {
       if (error.message === 'PROJECT_NOT_FOUND') {
-        return NextResponse.json(
-          { error: '프로젝트를 찾을 수 없습니다.' },
-          { status: 404 }
-        )
+        return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
       }
       if (error.message === 'SELF_REACTION_NOT_ALLOWED') {
-        return NextResponse.json(
-          { error: '자신의 게시물에는 리액션을 남길 수 없습니다.' },
-          { status: 403 }
-        )
+        return forbiddenResponse('자신의 게시물에는 리액션을 남길 수 없습니다.')
       }
     }
 
-    console.error('Error toggling reaction:', error)
-    return NextResponse.json(
-      { error: '리액션 처리에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/projects/[id]/reactions', ERROR_MESSAGES.REACTION_TOGGLE_FAILED)
   }
 }
 
@@ -150,10 +142,6 @@ export async function GET(
       userReactions,
     })
   } catch (error) {
-    console.error('Error fetching reactions:', error)
-    return NextResponse.json(
-      { error: '리액션 조회에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects/[id]/reactions', ERROR_MESSAGES.REACTIONS_FETCH_FAILED)
   }
 }

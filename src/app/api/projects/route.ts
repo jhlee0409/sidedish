@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
-import { CreateProjectInput, ProjectResponse, PaginatedResponse, ProjectLinkDoc, PromotionPostsResponse } from '@/lib/db-types'
+import { CreateProjectInput, ProjectResponse, PaginatedResponse, ProjectLinkDoc } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import {
@@ -14,6 +14,9 @@ import {
   CONTENT_LIMITS,
   badRequestResponse,
 } from '@/lib/security-utils'
+import { convertTimestamps, convertPromotionPosts } from '@/lib/firestore-utils'
+import { handleApiError } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // GET /api/projects - List all projects with pagination (public)
 export async function GET(request: NextRequest) {
@@ -58,17 +61,7 @@ export async function GET(request: NextRequest) {
     let projects: ProjectResponse[] = snapshot.docs.slice(0, fetchLimit).map(doc => {
       const data = doc.data()
 
-      // Build promotionPosts if exists
-      let promotionPosts: PromotionPostsResponse | undefined
-      if (data.promotionPosts) {
-        promotionPosts = {
-          x: data.promotionPosts.x || null,
-          linkedin: data.promotionPosts.linkedin || null,
-          facebook: data.promotionPosts.facebook || null,
-          threads: data.promotionPosts.threads || null,
-          promotedAt: data.promotionPosts.promotedAt || new Date().toISOString(),
-        }
-      }
+      const timestamps = convertTimestamps(data, ['createdAt', 'updatedAt'])
 
       return {
         id: doc.id,
@@ -86,9 +79,9 @@ export async function GET(request: NextRequest) {
         links: data.links || [],
         platform: data.platform,
         isBeta: data.isBeta,
-        promotionPosts,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        promotionPosts: convertPromotionPosts(data.promotionPosts),
+        createdAt: timestamps.createdAt,
+        updatedAt: timestamps.updatedAt,
       }
     })
 
@@ -128,11 +121,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching projects:', error)
-    return NextResponse.json(
-      { error: '프로젝트 목록을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects', ERROR_MESSAGES.PROJECTS_FETCH_FAILED)
   }
 }
 
@@ -220,19 +209,16 @@ export async function POST(request: NextRequest) {
     await projectRef.set(projectData)
     console.log('POST /api/projects: Project created:', projectRef.id)
 
+    const timestamps = convertTimestamps({ createdAt: now, updatedAt: now }, ['createdAt', 'updatedAt'])
+
     const response: ProjectResponse = {
       ...projectData,
-      createdAt: now.toDate().toISOString(),
-      updatedAt: now.toDate().toISOString(),
+      createdAt: timestamps.createdAt,
+      updatedAt: timestamps.updatedAt,
     }
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
-    console.error('Error creating project:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return NextResponse.json(
-      { error: '프로젝트 생성에 실패했습니다.', details: errorMessage },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/projects', ERROR_MESSAGES.PROJECT_CREATE_FAILED)
   }
 }

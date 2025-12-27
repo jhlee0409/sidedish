@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { CommentResponse } from '@/lib/db-types'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -19,10 +22,7 @@ export async function GET(
     const doc = await db.collection(COLLECTIONS.COMMENTS).doc(id).get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '댓글을 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.COMMENT_NOT_FOUND)
     }
 
     const data = doc.data()!
@@ -33,16 +33,12 @@ export async function GET(
       authorName: data.authorName,
       avatarUrl: data.avatarUrl,
       content: data.content,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      createdAt: timestampToISO(data.createdAt),
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching comment:', error)
-    return NextResponse.json(
-      { error: '댓글을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/comments/[id]', ERROR_MESSAGES.COMMENT_FETCH_FAILED)
   }
 }
 
@@ -65,10 +61,7 @@ export async function DELETE(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '댓글을 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.COMMENT_NOT_FOUND)
     }
 
     // Check if user is the author
@@ -81,10 +74,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting comment:', error)
-    return NextResponse.json(
-      { error: '댓글 삭제에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'DELETE /api/comments/[id]', ERROR_MESSAGES.COMMENT_DELETE_FAILED)
   }
 }

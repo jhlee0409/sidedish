@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { ProjectUpdateResponse, ProjectUpdateType } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
-import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
 import { validateString, validateLimit, CONTENT_LIMITS, badRequestResponse } from '@/lib/security-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -34,10 +37,7 @@ export async function GET(
     // 프로젝트 존재 확인
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // 쿼리 구성
@@ -76,7 +76,7 @@ export async function GET(
         content: data.content,
         version: data.version,
         emoji: data.emoji,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt: timestampToISO(data.createdAt),
       }
     })
 
@@ -88,11 +88,7 @@ export async function GET(
       hasMore,
     })
   } catch (error) {
-    console.error('Error fetching project updates:', error)
-    return NextResponse.json(
-      { error: '업데이트를 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects/[id]/updates', ERROR_MESSAGES.UPDATES_FETCH_FAILED)
   }
 }
 
@@ -115,18 +111,12 @@ export async function POST(
     // 프로젝트 확인 및 소유권 검증
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     const projectData = projectDoc.data()
     if (projectData?.authorId !== user.uid) {
-      return NextResponse.json(
-        { error: '본인의 프로젝트만 업데이트를 작성할 수 있습니다.' },
-        { status: 403 }
-      )
+      return forbiddenResponse('본인의 프로젝트만 업데이트를 작성할 수 있습니다.')
     }
 
     // 타입 검증
@@ -195,15 +185,11 @@ export async function POST(
 
     const response: ProjectUpdateResponse = {
       ...updateData,
-      createdAt: now.toDate().toISOString(),
+      createdAt: timestampToISO(now),
     }
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
-    console.error('Error creating project update:', error)
-    return NextResponse.json(
-      { error: '업데이트 작성에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/projects/[id]/updates', ERROR_MESSAGES.UPDATE_CREATE_FAILED)
   }
 }

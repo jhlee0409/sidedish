@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
+import { handleApiError } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -65,10 +67,6 @@ export async function GET(
       hasMore,
     })
   } catch (error) {
-    console.error('Error fetching user likes:', error)
-    return NextResponse.json(
-      { error: '좋아요 목록을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/users/[id]/likes', ERROR_MESSAGES.LIKES_FETCH_FAILED)
   }
 }

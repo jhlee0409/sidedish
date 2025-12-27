@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { WhisperResponse } from '@/lib/db-types'
 import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -25,10 +28,7 @@ export async function GET(
     const doc = await db.collection(COLLECTIONS.WHISPERS).doc(id).get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '귓속말을 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.WHISPER_NOT_FOUND)
     }
 
     const data = doc.data()!
@@ -45,16 +45,12 @@ export async function GET(
       senderName: data.senderName,
       content: data.content,
       isRead: data.isRead || false,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      createdAt: timestampToISO(data.createdAt),
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching whisper:', error)
-    return NextResponse.json(
-      { error: '귓속말을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/whispers/[id]', ERROR_MESSAGES.WHISPER_FETCH_FAILED)
   }
 }
 
@@ -78,10 +74,7 @@ export async function PATCH(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '귓속말을 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.WHISPER_NOT_FOUND)
     }
 
     const whisperData = doc.data()!
@@ -107,16 +100,12 @@ export async function PATCH(
       senderName: data.senderName,
       content: data.content,
       isRead: data.isRead || false,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      createdAt: timestampToISO(data.createdAt),
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error updating whisper:', error)
-    return NextResponse.json(
-      { error: '귓속말 업데이트에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'PATCH /api/whispers/[id]', ERROR_MESSAGES.WHISPER_UPDATE_FAILED)
   }
 }
 
@@ -139,10 +128,7 @@ export async function DELETE(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '귓속말을 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.WHISPER_NOT_FOUND)
     }
 
     const whisperData = doc.data()!
@@ -156,10 +142,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting whisper:', error)
-    return NextResponse.json(
-      { error: '귓속말 삭제에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'DELETE /api/whispers/[id]', ERROR_MESSAGES.WHISPER_DELETE_FAILED)
   }
 }

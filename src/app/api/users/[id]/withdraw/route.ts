@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
-import { verifyAuth } from '@/lib/auth-utils'
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { handleApiError, notFoundResponse, badRequestResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -23,18 +25,12 @@ export async function POST(
     // 인증 확인
     const authUser = await verifyAuth(request)
     if (!authUser) {
-      return NextResponse.json(
-        { error: '인증이 필요합니다.' },
-        { status: 401 }
-      )
+      return unauthorizedResponse()
     }
 
     // 본인만 탈퇴 가능
     if (authUser.uid !== id) {
-      return NextResponse.json(
-        { error: '본인의 계정만 탈퇴할 수 있습니다.' },
-        { status: 403 }
-      )
+      return forbiddenResponse('본인의 계정만 탈퇴할 수 있습니다.')
     }
 
     const db = getAdminDb()
@@ -42,10 +38,7 @@ export async function POST(
 
     // 탈퇴 사유 검증
     if (!body.reason || typeof body.reason !== 'string') {
-      return NextResponse.json(
-        { error: '탈퇴 사유를 입력해주세요.' },
-        { status: 400 }
-      )
+      return badRequestResponse('탈퇴 사유를 입력해주세요.')
     }
 
     const docRef = db.collection(COLLECTIONS.USERS).doc(id)
@@ -53,20 +46,14 @@ export async function POST(
     const now = Timestamp.now()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.USER_NOT_FOUND)
     }
 
     const userData = doc.data()
 
     // 이미 탈퇴한 계정인지 확인
     if (userData?.isWithdrawn) {
-      return NextResponse.json(
-        { error: '이미 탈퇴 처리된 계정입니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse('이미 탈퇴 처리된 계정입니다.')
     }
 
     // Soft delete: 사용자를 탈퇴 상태로 표시
@@ -133,10 +120,6 @@ export async function POST(
       message: '회원 탈퇴가 완료되었습니다.',
     })
   } catch (error) {
-    console.error('Error withdrawing user:', error)
-    return NextResponse.json(
-      { error: '회원 탈퇴 처리에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/users/[id]/withdraw', ERROR_MESSAGES.USER_WITHDRAWAL_FAILED)
   }
 }

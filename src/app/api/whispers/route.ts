@@ -4,6 +4,9 @@ import { WhisperResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import { validateString, forbiddenResponse, CONTENT_LIMITS } from '@/lib/security-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, badRequestResponse, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // GET /api/whispers - Get all whispers for the authenticated user (project author)
 export async function GET(request: NextRequest) {
@@ -33,18 +36,14 @@ export async function GET(request: NextRequest) {
           senderName: data.senderName,
           content: data.content,
           isRead: data.isRead || false,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          createdAt: timestampToISO(data.createdAt),
         }
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json({ data: whispers })
   } catch (error) {
-    console.error('Error fetching whispers:', error)
-    return NextResponse.json(
-      { error: '귓속말 목록을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/whispers', ERROR_MESSAGES.WHISPERS_FETCH_FAILED)
   }
 }
 
@@ -65,10 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!body.projectId) {
-      return NextResponse.json(
-        { error: '프로젝트 ID가 필요합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse(ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // SECURITY: Validate content length
@@ -78,16 +74,13 @@ export async function POST(request: NextRequest) {
       maxLength: CONTENT_LIMITS.WHISPER_MAX,
     })
     if (!contentValidation.valid) {
-      return NextResponse.json({ error: contentValidation.error }, { status: 400 })
+      return badRequestResponse(contentValidation.error || ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // Check if project exists
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(body.projectId).get()
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     const projectData = projectDoc.data()!
@@ -121,15 +114,11 @@ export async function POST(request: NextRequest) {
       senderName: whisperData.senderName,
       content: whisperData.content,
       isRead: false,
-      createdAt: now.toDate().toISOString(),
+      createdAt: timestampToISO(now),
     }
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
-    console.error('Error creating whisper:', error)
-    return NextResponse.json(
-      { error: '귓속말 전송에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/whispers', ERROR_MESSAGES.WHISPER_CREATE_FAILED)
   }
 }

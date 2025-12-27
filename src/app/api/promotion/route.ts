@@ -19,6 +19,8 @@ import {
 import { getPageUrl } from '@/lib/site'
 import { getAdminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { badRequestResponse, notFoundResponse, handleApiError } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // Rate limit config for promotion (limited to prevent spam)
 const PROMOTION_RATE_LIMIT = {
@@ -122,10 +124,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       maxLength: 100,
     })
     if (!titleValidation.valid) {
-      return NextResponse.json(
-        { error: titleValidation.error, code: 'INVALID_INPUT' },
-        { status: 400 }
-      )
+      return badRequestResponse(titleValidation.error || ERROR_MESSAGES.BAD_REQUEST)
     }
 
     const summaryValidation = validateString(body.projectSummary, 'projectSummary', {
@@ -134,10 +133,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       maxLength: 500,
     })
     if (!summaryValidation.valid) {
-      return NextResponse.json(
-        { error: summaryValidation.error, code: 'INVALID_INPUT' },
-        { status: 400 }
-      )
+      return badRequestResponse(summaryValidation.error || ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // Validate project ID
@@ -147,10 +143,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       maxLength: 100,
     })
     if (!projectIdValidation.valid) {
-      return NextResponse.json(
-        { error: projectIdValidation.error, code: 'INVALID_INPUT' },
-        { status: 400 }
-      )
+      return badRequestResponse(projectIdValidation.error || ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // Generate project URL if not provided
@@ -159,10 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Validate URL format
     const urlValidation = validateUrl(projectUrl, 'projectUrl')
     if (!urlValidation.valid) {
-      return NextResponse.json(
-        { error: urlValidation.error, code: 'INVALID_INPUT' },
-        { status: 400 }
-      )
+      return badRequestResponse(urlValidation.error || ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // Format tags as comma-separated string
@@ -177,10 +167,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         VALID_PLATFORMS.includes(p as SocialPlatform)
       )
       if (platforms.length === 0) {
-        return NextResponse.json(
-          { error: '최소 하나의 플랫폼을 선택해주세요.', code: 'INVALID_INPUT' },
-          { status: 400 }
-        )
+        return badRequestResponse('최소 하나의 플랫폼을 선택해주세요.')
       }
     }
 
@@ -189,10 +176,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const projectDoc = await db.collection('projects').doc(body.projectId).get()
 
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.', code: 'PROJECT_NOT_FOUND' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     const projectData = projectDoc.data()
@@ -328,18 +312,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
 
   } catch (error) {
-    console.error('Promotion API error:', error)
-
     if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        { error: '잘못된 요청 형식입니다.', code: 'INVALID_JSON' },
-        { status: 400 }
-      )
+      return badRequestResponse('잘못된 요청 형식입니다.')
     }
 
-    return NextResponse.json(
-      { error: '홍보 처리 중 오류가 발생했습니다.', code: 'INTERNAL_ERROR' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/promotion', ERROR_MESSAGES.PROMOTION_FAILED)
   }
 }

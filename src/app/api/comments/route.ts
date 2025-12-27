@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { CommentResponse } from '@/lib/db-types'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, badRequestResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // GET /api/comments?authorId=xxx - Get all comments by a user
 export async function GET(request: NextRequest) {
@@ -12,10 +15,7 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor')
 
     if (!authorId) {
-      return NextResponse.json(
-        { error: '작성자 ID가 필요합니다.' },
-        { status: 400 }
-      )
+      return badRequestResponse(ERROR_MESSAGES.BAD_REQUEST)
     }
 
     // Use composite index for efficient query with ordering
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         authorName: data.authorName,
         avatarUrl: data.avatarUrl,
         content: data.content,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt: timestampToISO(data.createdAt),
       }
     })
 
@@ -80,10 +80,6 @@ export async function GET(request: NextRequest) {
       hasMore,
     })
   } catch (error) {
-    console.error('Error fetching user comments:', error)
-    return NextResponse.json(
-      { error: '댓글 목록을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/comments', ERROR_MESSAGES.COMMENTS_FETCH_FAILED)
   }
 }

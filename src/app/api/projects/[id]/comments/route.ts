@@ -4,6 +4,9 @@ import { CommentResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import { validateString, validateLimit, CONTENT_LIMITS, badRequestResponse } from '@/lib/security-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -26,10 +29,7 @@ export async function GET(
     // Check if project exists
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // Use composite index (projectId + createdAt) for efficient query
@@ -75,7 +75,7 @@ export async function GET(
         avatarUrl: data.avatarUrl,
         role: userRoles[data.authorId] as CommentResponse['role'],
         content: data.content,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt: timestampToISO(data.createdAt),
       }
     })
 
@@ -87,11 +87,7 @@ export async function GET(
       hasMore,
     })
   } catch (error) {
-    console.error('Error fetching comments:', error)
-    return NextResponse.json(
-      { error: '댓글을 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/projects/[id]/comments', ERROR_MESSAGES.COMMENTS_FETCH_FAILED)
   }
 }
 
@@ -124,10 +120,7 @@ export async function POST(
     // Check if project exists
     const projectDoc = await db.collection(COLLECTIONS.PROJECTS).doc(id).get()
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: '프로젝트를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.PROJECT_NOT_FOUND)
     }
 
     // Fetch user's role
@@ -152,15 +145,11 @@ export async function POST(
     const response: CommentResponse = {
       ...commentData,
       role: userRole as CommentResponse['role'],
-      createdAt: now.toDate().toISOString(),
+      createdAt: timestampToISO(now),
     }
 
     return NextResponse.json(response, { status: 201 })
   } catch (error) {
-    console.error('Error creating comment:', error)
-    return NextResponse.json(
-      { error: '댓글 작성에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'POST /api/projects/[id]/comments', ERROR_MESSAGES.COMMENT_CREATE_FAILED)
   }
 }

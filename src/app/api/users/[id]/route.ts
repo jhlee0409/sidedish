@@ -3,7 +3,10 @@ import { getAdminDb, COLLECTIONS } from '@/lib/firebase-admin'
 import { UpdateUserInput, UserResponse, UserAgreementsResponse } from '@/lib/db-types'
 import { Timestamp } from 'firebase-admin/firestore'
 import { del } from '@vercel/blob'
-import { verifyAuth } from '@/lib/auth-utils'
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-utils'
+import { timestampToISO } from '@/lib/firestore-utils'
+import { handleApiError, notFoundResponse, badRequestResponse } from '@/lib/api-helpers'
+import { ERROR_MESSAGES } from '@/lib/error-messages'
 
 // Vercel Blob URL 패턴 확인 (커스텀 업로드 이미지인지)
 function isVercelBlobUrl(url: string): boolean {
@@ -26,10 +29,7 @@ export async function GET(
     const doc = await db.collection(COLLECTIONS.USERS).doc(id).get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.USER_NOT_FOUND)
     }
 
     const data = doc.data()!
@@ -41,7 +41,7 @@ export async function GET(
         termsOfService: data.agreements.termsOfService || false,
         privacyPolicy: data.agreements.privacyPolicy || false,
         marketing: data.agreements.marketing || false,
-        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        agreedAt: timestampToISO(data.agreements.agreedAt),
       }
     }
 
@@ -52,16 +52,12 @@ export async function GET(
       role: data.role || 'user',
       agreements,
       isProfileComplete: data.isProfileComplete || false,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      createdAt: timestampToISO(data.createdAt),
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error fetching user:', error)
-    return NextResponse.json(
-      { error: '사용자를 불러오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'GET /api/users/[id]', ERROR_MESSAGES.USER_FETCH_FAILED)
   }
 }
 
@@ -110,18 +106,12 @@ export async function PATCH(
     // 인증 확인
     const authUser = await verifyAuth(request)
     if (!authUser) {
-      return NextResponse.json(
-        { error: '인증이 필요합니다.' },
-        { status: 401 }
-      )
+      return unauthorizedResponse()
     }
 
     // 본인만 수정 가능
     if (authUser.uid !== id) {
-      return NextResponse.json(
-        { error: '본인의 프로필만 수정할 수 있습니다.' },
-        { status: 403 }
-      )
+      return forbiddenResponse('본인의 프로필만 수정할 수 있습니다.')
     }
 
     const db = getAdminDb()
@@ -131,10 +121,7 @@ export async function PATCH(
     if (body.name !== undefined) {
       const nameValidation = validateName(body.name)
       if (!nameValidation.valid) {
-        return NextResponse.json(
-          { error: nameValidation.error },
-          { status: 400 }
-        )
+        return badRequestResponse(nameValidation.error || '잘못된 닉네임입니다.')
       }
       body.name = body.name.trim()
     }
@@ -143,10 +130,7 @@ export async function PATCH(
     if (body.isProfileComplete === true && body.agreements) {
       const agreementsValidation = validateAgreements(body.agreements)
       if (!agreementsValidation.valid) {
-        return NextResponse.json(
-          { error: agreementsValidation.error },
-          { status: 400 }
-        )
+        return badRequestResponse(agreementsValidation.error || '약관 동의가 필요합니다.')
       }
     }
 
@@ -185,7 +169,7 @@ export async function PATCH(
           termsOfService: body.agreements.termsOfService,
           privacyPolicy: body.agreements.privacyPolicy,
           marketing: body.agreements.marketing,
-          agreedAt: now.toDate().toISOString(),
+          agreedAt: timestampToISO(now),
         }
       }
 
@@ -195,7 +179,7 @@ export async function PATCH(
         avatarUrl: newUserData.avatarUrl,
         agreements: agreementsResponse,
         isProfileComplete: newUserData.isProfileComplete,
-        createdAt: now.toDate().toISOString(),
+        createdAt: timestampToISO(now),
       })
     }
 
@@ -254,7 +238,7 @@ export async function PATCH(
         termsOfService: data.agreements.termsOfService || false,
         privacyPolicy: data.agreements.privacyPolicy || false,
         marketing: data.agreements.marketing || false,
-        agreedAt: data.agreements.agreedAt?.toDate?.()?.toISOString() || now.toDate().toISOString(),
+        agreedAt: timestampToISO(data.agreements.agreedAt),
       }
     }
 
@@ -265,16 +249,12 @@ export async function PATCH(
       role: data.role || 'user',
       agreements: agreementsResponse,
       isProfileComplete: data.isProfileComplete || false,
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      createdAt: timestampToISO(data.createdAt),
     }
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error updating user:', error)
-    return NextResponse.json(
-      { error: '사용자 수정에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'PATCH /api/users/[id]', ERROR_MESSAGES.USER_UPDATE_FAILED)
   }
 }
 
@@ -289,18 +269,12 @@ export async function DELETE(
     // 인증 확인
     const authUser = await verifyAuth(request)
     if (!authUser) {
-      return NextResponse.json(
-        { error: '인증이 필요합니다.' },
-        { status: 401 }
-      )
+      return unauthorizedResponse()
     }
 
     // 본인만 삭제 가능
     if (authUser.uid !== id) {
-      return NextResponse.json(
-        { error: '본인의 계정만 삭제할 수 있습니다.' },
-        { status: 403 }
-      )
+      return forbiddenResponse('본인의 계정만 삭제할 수 있습니다.')
     }
 
     const db = getAdminDb()
@@ -309,10 +283,7 @@ export async function DELETE(
     const doc = await docRef.get()
 
     if (!doc.exists) {
-      return NextResponse.json(
-        { error: '사용자를 찾을 수 없습니다.' },
-        { status: 404 }
-      )
+      return notFoundResponse(ERROR_MESSAGES.USER_NOT_FOUND)
     }
 
     // Fetch all related data in parallel for better performance
@@ -375,10 +346,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting user:', error)
-    return NextResponse.json(
-      { error: '사용자 삭제에 실패했습니다.' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'DELETE /api/users/[id]', ERROR_MESSAGES.USER_DELETE_FAILED)
   }
 }
