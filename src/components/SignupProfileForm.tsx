@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -48,13 +48,16 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
   const { firebaseUser } = useAuth()
 
   // Avatar State
-  const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 크롭 모달 상태
   const [cropModalOpen, setCropModalOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
+
+  // Deferred upload 상태 (저장 시점에 업로드)
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   // Form
   const {
@@ -130,41 +133,38 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
     }
   }
 
-  // 크롭 완료 후 업로드
-  const handleCropComplete = async (croppedBlob: Blob) => {
-    if (!firebaseUser?.uid) {
-      setUploadError('사용자 인증 정보를 찾을 수 없습니다.')
-      return
+  // 크롭 완료 후 프리뷰 설정 (업로드는 폼 제출 시)
+  const handleCropComplete = (blob: Blob) => {
+    // 이전 Blob URL cleanup
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
     }
 
-    setIsUploading(true)
-    try {
-      // Blob을 File로 변환
-      const file = new File([croppedBlob], 'profile.webp', {
-        type: 'image/webp',
-      })
-      const { url } = await uploadImage(file, 'profile', firebaseUser.uid)
-      setValue('avatarUrl', url)
-      setCropModalOpen(false)
-      setSelectedImageSrc(null)
-    } catch (err) {
-      console.error('Image upload error:', err)
-      setUploadError('이미지 업로드에 실패했습니다.')
-    } finally {
-      setIsUploading(false)
-    }
+    // 새 Blob과 preview URL 설정
+    setCroppedBlob(blob)
+    const blobUrl = URL.createObjectURL(blob)
+    setPreviewUrl(blobUrl)
+    setValue('avatarUrl', blobUrl, { shouldValidate: true })
+
+    // 모달 닫기
+    setCropModalOpen(false)
+    setSelectedImageSrc(null)
   }
 
   // 크롭 모달 닫기
   const handleCropModalClose = () => {
-    if (!isUploading) {
-      setCropModalOpen(false)
-      setSelectedImageSrc(null)
-    }
+    setCropModalOpen(false)
+    setSelectedImageSrc(null)
   }
 
   const handleRemoveImage = () => {
-    setValue('avatarUrl', '')
+    // Blob URL cleanup
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
+    }
+    setCroppedBlob(null)
+    setValue('avatarUrl', '', { shouldValidate: true })
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -177,9 +177,38 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
   }
 
   const handleFormSubmit = async (data: SignupFormData) => {
+    if (!firebaseUser?.uid) {
+      setUploadError('사용자 인증 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    let finalAvatarUrl = ''
+
+    // 크롭된 이미지가 있으면 서버에 업로드
+    if (croppedBlob) {
+      try {
+        const file = new File([croppedBlob], 'profile.webp', {
+          type: 'image/webp',
+        })
+        const { url } = await uploadImage(file, 'profile', firebaseUser.uid)
+        finalAvatarUrl = url
+
+        // Blob URL cleanup
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl)
+          setPreviewUrl(null)
+        }
+        setCroppedBlob(null)
+      } catch (err) {
+        console.error('Image upload error:', err)
+        setUploadError('이미지 업로드에 실패했습니다. 다시 시도해주세요.')
+        return
+      }
+    }
+
     await onSubmit({
       name: data.name.trim(),
-      avatarUrl: data.avatarUrl || '',
+      avatarUrl: finalAvatarUrl,
       agreements: {
         termsOfService: data.termsOfService,
         privacyPolicy: data.privacyPolicy,
@@ -189,6 +218,15 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
   }
 
   const allChecked = watchTerms && watchPrivacy && watchMarketing
+
+  // Cleanup Blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   // ==================== Render ====================
 
@@ -323,11 +361,6 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
                       </div>
                     )}
 
-                    {isUploading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                        <Loader2 className="w-8 h-8 text-white animate-spin" />
-                      </div>
-                    )}
                   </div>
 
                   <input
@@ -512,7 +545,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
                 {/* 제출 버튼 */}
                 <button
                   type="submit"
-                  disabled={!isValid || isUploading || isLoading}
+                  disabled={!isValid || isLoading}
                   className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (

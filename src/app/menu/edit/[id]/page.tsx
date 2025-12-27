@@ -816,7 +816,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                 disabled={isSubmitting || !isAuthenticated}
                 isLoading={isSubmitting}
               >
-                수정 완료
+                {isSubmitting ? '저장 중...' : '수정 완료'}
               </Button>
             </div>
           </form>
