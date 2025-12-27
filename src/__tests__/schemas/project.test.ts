@@ -139,7 +139,7 @@ describe('projectFormSchema', () => {
         ...projectFormDefaultValues,
         title: '제목입니다',
         shortDescription: '설명입니다',
-        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6'],
+        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6', 'tag7', 'tag8', 'tag9', 'tag10', 'tag11'],
       }
       const result = projectFormSchema.safeParse(project)
       expect(result.success).toBe(false)

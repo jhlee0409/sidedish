@@ -15,6 +15,9 @@ import { nicknameSchema, imageUrlSchema } from './common'
 export const signupFormSchema = z.object({
   name: nicknameSchema,
   avatarUrl: imageUrlSchema,
+  ageConfirmation: z.literal(true, {
+    message: '만 14세 이상임을 확인해주세요.',
+  }),
   termsOfService: z.literal(true, {
     message: '서비스 이용약관에 동의해주세요.',
   }),
@@ -32,6 +35,7 @@ export type SignupFormData = z.infer<typeof signupFormSchema>
 export const signupFormDefaultValues = {
   name: '',
   avatarUrl: '',
+  ageConfirmation: false as unknown as true,
   termsOfService: false as unknown as true,
   privacyPolicy: false as unknown as true,
   marketing: false,

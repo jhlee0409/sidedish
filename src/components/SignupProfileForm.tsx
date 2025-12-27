@@ -74,6 +74,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
 
   const watchName = watch('name')
   const watchAvatarUrl = watch('avatarUrl')
+  const watchAge = watch('ageConfirmation')
   const watchTerms = watch('termsOfService')
   const watchPrivacy = watch('privacyPolicy')
   const watchMarketing = watch('marketing')
@@ -171,6 +172,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
   }
 
   const handleAllChange = (checked: boolean) => {
+    setValue('ageConfirmation', checked as unknown as true, { shouldValidate: true })
     setValue('termsOfService', checked as unknown as true, { shouldValidate: true })
     setValue('privacyPolicy', checked as unknown as true, { shouldValidate: true })
     setValue('marketing', checked, { shouldValidate: true })
@@ -217,7 +219,7 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
     })
   }
 
-  const allChecked = watchTerms && watchPrivacy && watchMarketing
+  const allChecked = watchAge && watchTerms && watchPrivacy && watchMarketing
 
   // Cleanup Blob URL on unmount
   useEffect(() => {
@@ -437,6 +439,35 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
                   </label>
 
                   <div className="space-y-1 pl-2">
+                    {/* 만 14세 이상 확인 */}
+                    <Controller
+                      name="ageConfirmation"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <div>
+                          <label className="flex items-center gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-50 transition-colors">
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                className="peer sr-only"
+                              />
+                              <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:border-orange-500 peer-checked:bg-orange-500 transition-all flex items-center justify-center">
+                                {field.value && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                            </div>
+                            <span className="text-sm text-slate-600 flex-1">
+                              <span className="text-red-500 font-medium">[필수]</span> 만 14세 이상입니다
+                            </span>
+                          </label>
+                          {fieldState.error && (
+                            <p className="text-red-500 text-xs pl-8">{fieldState.error.message}</p>
+                          )}
+                        </div>
+                      )}
+                    />
+
                     {/* 서비스 이용약관 */}
                     <Controller
                       name="termsOfService"

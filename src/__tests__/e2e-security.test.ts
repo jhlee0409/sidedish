@@ -46,7 +46,9 @@ describe('E2E Security Tests', () => {
         })
 
         expect(result.valid).toBe(false)
-        expect(result.error).toBeDefined()
+        if (!result.valid) {
+          expect(result.error).toBeDefined()
+        }
       })
 
       it('should reject strings with dangerous patterns', () => {
@@ -76,7 +78,9 @@ describe('E2E Security Tests', () => {
         })
 
         expect(result.valid).toBe(true)
-        expect(result.value).toBe('valid content')
+        if (result.valid) {
+          expect(result.value).toBe('valid content')
+        }
       })
 
       it('should enforce minimum length', () => {
@@ -86,7 +90,9 @@ describe('E2E Security Tests', () => {
         })
 
         expect(result.valid).toBe(false)
-        expect(result.error).toContain('3자 이상')
+        if (!result.valid) {
+          expect(result.error).toContain('3자 이상')
+        }
       })
     })
 
@@ -135,7 +141,9 @@ describe('E2E Security Tests', () => {
       it('should accept valid tags', () => {
         const result = validateTags(['react', 'typescript', 'nextjs'])
         expect(result.valid).toBe(true)
-        expect(result.value).toEqual(['react', 'typescript', 'nextjs'])
+        if (result.valid) {
+          expect(result.value).toEqual(['react', 'typescript', 'nextjs'])
+        }
       })
 
       it('should reject too many tags', () => {
@@ -143,7 +151,9 @@ describe('E2E Security Tests', () => {
         const tooManyTags = Array.from({ length: 11 }, (_, i) => `tag${i + 1}`)
         const result = validateTags(tooManyTags)
         expect(result.valid).toBe(false)
-        expect(result.error).toContain('10개 이하')
+        if (!result.valid) {
+          expect(result.error).toContain('10개 이하')
+        }
       })
 
       it('should reject tags that are too long', () => {
@@ -151,14 +161,18 @@ describe('E2E Security Tests', () => {
         const longTag = 'a'.repeat(31)
         const result = validateTags([longTag])
         expect(result.valid).toBe(false)
-        expect(result.error).toContain('30자 이하')
+        if (!result.valid) {
+          expect(result.error).toContain('30자 이하')
+        }
       })
 
       it('should trim and normalize tags', () => {
         // Tags are converted to lowercase and trimmed
         const result = validateTags(['  React  ', 'TypeScript', ' Next.js '])
         expect(result.valid).toBe(true)
-        expect(result.value).toEqual(['react', 'typescript', 'next.js'])
+        if (result.valid) {
+          expect(result.value).toEqual(['react', 'typescript', 'next.js'])
+        }
       })
 
       it('should remove duplicate tags', () => {
@@ -475,7 +489,7 @@ describe('E2E Security Tests', () => {
       expect(containsDangerousPatterns(userInput)).toBe(true)
 
       // 3. Sanitize
-      const safe = sanitizeHtml(validation.value!)
+      const safe = sanitizeHtml(validation.valid ? validation.value : userInput)
       expect(safe).not.toContain('<script>')
       expect(safe).toContain('Valid content')
 

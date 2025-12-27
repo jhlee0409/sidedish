@@ -16,6 +16,7 @@ describe('signupFormSchema', () => {
       const validSignup = {
         name: '홍길동',
         avatarUrl: 'https://example.com/avatar.png',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: true,
         marketing: false,
@@ -28,6 +29,7 @@ describe('signupFormSchema', () => {
       const validSignup = {
         name: 'Developer',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: true,
         marketing: false,
@@ -40,6 +42,7 @@ describe('signupFormSchema', () => {
       const validSignup = {
         name: '개발자',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: true,
         marketing: true,
@@ -57,6 +60,7 @@ describe('signupFormSchema', () => {
       const signup = {
         name: '홍',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: true,
         marketing: false,
@@ -72,6 +76,7 @@ describe('signupFormSchema', () => {
       const signup = {
         name: 'user@name!',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: true,
         marketing: false,
@@ -82,10 +87,27 @@ describe('signupFormSchema', () => {
   })
 
   describe('terms validation', () => {
+    it('should reject when ageConfirmation is false', () => {
+      const signup = {
+        name: '개발자',
+        avatarUrl: '',
+        ageConfirmation: false,
+        termsOfService: true,
+        privacyPolicy: true,
+        marketing: false,
+      }
+      const result = signupFormSchema.safeParse(signup)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('ageConfirmation')
+      }
+    })
+
     it('should reject when termsOfService is false', () => {
       const signup = {
         name: '개발자',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: false,
         privacyPolicy: true,
         marketing: false,
@@ -102,6 +124,7 @@ describe('signupFormSchema', () => {
       const signup = {
         name: '개발자',
         avatarUrl: '',
+        ageConfirmation: true,
         termsOfService: true,
         privacyPolicy: false,
         marketing: false,

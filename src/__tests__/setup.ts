@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { vi, beforeEach } from 'vitest'
 
 // Mock server-only to prevent errors in Vitest (Node.js environment)
 vi.mock('server-only', () => ({}))
