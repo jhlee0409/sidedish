@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { X, Camera, RotateCcw, Loader2, Trash2 } from 'lucide-react'
+import { X, Camera, Loader2, Trash2 } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/contexts/AuthContext'
@@ -234,18 +234,6 @@ export default function ProfileEditModal({
                 >
                   <Trash2 className="w-3 h-3" />
                   사진 삭제
-                </button>
-              )}
-
-              {/* Reset to Original Button - 커스텀 이미지이고 원본이 있을 때만 표시 */}
-              {isCustomAvatar && originalAvatarUrl && (
-                <button
-                  type="button"
-                  onClick={handleResetToOriginal}
-                  className="text-sm text-slate-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  소셜 기본 사진으로 되돌리기
                 </button>
               )}
             </div>
