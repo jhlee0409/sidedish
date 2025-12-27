@@ -8,6 +8,7 @@
  */
 
 import { DraftData, AiGenerationCandidate, AiGeneratedContent, ProjectPlatform } from './types'
+import { v7 as uuidv7 } from 'uuid'
 
 const STORAGE_KEYS = {
   DRAFTS: 'sidedish_drafts',
@@ -17,14 +18,14 @@ const STORAGE_KEYS = {
 const AUTO_SAVE_DEBOUNCE_MS = 1000
 const MAX_DRAFTS = 5 // Maximum number of drafts to keep
 
-// Generate a unique draft ID
+// Generate a unique draft ID using UUIDv7 (time-ordered UUID)
 export const generateDraftId = (): string => {
-  return `draft_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  return uuidv7()
 }
 
-// Generate a unique candidate ID
+// Generate a unique candidate ID using UUIDv7 (time-ordered UUID)
 export const generateCandidateId = (): string => {
-  return `candidate_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  return uuidv7()
 }
 
 // Get all drafts from localStorage

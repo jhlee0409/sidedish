@@ -34,7 +34,7 @@ describe('API Client - uploadImage', () => {
     })
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-    const result = await uploadImage(file)
+    const result = await uploadImage(file, 'profile', 'user-1')
 
     expect(mockFetch).toHaveBeenCalledWith('/api/upload', {
       method: 'POST',
@@ -58,7 +58,7 @@ describe('API Client - uploadImage', () => {
     })
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-    await uploadImage(file)
+    await uploadImage(file, 'profile', 'user-1')
 
     expect(mockFetch).toHaveBeenCalledWith('/api/upload', {
       method: 'POST',
@@ -79,7 +79,7 @@ describe('API Client - uploadImage', () => {
 
     const file = new File(['test'], 'test.pdf', { type: 'application/pdf' })
 
-    await expect(uploadImage(file)).rejects.toThrow()
+    await expect(uploadImage(file, 'profile', 'user-1')).rejects.toThrow()
   })
 
   it('should throw ApiError on 401 unauthorized', async () => {
@@ -94,7 +94,7 @@ describe('API Client - uploadImage', () => {
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
-    await expect(uploadImage(file)).rejects.toThrow()
+    await expect(uploadImage(file, 'profile', 'user-1')).rejects.toThrow()
   })
 
   it('should throw ApiError on 429 rate limit', async () => {
@@ -109,10 +109,10 @@ describe('API Client - uploadImage', () => {
 
     const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
 
-    await expect(uploadImage(file)).rejects.toThrow()
+    await expect(uploadImage(file, 'profile', 'user-1')).rejects.toThrow()
   })
 
-  it('should include file in FormData', async () => {
+  it('should include file, type, and entityId in FormData', async () => {
     const mockGetIdToken = vi.fn().mockResolvedValue('mock-token-123')
     initApiClient(mockGetIdToken)
 
@@ -123,11 +123,34 @@ describe('API Client - uploadImage', () => {
     })
 
     const file = new File(['test-content'], 'profile.jpg', { type: 'image/jpeg' })
-    await uploadImage(file)
+    await uploadImage(file, 'profile', 'test-user-id')
 
     const callArgs = mockFetch.mock.calls[0]
     const formData = callArgs[1].body as FormData
 
     expect(formData.get('file')).toBe(file)
+    expect(formData.get('type')).toBe('profile')
+    expect(formData.get('entityId')).toBe('test-user-id')
+  })
+
+  it('should include project type in FormData', async () => {
+    const mockGetIdToken = vi.fn().mockResolvedValue('mock-token-123')
+    initApiClient(mockGetIdToken)
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ url: 'https://example.com/project-thumb.webp' }),
+    })
+
+    const file = new File(['test-content'], 'thumbnail.jpg', { type: 'image/jpeg' })
+    await uploadImage(file, 'project', 'draft-123')
+
+    const callArgs = mockFetch.mock.calls[0]
+    const formData = callArgs[1].body as FormData
+
+    expect(formData.get('file')).toBe(file)
+    expect(formData.get('type')).toBe('project')
+    expect(formData.get('entityId')).toBe('draft-123')
   })
 })

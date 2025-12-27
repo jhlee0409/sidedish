@@ -237,6 +237,20 @@ service cloud.firestore {
     }
 
     // ========================================
+    // Uploads Collection (File Metadata Tracking)
+    // ========================================
+
+    match /uploads/{uploadId} {
+      // 읽기: 본인이 업로드한 파일만 조회 가능
+      allow read: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+
+      // 쓰기: Admin SDK만 가능 (API 서버에서만 write)
+      // 클라이언트에서는 직접 업로드 메타데이터 수정 불가
+      allow write: if false;
+    }
+
+    // ========================================
     // Digest 관련 Collections (@deprecated)
     // ========================================
 

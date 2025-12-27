@@ -340,3 +340,34 @@ export interface PaginatedResponse<T> {
   nextCursor?: string
   hasMore: boolean
 }
+
+// Upload file status for tracking orphaned files
+export type UploadStatus = 'pending' | 'active' | 'orphaned'
+
+// Firestore document structure for Upload Metadata
+export interface UploadMetadataDoc {
+  id: string // Upload ID (extracted from Blob URL path)
+  url: string // Vercel Blob URL
+  userId: string // User who uploaded the file
+  type: 'profile' | 'project'
+  uploadedAt: Timestamp
+  draftId?: string // Temporary draft ID (before project creation)
+  projectId?: string // Actual project ID (after creation)
+  status: UploadStatus // File lifecycle status
+  fileSize: number // File size in bytes
+  mimeType: string // MIME type (e.g., 'image/webp')
+}
+
+// API Response type for Upload Metadata
+export interface UploadMetadataResponse {
+  id: string
+  url: string
+  userId: string
+  type: 'profile' | 'project'
+  uploadedAt: string
+  draftId?: string
+  projectId?: string
+  status: UploadStatus
+  fileSize: number
+  mimeType: string
+}

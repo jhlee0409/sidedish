@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import sharp from 'sharp'
+import { Timestamp } from 'firebase-admin/firestore'
+import { getAdminDb } from '@/lib/firebase-admin'
 import { verifyAuth, unauthorizedResponse } from '@/lib/auth-utils'
 import {
   checkRateLimit,
@@ -12,6 +14,7 @@ import {
 import { validateMagicNumber } from '@/lib/file-validation'
 import { handleApiError, badRequestResponse } from '@/lib/api-helpers'
 import { ERROR_MESSAGES } from '@/lib/error-messages'
+import type { UploadMetadataDoc } from '@/lib/db-types'
 
 // Max file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -77,10 +80,33 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
+    const type = formData.get('type') as string | null
+    const entityId = formData.get('entityId') as string | null
 
     if (!file) {
       return badRequestResponse('파일이 제공되지 않았습니다.')
     }
+
+    // Validate type parameter
+    if (!type || !['profile', 'project'].includes(type)) {
+      return badRequestResponse('올바른 업로드 타입을 지정해주세요. (profile 또는 project)')
+    }
+
+    // Validate entityId parameter
+    if (!entityId || typeof entityId !== 'string' || entityId.trim().length === 0) {
+      return badRequestResponse('유효한 엔티티 ID를 지정해주세요.')
+    }
+
+    // SECURITY: Verify user has permission to upload for this entity
+    if (type === 'profile' && entityId !== user.uid) {
+      return NextResponse.json(
+        { error: '자신의 프로필 사진만 업로드할 수 있습니다.' },
+        { status: 403 }
+      )
+    }
+
+    // For projects, we'll verify ownership when the project is created/updated
+    // (Upload happens before project creation, so we can't verify here)
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -110,17 +136,38 @@ export async function POST(request: NextRequest) {
     // Optimize image
     const optimizedBuffer = await optimizeImage(buffer, file.type)
 
-    // Generate unique filename
+    // Generate structured filename
     const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 8)
     const extension = file.type === 'image/gif' ? 'gif' : 'webp'
-    const filename = `sidedish/${timestamp}-${randomString}.${extension}`
+    const filename = `sidedish/${type}s/${entityId}/${timestamp}.${extension}`
 
     // Upload to Vercel Blob
     const blob = await put(filename, optimizedBuffer, {
       access: 'public',
       contentType: file.type === 'image/gif' ? 'image/gif' : 'image/webp',
     })
+
+    // Extract upload ID from blob URL pathname (e.g., "sidedish/projects/abc-123/1234567890.webp" -> "1234567890.webp")
+    const uploadId = new URL(blob.url).pathname.split('/').pop() || `${timestamp}.${extension}`
+
+    // Save upload metadata to Firestore for tracking and cleanup
+    // NOTE: Firestore does not allow undefined values, so we conditionally add fields
+    const uploadMetadata: UploadMetadataDoc = {
+      id: uploadId,
+      url: blob.url,
+      userId: user.uid,
+      type: type as 'profile' | 'project',
+      uploadedAt: Timestamp.now(),
+      status: 'pending', // Initial status, updated to 'active' after project creation
+      fileSize: optimizedBuffer.length,
+      mimeType: blob.contentType || (file.type === 'image/gif' ? 'image/gif' : 'image/webp'),
+      // Conditionally add draftId and projectId only for project uploads
+      ...(type === 'project' && { draftId: entityId }),
+    }
+
+    // Store metadata in Firestore
+    const adminDb = getAdminDb()
+    await adminDb.collection('uploads').doc(uploadId).set(uploadMetadata)
 
     return NextResponse.json({
       url: blob.url,

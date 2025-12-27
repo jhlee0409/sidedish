@@ -1045,20 +1045,25 @@ export async function withdrawUser(
  * - Converts to WebP format for smaller file sizes
  * - Animated GIFs are preserved without conversion
  *
+ * Images are organized in folder structure: {type}s/{entityId}/{timestamp}.webp
+ *
  * @param file - Image file to upload (JPEG, PNG, WebP, or GIF)
+ * @param type - Upload type ('profile' or 'project')
+ * @param entityId - Entity ID (userId for profile, projectId for project)
  * @returns Object containing the public URL of the uploaded image
  * @throws {ApiError} 401 if not authenticated
  * @throws {ApiError} 400 if file is not an image or exceeds size limit
+ * @throws {ApiError} 403 if user doesn't have permission for this entity
  * @throws {ApiError} 500 if upload fails
  *
  * @example
  * ```tsx
  * const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
  *   const file = e.target.files?.[0]
- *   if (!file) return
+ *   if (!file || !user) return
  *
  *   try {
- *     const { url } = await uploadImage(file)
+ *     const { url } = await uploadImage(file, 'profile', user.id)
  *     setImageUrl(url)
  *   } catch (error) {
  *     if (error instanceof ApiError && error.status === 400) {
@@ -1068,9 +1073,15 @@ export async function withdrawUser(
  * }
  * ```
  */
-export async function uploadImage(file: File): Promise<{ url: string }> {
+export async function uploadImage(
+  file: File,
+  type: 'profile' | 'project',
+  entityId: string
+): Promise<{ url: string }> {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('type', type)
+  formData.append('entityId', entityId)
 
   const headers: HeadersInit = {}
   if (getIdToken) {

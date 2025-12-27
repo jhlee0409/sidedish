@@ -207,7 +207,16 @@ export async function PATCH(
         isVercelBlobUrl(previousAvatarUrl)
       ) {
         try {
+          // Blob 파일 삭제
           await del(previousAvatarUrl)
+
+          // uploads collection 메타데이터 삭제
+          const uploadId = new URL(previousAvatarUrl).pathname.split('/').pop()
+          if (uploadId) {
+            await db.collection('uploads').doc(uploadId).delete().catch((err) => {
+              console.error('Failed to delete upload metadata:', err)
+            })
+          }
         } catch (deleteError) {
           // 이미지 삭제 실패는 치명적이지 않으므로 로그만 남기고 계속 진행
           console.error('Failed to delete previous avatar:', deleteError)

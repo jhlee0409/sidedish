@@ -45,11 +45,6 @@ const nextConfig: NextConfig = {
       '@hookform/resolvers',
       'react-hook-form',
     ],
-    // Turbopack configuration
-    turbopack: {
-      // Explicitly set project root to avoid lockfile detection warnings
-      root: process.cwd(),
-    },
   },
 
   // Security headers for SEO and performance

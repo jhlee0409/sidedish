@@ -129,7 +129,16 @@ export async function PATCH(
       const oldImageUrl = projectData.imageUrl
       if (oldImageUrl && oldImageUrl.includes('blob.vercel-storage.com')) {
         try {
+          // Blob 파일 삭제
           await del(oldImageUrl)
+
+          // uploads collection 메타데이터 삭제
+          const uploadId = new URL(oldImageUrl).pathname.split('/').pop()
+          if (uploadId) {
+            await db.collection('uploads').doc(uploadId).delete().catch((err) => {
+              console.error('Failed to delete upload metadata:', err)
+            })
+          }
         } catch (error) {
           console.error('Error deleting old image from Vercel Blob:', error)
         }
@@ -202,7 +211,16 @@ export async function DELETE(
     const imageUrl = projectData.imageUrl
     if (imageUrl && imageUrl.includes('blob.vercel-storage.com')) {
       try {
+        // Blob 파일 삭제
         await del(imageUrl)
+
+        // uploads collection 메타데이터 삭제
+        const uploadId = new URL(imageUrl).pathname.split('/').pop()
+        if (uploadId) {
+          await db.collection('uploads').doc(uploadId).delete().catch((err) => {
+            console.error('Failed to delete upload metadata:', err)
+          })
+        }
       } catch (error) {
         console.error('Error deleting image from Vercel Blob:', error)
         // Continue with project deletion even if image deletion fails
