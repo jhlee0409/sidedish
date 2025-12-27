@@ -5,7 +5,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: 'https://70ec520c66b69ee24a9a14df9272c6a5@o4509743437119488.ingest.us.sentry.io/4510608743202816',
 
   // Setting this option to true will send default PII data to Sentry.
   // For more info, see:
@@ -24,6 +24,10 @@ Sentry.init({
   // If you're not already sampling the entire session, change the sample rate to 100%
   // when sampling sessions where errors occur.
   replaysOnErrorSampleRate: 1.0,
+
+  // Distributed tracing configuration
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/tracing/
+  tracePropagationTargets: ['localhost', /^https:\/\/sidedish\.me\/api/],
 
   // You can remove this option if you're not planning to use the Sentry Session Replay feature:
   integrations: [

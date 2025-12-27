@@ -5,7 +5,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: 'https://70ec520c66b69ee24a9a14df9272c6a5@o4509743437119488.ingest.us.sentry.io/4510608743202816',
 
   // Setting this option to true will send default PII data to Sentry.
   sendDefaultPii: false,
