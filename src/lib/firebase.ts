@@ -6,6 +6,8 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   fetchSignInMethodsForEmail,
@@ -70,6 +72,46 @@ export function getFirebaseAuth(): Auth | null {
 const googleProvider = new GoogleAuthProvider()
 const githubProvider = new GithubAuthProvider()
 
+/**
+ * WebView/인앱 브라우저 감지
+ * Google OAuth는 WebView에서 차단됨 (disallowed_useragent 오류)
+ * 카카오톡, 네이버, Instagram, Facebook 등의 인앱 브라우저 감지
+ */
+export function isWebView(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false
+  }
+
+  const userAgent = navigator.userAgent || navigator.vendor || ''
+
+  // 일반적인 WebView 패턴
+  const webViewPatterns = [
+    /FBAN|FBAV/i, // Facebook App
+    /Instagram/i, // Instagram
+    /KAKAOTALK/i, // 카카오톡
+    /NAVER/i, // 네이버 앱
+    /Line/i, // LINE
+    /wv\)/i, // Android WebView
+    /WebView/i, // Generic WebView
+  ]
+
+  // iOS WebView 감지 (standalone 모드가 아닌 경우)
+  const isIOSWebView =
+    /iPhone|iPod|iPad/i.test(userAgent) &&
+    !/Safari/i.test(userAgent) &&
+    !/CriOS/i.test(userAgent) // Chrome iOS 제외
+
+  // Android WebView 감지
+  const isAndroidWebView =
+    /Android/i.test(userAgent) && /wv\)|Version\/[\d.]+.*Chrome/i.test(userAgent)
+
+  return (
+    webViewPatterns.some((pattern) => pattern.test(userAgent)) ||
+    isIOSWebView ||
+    isAndroidWebView
+  )
+}
+
 // Helper to get provider display name
 function getProviderDisplayName(providerId: string): string {
   if (providerId === 'google.com') return 'Google'
@@ -126,14 +168,21 @@ async function handleAuthError(auth: Auth, error: AuthError): Promise<never> {
 }
 
 // Sign in with Google
-export async function signInWithGoogle(): Promise<FirebaseUser> {
+// WebView에서는 signInWithRedirect 사용, 일반 브라우저에서는 signInWithPopup 사용
+export async function signInWithGoogle(): Promise<FirebaseUser | null> {
   const auth = getFirebaseAuth()
   if (!auth) {
     throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
   }
   try {
-    const result = await signInWithPopup(auth, googleProvider)
-    return result.user
+    if (isWebView()) {
+      // WebView에서는 redirect 방식 사용 (페이지 이동 후 돌아옴)
+      await signInWithRedirect(auth, googleProvider)
+      return null // redirect 후에는 null 반환, onAuthChange에서 처리됨
+    } else {
+      const result = await signInWithPopup(auth, googleProvider)
+      return result.user
+    }
   } catch (error) {
     await handleAuthError(auth, error as AuthError)
     throw error // TypeScript needs this, but handleAuthError always throws
@@ -141,17 +190,40 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
 }
 
 // Sign in with GitHub
-export async function signInWithGithub(): Promise<FirebaseUser> {
+// WebView에서는 signInWithRedirect 사용, 일반 브라우저에서는 signInWithPopup 사용
+export async function signInWithGithub(): Promise<FirebaseUser | null> {
   const auth = getFirebaseAuth()
   if (!auth) {
     throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* environment variables.')
   }
   try {
-    const result = await signInWithPopup(auth, githubProvider)
-    return result.user
+    if (isWebView()) {
+      // WebView에서는 redirect 방식 사용 (페이지 이동 후 돌아옴)
+      await signInWithRedirect(auth, githubProvider)
+      return null // redirect 후에는 null 반환, onAuthChange에서 처리됨
+    } else {
+      const result = await signInWithPopup(auth, githubProvider)
+      return result.user
+    }
   } catch (error) {
     await handleAuthError(auth, error as AuthError)
     throw error // TypeScript needs this, but handleAuthError always throws
+  }
+}
+
+// Handle redirect result after returning from OAuth provider
+// 앱 초기화 시 호출하여 redirect 로그인 결과를 처리
+export async function handleRedirectResult(): Promise<FirebaseUser | null> {
+  const auth = getFirebaseAuth()
+  if (!auth) return null
+
+  try {
+    const result = await getRedirectResult(auth)
+    return result?.user || null
+  } catch (error) {
+    // Redirect 결과 처리 중 에러 발생 시 로그만 남기고 null 반환
+    console.error('Redirect result error:', error)
+    return null
   }
 }
 

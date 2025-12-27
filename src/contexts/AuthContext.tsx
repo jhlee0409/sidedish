@@ -7,6 +7,7 @@ import {
   signInWithGithub,
   signOut,
   isFirebaseConfigured,
+  handleRedirectResult,
   FirebaseUser,
 } from '@/lib/firebase'
 import { initApiClient, updateUser, getUser } from '@/lib/api-client'
@@ -87,6 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false)
       return
     }
+
+    // WebView에서 redirect 로그인 후 돌아왔을 때 결과 처리
+    handleRedirectResult().catch((error) => {
+      console.error('Failed to handle redirect result:', error)
+    })
 
     const unsubscribe = onAuthChange(async (fbUser) => {
       if (fbUser) {
