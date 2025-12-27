@@ -116,11 +116,11 @@ export function validateNickname(nickname: string): NicknameValidationResult {
     }
   }
 
-  // 허용 문자 체크 (한글, 영문, 숫자, 밑줄, 공백)
-  if (!/^[가-힣a-zA-Z0-9_\s]+$/.test(trimmed)) {
+  // 허용 문자 체크 (한글, 영문, 숫자, 밑줄만 허용 - 약관 제7조의2)
+  if (!/^[가-힣a-zA-Z0-9_]+$/.test(trimmed)) {
     return {
       valid: false,
-      error: '닉네임에 특수문자는 사용할 수 없습니다.',
+      error: '닉네임은 한글, 영문, 숫자, 밑줄(_)만 사용할 수 있습니다.',
       errorType: 'format',
     }
   }

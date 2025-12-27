@@ -57,20 +57,6 @@ export const TERMS_VERSIONS: LegalVersion[] = [
     summary: '서비스 이용약관 최초 제정',
     changeType: 'initial',
   },
-  // 예시: 향후 버전 추가 시
-  // {
-  //   version: '1.1',
-  //   effectiveDate: '2025.03.01',
-  //   summary: '제3자 정보제공 조항 추가',
-  //   changeType: 'major',
-  //   changes: [
-  //     {
-  //       section: '제15조 (제3자 정보제공)',
-  //       before: '(신설)',
-  //       after: '회사는 다음의 경우 제3자에게 정보를 제공할 수 있습니다...',
-  //     },
-  //   ],
-  // },
 ]
 
 /**
