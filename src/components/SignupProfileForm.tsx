@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { signupFormSchema, signupFormDefaultValues, type SignupFormData } from '@/lib/schemas'
+import { uploadImage } from '@/lib/api-client'
 
 // ==================== Types ====================
 
@@ -115,20 +116,8 @@ const SignupProfileForm: React.FC<SignupProfileFormProps> = ({
     reader.readAsDataURL(file)
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error('업로드 실패')
-      }
-
-      const data = await response.json()
-      setValue('avatarUrl', data.url)
+      const { url } = await uploadImage(file)
+      setValue('avatarUrl', url)
     } catch (err) {
       console.error('Image upload error:', err)
       setUploadError('이미지 업로드에 실패했습니다.')
