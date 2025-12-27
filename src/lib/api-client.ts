@@ -1034,6 +1034,32 @@ export async function withdrawUser(
   return result
 }
 
+/**
+ * Reactivates a withdrawn user account.
+ *
+ * Only possible within 30 days of withdrawal. After reactivation,
+ * the user needs to set up their profile again.
+ *
+ * @param userId - User ID to reactivate
+ * @returns Success status with profile setup requirement
+ * @throws {ApiError} 401 if not authenticated
+ * @throws {ApiError} 403 if not the account owner
+ * @throws {ApiError} 400 if not withdrawn or past 30-day window
+ */
+export async function reactivateUser(
+  userId: string
+): Promise<{ success: boolean; message: string; needsProfileSetup: boolean }> {
+  const response = await fetchWithAuth(`/api/users/${userId}/reactivate`, {
+    method: 'POST',
+  })
+  const result = await handleResponse<{ success: boolean; message: string; needsProfileSetup: boolean }>(response)
+
+  // 캐시 무효화
+  invalidateCache(`user:${userId}`)
+
+  return result
+}
+
 // ============ Image Upload API ============
 // Upload images to Vercel Blob storage with automatic optimization.
 
