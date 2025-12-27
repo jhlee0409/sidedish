@@ -97,7 +97,9 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('로그인이 필요합니다.')
+      if (!result.success) {
+        expect(result.error).toBe('로그인이 필요합니다.')
+      }
     })
 
     it('should validate title length constraints', async () => {
@@ -126,7 +128,9 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('제목')
+      if (!result.success) {
+        expect(result.error).toContain('제목')
+      }
     })
 
     it('should validate shortDescription length constraints', async () => {
@@ -155,7 +159,9 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('간단 소개')
+      if (!result.success) {
+        expect(result.error).toContain('간단 소개')
+      }
     })
 
     it('should validate tags', async () => {
@@ -189,8 +195,10 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('태그')
-      expect(result.error).toContain('10개')
+      if (!result.success) {
+        expect(result.error).toContain('태그')
+        expect(result.error).toContain('10개')
+      }
     })
 
     it('should create project successfully with valid data', async () => {
@@ -239,7 +247,9 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(true)
-      expect(result.data).toBe('project123')
+      if (result.success) {
+        expect(result.data).toBe('project123')
+      }
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'project123',
@@ -296,7 +306,9 @@ describe('Server Actions - Projects', () => {
       const result = await createProject(null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('프로젝트 생성에 실패했습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('프로젝트 생성에 실패했습니다.')
+      }
     })
   })
 
@@ -316,7 +328,9 @@ describe('Server Actions - Projects', () => {
       const result = await updateProject('project123', null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('로그인이 필요합니다.')
+      if (!result.success) {
+        expect(result.error).toBe('로그인이 필요합니다.')
+      }
     })
 
     it('should reject non-owner updates', async () => {
@@ -362,7 +376,9 @@ describe('Server Actions - Projects', () => {
       const result = await updateProject('project123', null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('권한이 없습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('권한이 없습니다.')
+      }
     })
 
     it('should update project successfully for owner', async () => {
@@ -462,7 +478,9 @@ describe('Server Actions - Projects', () => {
       const result = await updateProject('nonexistent', null, formData)
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('프로젝트를 찾을 수 없습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('프로젝트를 찾을 수 없습니다.')
+      }
     })
   })
 
@@ -479,7 +497,9 @@ describe('Server Actions - Projects', () => {
       const result = await deleteProject('project123')
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('로그인이 필요합니다.')
+      if (!result.success) {
+        expect(result.error).toBe('로그인이 필요합니다.')
+      }
     })
 
     it('should reject non-owner deletions', async () => {
@@ -522,7 +542,9 @@ describe('Server Actions - Projects', () => {
       const result = await deleteProject('project123')
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('권한이 없습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('권한이 없습니다.')
+      }
     })
 
     it('should delete project with cascade delete (comments, likes)', async () => {
@@ -651,7 +673,9 @@ describe('Server Actions - Projects', () => {
       const result = await deleteProject('nonexistent')
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('프로젝트를 찾을 수 없습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('프로젝트를 찾을 수 없습니다.')
+      }
     })
   })
 
@@ -668,7 +692,9 @@ describe('Server Actions - Projects', () => {
       const result = await toggleLike('project123')
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('로그인이 필요합니다.')
+      if (!result.success) {
+        expect(result.error).toBe('로그인이 필요합니다.')
+      }
     })
 
     it('should add like if not already liked', async () => {
@@ -739,8 +765,10 @@ describe('Server Actions - Projects', () => {
       const result = await toggleLike('project123')
 
       expect(result.success).toBe(true)
-      expect(result.data?.liked).toBe(true)
-      expect(result.data?.newCount).toBe(6)
+      if (result.success) {
+        expect(result.data?.liked).toBe(true)
+        expect(result.data?.newCount).toBe(6)
+      }
       expect(mockAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'user123',
@@ -823,8 +851,10 @@ describe('Server Actions - Projects', () => {
       const result = await toggleLike('project123')
 
       expect(result.success).toBe(true)
-      expect(result.data?.liked).toBe(false)
-      expect(result.data?.newCount).toBe(4)
+      if (result.success) {
+        expect(result.data?.liked).toBe(false)
+        expect(result.data?.newCount).toBe(4)
+      }
       expect(mockDelete).toHaveBeenCalled()
       expect(mockUpdate).toHaveBeenCalledWith({ likes: 4 })
       expect(revalidatePath).toHaveBeenCalledWith('/menu/project123')
@@ -868,7 +898,9 @@ describe('Server Actions - Projects', () => {
       const result = await toggleLike('project123')
 
       expect(result.success).toBe(false)
-      expect(result.error).toBe('좋아요 처리에 실패했습니다.')
+      if (!result.success) {
+        expect(result.error).toBe('좋아요 처리에 실패했습니다.')
+      }
     })
   })
 })
