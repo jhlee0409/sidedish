@@ -37,11 +37,6 @@ Sentry.init({
       blockAllMedia: true,
     }),
     Sentry.browserTracingIntegration(),
-    Sentry.feedbackIntegration({
-      // Additional SDK configuration goes in here
-      colorScheme: 'system',
-      showBranding: false,
-    }),
   ],
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
