@@ -94,6 +94,7 @@ const MultiLinkInput: React.FC<MultiLinkInputProps> = ({
       id: generateId(),
       storeType: 'WEBSITE',
       url: '',
+      label: '', // 스키마 호환을 위해 빈 문자열 추가
       isPrimary: links.length === 0, // 첫 번째 링크는 자동으로 대표 링크
     }
 
