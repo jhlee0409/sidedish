@@ -154,4 +154,7 @@ export interface DraftData {
   generationCount: number
   lastSavedAt: number
   createdAt: number
+  // 홍보 관련
+  wantsPromotion?: boolean
+  selectedPlatforms?: string[] // SocialPlatform[]
 }

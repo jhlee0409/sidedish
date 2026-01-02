@@ -22,7 +22,7 @@ import LoginModal from '@/components/LoginModal'
 import { projectFormSchema, type ProjectFormData } from '@/lib/schemas'
 
 // 리팩토링된 상수 및 설정
-import { AI_CONSTRAINTS } from '@/lib/form-constants'
+import { AI_CONSTRAINTS, PROJECT_CONSTRAINTS } from '@/lib/form-constants'
 import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 
 // Helper functions for managing AI candidates in localStorage (per project)
@@ -228,7 +228,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       const currentTags = watchedValues.tags || []
-      if (!currentTags.includes(tagInput.trim()) && currentTags.length < 5) {
+      if (!currentTags.includes(tagInput.trim()) && currentTags.length < PROJECT_CONSTRAINTS.MAX_TAGS) {
         setValue('tags', [...currentTags, tagInput.trim()], { shouldValidate: true })
       }
       setTagInput('')
@@ -413,6 +413,26 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  // Form validation error handler
+  const onFormError = (errors: Record<string, unknown>) => {
+    console.error('Form validation errors:', errors)
+
+    const errorMessages: Record<string, string> = {
+      title: '메뉴 이름을 확인해주세요.',
+      shortDescription: '한 줄 소개를 확인해주세요.',
+      description: '상세 설명을 확인해주세요.',
+      tags: '태그를 확인해주세요.',
+      imageUrl: '메뉴 사진을 확인해주세요.',
+      links: '링크를 확인해주세요.',
+      platform: '플랫폼을 선택해주세요.',
+    }
+
+    const firstErrorKey = Object.keys(errors)[0]
+    if (firstErrorKey) {
+      toast.error(errorMessages[firstErrorKey] || '입력 내용을 확인해주세요.')
+    }
+  }
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
@@ -507,7 +527,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-1.5 sm:space-y-2">
                 <label className="text-xs sm:text-sm font-bold text-slate-700">메뉴 이름 (프로젝트명) <span className="text-orange-500">*</span></label>

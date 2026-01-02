@@ -122,6 +122,14 @@ export default function MenuRegisterPage() {
 
       setLastSaved(formatLastSaved(existingDraft.lastSavedAt))
 
+      // Load promotion settings from draft
+      if (existingDraft.wantsPromotion !== undefined) {
+        setWantsPromotion(existingDraft.wantsPromotion)
+      }
+      if (existingDraft.selectedPlatforms?.length) {
+        setSelectedPlatforms(existingDraft.selectedPlatforms as SocialPlatform[])
+      }
+
       // Fetch AI usage info
       getAiUsageInfo(existingDraft.id)
         .then(usage => {
@@ -144,9 +152,26 @@ export default function MenuRegisterPage() {
     }
   }, [authLoading, isAuthenticated, router])
 
-  // Auto-save draft
+  // Ref to track latest form values without causing re-renders
+  const formValuesRef = useRef(formValues)
+  formValuesRef.current = formValues
+
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+
+  // Refs for promotion settings
+  const wantsPromotionRef = useRef(wantsPromotion)
+  wantsPromotionRef.current = wantsPromotion
+
+  const selectedPlatformsRef = useRef(selectedPlatforms)
+  selectedPlatformsRef.current = selectedPlatforms
+
+  // Auto-save draft - stable function that reads from refs
   const autoSaveDraft = useCallback(() => {
-    if (!draft || !user?.id) return
+    const currentDraft = draftRef.current
+    const currentFormValues = formValuesRef.current
+
+    if (!currentDraft || !user?.id) return
 
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current)
@@ -155,12 +180,15 @@ export default function MenuRegisterPage() {
     setIsSaving(true)
     autoSaveTimerRef.current = setTimeout(() => {
       const updatedDraft: DraftData = {
-        ...draft,
-        ...formValues,
-        links: formValues.links.map(l => ({
+        ...currentDraft,
+        ...currentFormValues,
+        links: currentFormValues.links.map(l => ({
           ...l,
           storeType: l.storeType as StoreType,
         })),
+        // 홍보 설정 포함
+        wantsPromotion: wantsPromotionRef.current,
+        selectedPlatforms: selectedPlatformsRef.current,
       }
 
       saveDraft(updatedDraft)
@@ -168,14 +196,15 @@ export default function MenuRegisterPage() {
       setLastSaved(formatLastSaved(Date.now()))
       setIsSaving(false)
     }, 1000)
-  }, [draft, formValues, user?.id])
+  }, [user?.id])
 
-  // Trigger auto-save on form data change
+  // Trigger auto-save on form data change (only depends on formValues for triggering)
   useEffect(() => {
     if (draft) {
       autoSaveDraft()
     }
-  }, [formValues, autoSaveDraft, draft])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValues, wantsPromotion, selectedPlatforms])
 
   // Cooldown timer
   useEffect(() => {
@@ -229,8 +258,8 @@ export default function MenuRegisterPage() {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       const currentTags = formValues.tags || []
-      if (currentTags.length >= 5) {
-        toast.error('태그는 최대 5개까지 추가할 수 있습니다.')
+      if (currentTags.length >= PROJECT_CONSTRAINTS.MAX_TAGS) {
+        toast.error(`태그는 최대 ${PROJECT_CONSTRAINTS.MAX_TAGS}개까지 추가할 수 있습니다.`)
         return
       }
       const newTag = tagInput.trim().toLowerCase()
@@ -411,6 +440,27 @@ export default function MenuRegisterPage() {
     }
   }
 
+  // Form validation error handler
+  const onFormError = (errors: Record<string, unknown>) => {
+    console.error('Form validation errors:', errors)
+
+    // Show first error as toast
+    const errorMessages: Record<string, string> = {
+      title: '메뉴 이름을 확인해주세요.',
+      shortDescription: '한 줄 소개를 확인해주세요.',
+      description: '상세 설명을 확인해주세요.',
+      tags: '태그를 확인해주세요.',
+      imageUrl: '메뉴 사진을 확인해주세요.',
+      links: '링크를 확인해주세요.',
+      platform: '플랫폼을 선택해주세요.',
+    }
+
+    const firstErrorKey = Object.keys(errors)[0]
+    if (firstErrorKey) {
+      toast.error(errorMessages[firstErrorKey] || '입력 내용을 확인해주세요.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
@@ -466,7 +516,7 @@ export default function MenuRegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-5 sm:p-8 space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <Controller
                 name="title"
