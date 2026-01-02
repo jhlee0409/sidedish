@@ -52,13 +52,14 @@ export default function MenuRegisterPage() {
     mode: 'onChange',
   })
 
-  // Watch form values
+  // Watch form values - 특정 필드만 감시하여 무한 루프 방지
   const formValues = watch()
 
   // Draft state
   const [draft, setDraft] = useState<DraftData | null>(null)
   const [lastSaved, setLastSaved] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
+  const isInitializedRef = useRef(false)
 
   // Other state
   const [tagInput, setTagInput] = useState('')
@@ -142,6 +143,11 @@ export default function MenuRegisterPage() {
           }))
         })
         .catch(err => console.error('Failed to fetch AI usage info:', err))
+
+      // 초기화 완료 후 auto-save 활성화 (reset으로 인한 불필요한 저장 방지)
+      setTimeout(() => {
+        isInitializedRef.current = true
+      }, 100)
     }
   }, [authLoading, user?.id, reset, setValue])
 
@@ -168,6 +174,9 @@ export default function MenuRegisterPage() {
 
   // Auto-save draft - stable function that reads from refs
   const autoSaveDraft = useCallback(() => {
+    // 초기화 완료 전에는 저장하지 않음
+    if (!isInitializedRef.current) return
+
     const currentDraft = draftRef.current
     const currentFormValues = formValuesRef.current
 
@@ -198,13 +207,23 @@ export default function MenuRegisterPage() {
     }, 1000)
   }, [user?.id])
 
-  // Trigger auto-save on form data change (only depends on formValues for triggering)
+  // Trigger auto-save on form data change using watch subscription
   useEffect(() => {
-    if (draft) {
+    const subscription = watch(() => {
+      if (draftRef.current) {
+        autoSaveDraft()
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, autoSaveDraft])
+
+  // Trigger auto-save on promotion settings change
+  useEffect(() => {
+    if (draftRef.current) {
       autoSaveDraft()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formValues, wantsPromotion, selectedPlatforms])
+  }, [wantsPromotion, selectedPlatforms])
 
   // Cooldown timer
   useEffect(() => {

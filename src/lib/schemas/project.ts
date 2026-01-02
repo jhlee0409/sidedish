@@ -52,8 +52,8 @@ export const projectFormSchema = z.object({
     id: z.string(),
     storeType: z.string(),
     url: z.string(),
-    label: z.string(),
-    isPrimary: z.boolean(),
+    label: z.string().optional(),
+    isPrimary: z.boolean().optional(),
   })),
 
   platform: platformSchema,
