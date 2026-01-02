@@ -52,7 +52,7 @@ export default function MenuRegisterPage() {
     mode: 'onChange',
   })
 
-  // Watch form values
+  // Watch form values - 특정 필드만 감시하여 무한 루프 방지
   const formValues = watch()
 
   // Draft state
@@ -198,13 +198,23 @@ export default function MenuRegisterPage() {
     }, 1000)
   }, [user?.id])
 
-  // Trigger auto-save on form data change (only depends on formValues for triggering)
+  // Trigger auto-save on form data change using watch subscription
   useEffect(() => {
-    if (draft) {
+    const subscription = watch(() => {
+      if (draftRef.current) {
+        autoSaveDraft()
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, autoSaveDraft])
+
+  // Trigger auto-save on promotion settings change
+  useEffect(() => {
+    if (draftRef.current) {
       autoSaveDraft()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formValues, wantsPromotion, selectedPlatforms])
+  }, [wantsPromotion, selectedPlatforms])
 
   // Cooldown timer
   useEffect(() => {
