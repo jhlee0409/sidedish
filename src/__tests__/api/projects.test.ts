@@ -247,5 +247,129 @@ describe('Projects API', () => {
       expect(body.title).toBe('New Project')
       expect(body.authorId).toBe('user-1')
     })
+
+    it('should create project with minimal required fields only', async () => {
+      const { verifyAuth } = await import('@/lib/auth-utils')
+      vi.mocked(verifyAuth).mockResolvedValue({
+        uid: 'user-1',
+        email: 'test@example.com',
+        name: 'Test User',
+        picture: undefined,
+      })
+
+      const mockSet = vi.fn()
+      const mockDb = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            id: 'minimal-project-id',
+            set: mockSet,
+          })),
+        })),
+      }
+
+      const { getAdminDb } = await import('@/lib/firebase-admin')
+      vi.mocked(getAdminDb).mockReturnValue(mockDb as unknown as ReturnType<typeof getAdminDb>)
+
+      const { POST } = await import('@/app/api/projects/route')
+
+      // 최소 필드: title, shortDescription, platform만 전송
+      const request = new NextRequest('http://localhost/api/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: '최소 프로젝트',
+          shortDescription: '한 줄 소개',
+          platform: 'WEB',
+          // 나머지는 모두 빈 값 또는 미전송
+          description: '',
+          tags: [],
+          imageUrl: '',
+          link: '',
+          githubUrl: '',
+          links: [],
+        }),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(201)
+      expect(mockSet).toHaveBeenCalled()
+    })
+
+    it('should create project without thumbnail', async () => {
+      const { verifyAuth } = await import('@/lib/auth-utils')
+      vi.mocked(verifyAuth).mockResolvedValue({
+        uid: 'user-1',
+        email: 'test@example.com',
+        name: 'Test User',
+        picture: undefined,
+      })
+
+      const mockSet = vi.fn()
+      const mockDb = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            id: 'no-thumb-project-id',
+            set: mockSet,
+          })),
+        })),
+      }
+
+      const { getAdminDb } = await import('@/lib/firebase-admin')
+      vi.mocked(getAdminDb).mockReturnValue(mockDb as unknown as ReturnType<typeof getAdminDb>)
+
+      const { POST } = await import('@/app/api/projects/route')
+
+      const request = new NextRequest('http://localhost/api/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: '썸네일 없는 프로젝트',
+          shortDescription: '소개',
+          platform: 'MOBILE',
+          imageUrl: '',  // 썸네일 없음
+        }),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(201)
+    })
+
+    it('should create project without links', async () => {
+      const { verifyAuth } = await import('@/lib/auth-utils')
+      vi.mocked(verifyAuth).mockResolvedValue({
+        uid: 'user-1',
+        email: 'test@example.com',
+        name: 'Test User',
+        picture: undefined,
+      })
+
+      const mockSet = vi.fn()
+      const mockDb = {
+        collection: vi.fn(() => ({
+          doc: vi.fn(() => ({
+            id: 'no-links-project-id',
+            set: mockSet,
+          })),
+        })),
+      }
+
+      const { getAdminDb } = await import('@/lib/firebase-admin')
+      vi.mocked(getAdminDb).mockReturnValue(mockDb as unknown as ReturnType<typeof getAdminDb>)
+
+      const { POST } = await import('@/app/api/projects/route')
+
+      const request = new NextRequest('http://localhost/api/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: '링크 없는 프로젝트',
+          shortDescription: '소개',
+          platform: 'DESKTOP',
+          link: '',
+          githubUrl: '',
+          links: [],
+        }),
+      })
+
+      const response = await POST(request)
+      expect(response.status).toBe(201)
+    })
   })
 })
