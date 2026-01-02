@@ -30,10 +30,8 @@ export function getProjectThumbnail(project: {
   authorName?: string
   platform?: string
 }): string {
-  // Check if imageUrl exists and is not a placeholder
-  if (project.imageUrl &&
-      !project.imageUrl.includes('picsum.photos') &&
-      !project.imageUrl.includes('placeholder')) {
+  // Check if imageUrl exists and is valid
+  if (project.imageUrl && project.imageUrl.trim() !== '') {
     return project.imageUrl
   }
 

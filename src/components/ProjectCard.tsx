@@ -1,10 +1,9 @@
 'use client'
 
 import { Heart, ArrowUpRight, FlaskConical } from 'lucide-react'
-import Image from 'next/image'
 import { ProjectResponse } from '@/lib/db-types'
-import { getProjectThumbnail } from '@/lib/og-utils'
 import { PLATFORM_ICONS, getPlatformOption } from '@/lib/platform-config'
+import { ProjectThumbnailCompact } from '@/components/ProjectThumbnail'
 
 interface ProjectCardProps {
   project: ProjectResponse
@@ -38,11 +37,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
     >
       {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
-        <Image
-          src={getProjectThumbnail(project)}
-          alt={project.title}
-          fill
-          className="object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
+        <ProjectThumbnailCompact
+          imageUrl={project.imageUrl}
+          title={project.title}
+          platform={project.platform}
+          className="group-hover:scale-[1.03] transition-transform duration-500 ease-out"
         />
 
         {/* Top gradient overlay for badge visibility */}
