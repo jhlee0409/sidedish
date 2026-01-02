@@ -229,8 +229,8 @@ export default function MenuRegisterPage() {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       const currentTags = formValues.tags || []
-      if (currentTags.length >= 5) {
-        toast.error('태그는 최대 5개까지 추가할 수 있습니다.')
+      if (currentTags.length >= PROJECT_CONSTRAINTS.MAX_TAGS) {
+        toast.error(`태그는 최대 ${PROJECT_CONSTRAINTS.MAX_TAGS}개까지 추가할 수 있습니다.`)
         return
       }
       const newTag = tagInput.trim().toLowerCase()

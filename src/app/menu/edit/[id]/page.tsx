@@ -22,7 +22,7 @@ import LoginModal from '@/components/LoginModal'
 import { projectFormSchema, type ProjectFormData } from '@/lib/schemas'
 
 // 리팩토링된 상수 및 설정
-import { AI_CONSTRAINTS } from '@/lib/form-constants'
+import { AI_CONSTRAINTS, PROJECT_CONSTRAINTS } from '@/lib/form-constants'
 import { PLATFORM_OPTIONS } from '@/lib/platform-config'
 
 // Helper functions for managing AI candidates in localStorage (per project)
@@ -228,7 +228,7 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
       const currentTags = watchedValues.tags || []
-      if (!currentTags.includes(tagInput.trim()) && currentTags.length < 5) {
+      if (!currentTags.includes(tagInput.trim()) && currentTags.length < PROJECT_CONSTRAINTS.MAX_TAGS) {
         setValue('tags', [...currentTags, tagInput.trim()], { shouldValidate: true })
       }
       setTagInput('')
