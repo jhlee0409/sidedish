@@ -34,7 +34,7 @@ import {
 } from '@/lib/api-client'
 import { ProjectResponse, CommentResponse, UserResponse, Reactions, ReactionKey, PromotionPostsResponse } from '@/lib/db-types'
 import { REACTION_EMOJI_MAP, REACTION_KEYS, normalizeReactions, isReactionKey } from '@/lib/constants'
-import { getProjectThumbnail } from '@/lib/og-utils'
+import ProjectThumbnail from '@/components/ProjectThumbnail'
 import LoginModal from '@/components/LoginModal'
 import ShareSheet from '@/components/ShareSheet'
 import { ShareData } from '@/lib/share-utils'
@@ -584,11 +584,11 @@ export default function MenuDetailClient({
           <div className="lg:col-span-2 space-y-6 sm:space-y-12">
             {/* Hero Image */}
             <div className="rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-100 border border-slate-100 shadow-sm aspect-video relative group -mx-3 sm:mx-0">
-              <Image
-                src={getProjectThumbnail(project)}
-                alt={project.title}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
+              <ProjectThumbnail
+                imageUrl={project.imageUrl}
+                title={project.title}
+                platform={project.platform}
+                className="transition-transform duration-700 group-hover:scale-105"
                 priority
               />
             </div>

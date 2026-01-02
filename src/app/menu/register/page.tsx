@@ -424,7 +424,7 @@ export default function MenuRegisterPage() {
         description: data.description,
         shortDescription: data.shortDescription,
         tags: data.tags,
-        imageUrl: imageUrl || `https://picsum.photos/seed/${Date.now()}/600/400`,
+        imageUrl: imageUrl || '',
         link: primaryLink?.url || data.link,
         githubUrl: githubLink?.url || data.githubUrl,
         links: data.links.map(l => ({
