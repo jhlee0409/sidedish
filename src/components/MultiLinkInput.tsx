@@ -29,7 +29,7 @@ type FormLink = {
   storeType: string
   url: string
   label?: string
-  isPrimary: boolean
+  isPrimary?: boolean
 }
 
 interface MultiLinkInputProps {
