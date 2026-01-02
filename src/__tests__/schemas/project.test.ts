@@ -134,12 +134,23 @@ describe('projectFormSchema', () => {
       }
     })
 
-    it('should reject tags exceeding max count', () => {
+    it('should accept exactly max tags (5)', () => {
       const project = {
         ...projectFormDefaultValues,
         title: '제목입니다',
         shortDescription: '설명입니다',
-        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6', 'tag7', 'tag8', 'tag9', 'tag10', 'tag11'],
+        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5'],
+      }
+      const result = projectFormSchema.safeParse(project)
+      expect(result.success).toBe(true)
+    })
+
+    it('should reject tags exceeding max count (6 tags)', () => {
+      const project = {
+        ...projectFormDefaultValues,
+        title: '제목입니다',
+        shortDescription: '설명입니다',
+        tags: ['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6'],
       }
       const result = projectFormSchema.safeParse(project)
       expect(result.success).toBe(false)

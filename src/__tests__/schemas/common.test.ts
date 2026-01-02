@@ -218,14 +218,20 @@ describe('tagsSchema', () => {
     }
   })
 
-  it('should reject more than 10 tags', () => {
+  it('should accept exactly 5 tags (max limit)', () => {
     const result = tagsSchema.safeParse([
-      'tag1', 'tag2', 'tag3', 'tag4', 'tag5',
-      'tag6', 'tag7', 'tag8', 'tag9', 'tag10', 'tag11'
+      'tag1', 'tag2', 'tag3', 'tag4', 'tag5'
+    ])
+    expect(result.success).toBe(true)
+  })
+
+  it('should reject more than 5 tags', () => {
+    const result = tagsSchema.safeParse([
+      'tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6'
     ])
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('10개')
+      expect(result.error.issues[0].message).toContain('5개')
     }
   })
 })
