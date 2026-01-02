@@ -96,6 +96,9 @@ export const createDraft = (userId: string): DraftData => {
     generationCount: 0,
     lastSavedAt: now,
     createdAt: now,
+    // 홍보 관련 기본값
+    wantsPromotion: false,
+    selectedPlatforms: ['x', 'linkedin', 'facebook', 'threads'],
   }
 
   const drafts = getAllDrafts()

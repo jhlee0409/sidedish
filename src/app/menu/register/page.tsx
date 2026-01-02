@@ -122,6 +122,14 @@ export default function MenuRegisterPage() {
 
       setLastSaved(formatLastSaved(existingDraft.lastSavedAt))
 
+      // Load promotion settings from draft
+      if (existingDraft.wantsPromotion !== undefined) {
+        setWantsPromotion(existingDraft.wantsPromotion)
+      }
+      if (existingDraft.selectedPlatforms?.length) {
+        setSelectedPlatforms(existingDraft.selectedPlatforms as SocialPlatform[])
+      }
+
       // Fetch AI usage info
       getAiUsageInfo(existingDraft.id)
         .then(usage => {
@@ -151,6 +159,13 @@ export default function MenuRegisterPage() {
   const draftRef = useRef(draft)
   draftRef.current = draft
 
+  // Refs for promotion settings
+  const wantsPromotionRef = useRef(wantsPromotion)
+  wantsPromotionRef.current = wantsPromotion
+
+  const selectedPlatformsRef = useRef(selectedPlatforms)
+  selectedPlatformsRef.current = selectedPlatforms
+
   // Auto-save draft - stable function that reads from refs
   const autoSaveDraft = useCallback(() => {
     const currentDraft = draftRef.current
@@ -171,6 +186,9 @@ export default function MenuRegisterPage() {
           ...l,
           storeType: l.storeType as StoreType,
         })),
+        // 홍보 설정 포함
+        wantsPromotion: wantsPromotionRef.current,
+        selectedPlatforms: selectedPlatformsRef.current,
       }
 
       saveDraft(updatedDraft)
@@ -186,7 +204,7 @@ export default function MenuRegisterPage() {
       autoSaveDraft()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formValues])
+  }, [formValues, wantsPromotion, selectedPlatforms])
 
   // Cooldown timer
   useEffect(() => {
