@@ -427,7 +427,14 @@ export default function MenuDetailClient({
           <div className={`flex items-center justify-between transition-all duration-200 ${isScrolled ? 'h-12 sm:h-14' : 'h-14 sm:h-16'}`}>
             {/* 뒤로가기 */}
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                // 히스토리가 있으면 뒤로가기, 없으면 대시보드로 (공유 링크 진입 케이스)
+                if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer) {
+                  router.back()
+                } else {
+                  router.push('/dashboard')
+                }
+              }}
               className="flex items-center justify-center w-10 h-10 -ml-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
               aria-label="뒤로가기"
             >

@@ -168,7 +168,8 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
   useEffect(() => {
     if (project && user && project.authorId !== user.id) {
       toast.error('이 메뉴를 수정할 권한이 없습니다.')
-      router.push('/mypage')
+      // 메뉴 상세 페이지로 이동 (마이페이지 대신 자연스러운 흐름)
+      router.push(`/menu/${project.id}`)
     }
   }, [project, user, router])
 
@@ -491,7 +492,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
         <div className="container mx-auto px-3 sm:px-4 max-w-4xl">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                // 히스토리가 있으면 뒤로가기, 없으면 대시보드로
+                if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer) {
+                  router.back()
+                } else {
+                  router.push('/dashboard')
+                }
+              }}
               className="flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -825,7 +833,14 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
                 variant="outline"
                 className="w-full sm:w-auto px-6"
                 disabled={isSubmitting}
-                onClick={() => router.back()}
+                onClick={() => {
+                  // 히스토리가 있으면 뒤로가기, 없으면 대시보드로
+                  if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer) {
+                    router.back()
+                  } else {
+                    router.push('/dashboard')
+                  }
+                }}
               >
                 취소
               </Button>
